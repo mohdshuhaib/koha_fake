@@ -16,9 +16,9 @@ export default function LoginPage() {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
-        router.replace('/dashboard') // If logged in, redirect
+        router.replace('/dashboard')
       } else {
-        setCheckingSession(false) // Show form if not logged in
+        setCheckingSession(false)
       }
     }
 
@@ -28,48 +28,64 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-
     if (error) return setError(error.message)
     router.push('/dashboard')
   }
 
-  if (checkingSession) {
-    return (
-      <Loading/>
-    )
-  }
+  if (checkingSession) return <Loading />
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary via-secondary to-sidekick px-4">
       <form
         onSubmit={handleLogin}
-        className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md space-y-4"
+        className="w-full max-w-md space-y-6 bg-primary/80 rounded-xl shadow-lg p-8"
       >
-        <h1 className="text-2xl font-bold text-center">Librarian Login</h1>
-        {error && <p className="text-red-500">{error}</p>}
-        <input
-          type="email"
-          placeholder="Email"
-          className="w-full p-2 border rounded"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full p-2 border rounded"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          required
-        />
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-sidekick">Librarian Login</h1>
+          <p className="text-sm text-gray-500 mt-1">Welcome back! Please sign in.</p>
+        </div>
+
+        {error && (
+          <p className="text-red-600 text-sm bg-red-100 px-4 py-2 rounded">{error}</p>
+        )}
+
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-white/90">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-sidekick"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-white/90">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-sidekick"
+            />
+          </div>
+        </div>
+
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+          className="w-full py-2 rounded-md bg-sidekick text-black font-semibold hover:bg-sidekick-dark transition-colors"
         >
-          Login
+          Sign In
         </button>
       </form>
-    </div>
+    </main>
   )
 }

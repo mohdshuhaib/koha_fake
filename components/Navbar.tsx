@@ -47,10 +47,13 @@ export default function Navbar() {
   ]
 
   return (
-    <nav className="sticky top-0 z-20 w-full bg-white/90 backdrop-blur shadow-sm">
+    <nav className="sticky top-0 z-30 w-full bg-primary border-b border-sidekick shadow-sm">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="text-xl font-bold text-blue-700 flex items-center gap-1">
+        <Link
+          href="/"
+          className="text-xl font-bold text-sidekick flex items-center gap-2"
+        >
           📚 <span>PMSA Library</span>
         </Link>
 
@@ -61,8 +64,8 @@ export default function Navbar() {
               key={item.href}
               href={item.href}
               className={clsx(
-                'text-sm font-medium transition-colors hover:text-blue-600',
-                pathname === item.href ? 'text-blue-600' : 'text-gray-700'
+                'text-sm font-medium hover:text-sidekick transition',
+                pathname === item.href ? 'text-sidekick' : 'text-white/90'
               )}
             >
               {item.label}
@@ -79,33 +82,36 @@ export default function Navbar() {
           ) : (
             <Link
               href="/login"
-              className={clsx(
-                'text-sm font-medium hover:text-blue-600',
-                pathname === '/login' ? 'text-blue-600' : 'text-gray-700'
-              )}
+              className="text-sm font-medium px-4 py-1.5 rounded-full bg-sidekick text-black hover:bg-sidekick-dark transition"
             >
               Login
             </Link>
           )}
         </div>
 
-        {/* Mobile menu button */}
+        {/* Mobile menu toggle */}
         <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden">
-          {menuOpen ? <X className="w-6 h-6 text-gray-700" /> : <Menu className="w-6 h-6 text-gray-700" />}
+          {menuOpen ? (
+            <X className="w-6 h-6 text-white" />
+          ) : (
+            <Menu className="w-6 h-6 text-white" />
+          )}
         </button>
       </div>
 
-      {/* Mobile dropdown menu */}
+      {/* Mobile Menu */}
       {menuOpen && (
-        <div className="md:hidden px-4 pb-4 flex flex-col gap-2 bg-white shadow-sm">
+        <div className="md:hidden px-4 pb-4 pt-2 space-y-2 bg-white border-t border-gray-200">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               onClick={() => setMenuOpen(false)}
               className={clsx(
-                'text-sm font-medium px-2 py-1 rounded hover:bg-blue-50',
-                pathname === item.href ? 'text-blue-600' : 'text-gray-700'
+                'block text-sm font-medium px-3 py-2 rounded-md transition-colors',
+                pathname === item.href
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-800 hover:bg-gray-100'
               )}
             >
               {item.label}
@@ -118,7 +124,7 @@ export default function Navbar() {
                 handleLogout()
                 setMenuOpen(false)
               }}
-              className="text-sm font-medium px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition text-left"
+              className="w-full text-sm font-medium px-4 py-2 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
             >
               Logout
             </button>
@@ -126,10 +132,7 @@ export default function Navbar() {
             <Link
               href="/login"
               onClick={() => setMenuOpen(false)}
-              className={clsx(
-                'text-sm font-medium px-2 py-1 hover:bg-blue-50 rounded',
-                pathname === '/login' ? 'text-blue-600' : 'text-gray-700'
-              )}
+              className="block w-full text-center text-sm font-medium px-4 py-2 rounded-full bg-sidekick text-black hover:bg-sidekick-dark transition"
             >
               Login
             </Link>

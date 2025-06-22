@@ -45,54 +45,58 @@ export default function CatalogPage() {
     setFilteredBooks(results)
   }, [search, books])
 
-  if (loading) return <Loading/>
+  if (loading) return <Loading />
 
   return (
-    <div className="mt-6 max-w-6xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">📚 Book Catalog</h1>
+    <div className="min-h-screen bg-primary text-white">
+      <div className="max-w-6xl mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-6 text-sidekick">📚 Book Catalog</h1>
 
-      <input
-        type="text"
-        placeholder="Search by title, author, language or call number"
-        className="w-full p-2 mb-4 border rounded"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+        <input
+          type="text"
+          placeholder="Search by title, author, language or call number"
+          className="w-full p-3 mb-6 rounded-md bg-[#1a1a1a] border border-secondary text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sidekick"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
-      {filteredBooks.length === 0 ? (
-        <p>No books found in the catalog.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border text-sm">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border px-4 py-2 text-left">Title</th>
-                <th className="border px-4 py-2 text-left">Author</th>
-                <th className="border px-4 py-2 text-left">Language</th>
-                <th className="border px-4 py-2 text-left">Call Number</th>
-                <th className="border px-4 py-2 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredBooks.map((book) => (
-                <tr key={book.id} className="hover:bg-gray-50">
-                  <td className="border px-4 py-2">{book.title}</td>
-                  <td className="border px-4 py-2">{book.author}</td>
-                  <td className="border px-4 py-2">{book.language}</td>
-                  <td className="border px-4 py-2">{book.call_number}</td>
-                  <td className="border px-4 py-2">
-                    {book.status ? (
-                      <span className="text-green-600 font-medium">Available</span>
-                    ) : (
-                      <span className="text-red-600 font-medium">Checked Out</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        {filteredBooks.length === 0 ? (
+          <p className="text-gray-300">No books found in the catalog.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <div className="max-h-[calc(100vh-250px)] overflow-y-auto rounded-md border border-secondary shadow-lg custom-scroll">
+              <table className="min-w-full text-sm text-white">
+                <thead className="bg-secondary sticky top-0 z-10 text-left text-white">
+                  <tr>
+                    <th className="px-4 py-2">Title</th>
+                    <th className="px-4 py-2">Author</th>
+                    <th className="px-4 py-2">Language</th>
+                    <th className="px-4 py-2">Call Number</th>
+                    <th className="px-4 py-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredBooks.map((book) => (
+                    <tr key={book.id} className="hover:bg-[#1a1a1a] border-t border-gray-700">
+                      <td className="px-4 py-3">{book.title}</td>
+                      <td className="px-4 py-3">{book.author}</td>
+                      <td className="px-4 py-3">{book.language}</td>
+                      <td className="px-4 py-3">{book.call_number}</td>
+                      <td className="px-4 py-3">
+                        {book.status ? (
+                          <span className="text-green-400 font-medium">Available</span>
+                        ) : (
+                          <span className="text-red-400 font-medium">Checked Out</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
