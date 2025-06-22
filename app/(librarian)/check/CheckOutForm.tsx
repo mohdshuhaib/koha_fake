@@ -1,99 +1,108 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import dayjs from 'dayjs'
 
 export default function CheckOutForm() {
-  const [members, setMembers] = useState<any[]>([])
-  const [books, setBooks] = useState<any[]>([])
-  const [memberId, setMemberId] = useState('')
-  const [bookId, setBookId] = useState('')
-  const [dueDate, setDueDate] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [memberBarcode, setMemberBarcode] = useState('')
+  const [bookBarcode, setBookBarcode] = useState('')
   const [message, setMessage] = useState('')
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const { data: membersData } = await supabase.from('members').select('*')
-      const { data: booksData } = await supabase
-        .from('books')
-        .select('*')
-        .eq('status', 'available')
-
-      setMembers(membersData || [])
-      setBooks(booksData || [])
-    }
-    fetchData()
-  }, [])
+  const [loading, setLoading] = useState(false)
 
   const handleCheckout = async () => {
-    if (!memberId || !bookId || !dueDate) {
-      setMessage('⚠️ Fill all fields')
+    setLoading(true)
+    setMessage('')
+
+    const issueDate = new Date()
+    const dueDate = dayjs(issueDate).add(15, 'day').format('YYYY-MM-DD')
+
+    // Fetch member
+    const { data: member, error: memberError } = await supabase
+      .from('members')
+      .select('*')
+      .eq('barcode', memberBarcode)
+      .single()
+
+    if (memberError || !member) {
+      setMessage('❌ Member not found')
+      setLoading(false)
       return
     }
 
-    setLoading(true)
+    // Fetch book
+    const { data: book, error: bookError } = await supabase
+      .from('books')
+      .select('*')
+      .eq('barcode', bookBarcode)
+      .eq('status', 'available')
+      .single()
 
+    if (bookError || !book) {
+      setMessage('❌ Book not available')
+      setLoading(false)
+      return
+    }
+
+    // Insert borrow record
     const { error: borrowError } = await supabase.from('borrow_records').insert([
       {
-        book_id: bookId,
-        member_id: memberId,
-        due_date: dueDate,
+        book_id: book.id,
+        member_id: member.id,
+        borrow_date: issueDate.toISOString(), // ensure proper format
+        due_date: dueDate, // already formatted YYYY-MM-DD
       },
     ])
 
+    if (borrowError) {
+      console.error('❌ Insert error:', borrowError)
+      setMessage('❌ Failed to insert borrow record')
+      setLoading(false)
+      return
+    }
+
+    // Update book status
     const { error: updateBookError } = await supabase
       .from('books')
       .update({ status: 'borrowed' })
-      .eq('id', bookId)
+      .eq('id', book.id)
 
-    setLoading(false)
-
-    if (borrowError || updateBookError) {
-      setMessage('❌ Checkout failed')
-    } else {
-      setMessage('✅ Book checked out successfully')
-      setBookId('')
-      setMemberId('')
-      setDueDate('')
+    if (updateBookError) {
+      console.error('❌ Book update error:', updateBookError)
+      setMessage('❌ Failed to update book status')
+      setLoading(false)
+      return
     }
+
+    // Success
+    setMessage(
+      `✅ "${book.title}" issued to ${member.name}. Return date: ${dayjs(dueDate).format('DD MMM YYYY')}`
+    )
+    setBookBarcode('')
+    setMemberBarcode('')
+    setLoading(false)
   }
 
   return (
     <div className="space-y-4 max-w-xl mx-auto p-4 bg-white rounded shadow">
       <h2 className="text-xl font-bold">📤 Check Out Book</h2>
 
-      <select
-        value={memberId}
-        onChange={(e) => setMemberId(e.target.value)}
+      <input
+        type="text"
         className="w-full border p-2 rounded"
-      >
-        <option value="">-- Select Member --</option>
-        {members.map((m) => (
-          <option key={m.id} value={m.id}>
-            {m.name} ({m.category})
-          </option>
-        ))}
-      </select>
-
-      <select
-        value={bookId}
-        onChange={(e) => setBookId(e.target.value)}
-        className="w-full border p-2 rounded"
-      >
-        <option value="">-- Select Book --</option>
-        {books.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.title} ({b.barcode})
-          </option>
-        ))}
-      </select>
+        placeholder="Scan member barcode"
+        value={memberBarcode}
+        onChange={(e) => setMemberBarcode(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && handleCheckout()}
+      />
 
       <input
-        type="date"
-        value={dueDate}
-        onChange={(e) => setDueDate(e.target.value)}
+        type="text"
         className="w-full border p-2 rounded"
+        placeholder="Scan book barcode"
+        value={bookBarcode}
+        onChange={(e) => setBookBarcode(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && handleCheckout()}
       />
 
       <button

@@ -38,7 +38,8 @@ export default function DashboardPage() {
         supabase
           .from('borrow_records')
           .select('fine')
-          .is('return_date', null),
+          .eq('fine_paid', false)
+          .gt('fine', 0),
       ])
 
       const pendingFinesTotal = fines?.reduce((sum, r) => sum + (r.fine || 0), 0)

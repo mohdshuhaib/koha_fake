@@ -1,20 +1,19 @@
 // app/layout.tsx
-'use client'
-import './globals.css'
+import '@/app/globals.css'
 import Navbar from '@/components/Navbar'
-import { usePathname } from 'next/navigation'
+import { ReactNode } from 'react'
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
+export const metadata = {
+  title: 'PMSA Library',
+  description: 'Library management system for PMSA Wafy College Kattilangadi',
+}
 
-  // Pages where navbar should be hidden
-  const hideNavbar = ['/login', '/signup']
-
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>
-        {!hideNavbar.includes(pathname) && <Navbar />}
-        {children}
+      <body className="bg-gray-50 text-gray-900">
+        <Navbar />
+        <main className="max-w-4xl mx-auto p-4">{children}</main>
       </body>
     </html>
   )

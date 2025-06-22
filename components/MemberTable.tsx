@@ -33,6 +33,7 @@ export default function MemberTable() {
 
   return (
     <div className="mt-6 overflow-auto rounded shadow">
+      <h1 className="text-2xl font-bold mb-6">Available Patrons</h1>
       <table className="w-full border text-sm">
         <thead className="bg-gray-100 text-left">
           <tr>
