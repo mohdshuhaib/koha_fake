@@ -1,14 +1,38 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import Loading from '@/app/loading'
 
 export default function FinesPage() {
   const [loading, setLoading] = useState(true)
   const [fines, setFines] = useState<any[]>([])
+  const [checkingSession, setCheckingSession] = useState(true)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  const router = useRouter()
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        router.push('/login')
+      } else {
+        setIsLoggedIn(true)
+      }
+
+      setCheckingSession(false)
+    }
+
+    checkAuth()
+  }, [router])
 
   useEffect(() => {
     const fetchFines = async () => {
+      if (!isLoggedIn) return
+
       const { data, error } = await supabase
         .from('borrow_records')
         .select('id, fine, return_date, fine_paid, member:member_id(name), book:book_id(title)')
@@ -25,7 +49,7 @@ export default function FinesPage() {
     }
 
     fetchFines()
-  }, [])
+  }, [isLoggedIn])
 
   const markAsPaid = async (id: number) => {
     const { error } = await supabase
@@ -40,12 +64,18 @@ export default function FinesPage() {
     }
   }
 
+  if (checkingSession) {
+    return <Loading/>
+  }
+
+  if (!isLoggedIn) return null
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">💰 Unpaid Fines</h1>
 
       {loading ? (
-        <p>Loading...</p>
+        <Loading/>
       ) : fines.length === 0 ? (
         <p>🎉 No unpaid fines</p>
       ) : (

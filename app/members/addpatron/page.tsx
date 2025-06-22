@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
+import Loading from '@/app/loading'
 
 export default function AddMemberForm() {
   const [name, setName] = useState('')
@@ -9,6 +11,34 @@ export default function AddMemberForm() {
   const [dob, setDob] = useState('')
   const [category, setCategory] = useState('')
   const [message, setMessage] = useState('')
+  const [userload, setuserload] = useState(true)
+  const [checkingSession, setCheckingSession] = useState(true)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  const router = useRouter()
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        router.push('/login')
+      } else {
+        setIsLoggedIn(true)
+      }
+
+      setCheckingSession(false)
+      setuserload(false)
+    }
+
+    checkAuth()
+  }, [router])
+
+  if (userload) {
+    return (
+      <Loading/>
+    )
+  }
 
   const handleAddMember = async () => {
     if (!name || !email || !dob || !category) {

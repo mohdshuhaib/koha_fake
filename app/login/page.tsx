@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import Loading from '../loading'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -34,9 +35,7 @@ export default function LoginPage() {
 
   if (checkingSession) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p className="text-gray-500">Checking login status...</p>
-      </div>
+      <Loading/>
     )
   }
 

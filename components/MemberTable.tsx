@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import Loading from '@/app/loading'
 
 type Member = {
   id: string
@@ -28,7 +29,7 @@ export default function MemberTable() {
     fetchMembers()
   }, [])
 
-  if (loading) return <p>Loading members...</p>
+  if (loading) return <Loading/>
   if (members.length === 0) return <p>No members found.</p>
 
   return (

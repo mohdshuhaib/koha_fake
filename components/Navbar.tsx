@@ -14,12 +14,10 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
-    // Check if user is logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsLoggedIn(!!session)
     })
 
-    // Listen to auth state changes (login/logout)
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session)
     })
@@ -39,37 +37,32 @@ export default function Navbar() {
     { href: '/catalog', label: 'Catalog' },
     ...(isLoggedIn
       ? [
-          { href: '/dashboard', label: 'Dashboard' },
-          { href: '/check', label: 'Check In / Out' },
-          { href: '/books', label: 'Add Book' },
-          { href: '/members', label: 'Add Patron' },
-          { href: '/fines', label: 'Fines' },
-        ]
+        { href: '/dashboard', label: 'Dashboard' },
+        { href: '/check', label: 'Check In / Out' },
+        { href: '/books', label: 'Add Book' },
+        { href: '/members', label: 'Add Patron' },
+        { href: '/fines', label: 'Fines' },
+      ]
       : []),
   ]
 
   return (
-    <nav className="p-4 shadow bg-white">
-      <div className="flex justify-between items-center">
-        <div className="text-lg font-bold">📚 Library</div>
+    <nav className="sticky top-0 z-20 w-full bg-white/90 backdrop-blur shadow-sm">
+      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        {/* Logo */}
+        <Link href="/" className="text-xl font-bold text-blue-700 flex items-center gap-1">
+          📚 <span>PMSA Library</span>
+        </Link>
 
-        {/* Mobile menu toggle */}
-        <button
-          className="md:hidden"
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
-
-        {/* Desktop nav */}
-        <div className="hidden md:flex gap-4">
+        {/* Desktop Nav */}
+        <div className="hidden md:flex items-center gap-6">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={clsx(
-                'text-sm font-medium',
-                pathname === item.href ? 'text-blue-600' : 'text-gray-600'
+                'text-sm font-medium transition-colors hover:text-blue-600',
+                pathname === item.href ? 'text-blue-600' : 'text-gray-700'
               )}
             >
               {item.label}
@@ -79,7 +72,7 @@ export default function Navbar() {
           {isLoggedIn ? (
             <button
               onClick={handleLogout}
-              className="text-sm text-red-600 hover:underline"
+              className="text-sm font-medium px-4 py-1.5 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
             >
               Logout
             </button>
@@ -87,28 +80,33 @@ export default function Navbar() {
             <Link
               href="/login"
               className={clsx(
-                'text-sm font-medium',
-                pathname === '/login' ? 'text-blue-600' : 'text-gray-600'
+                'text-sm font-medium hover:text-blue-600',
+                pathname === '/login' ? 'text-blue-600' : 'text-gray-700'
               )}
             >
               Login
             </Link>
           )}
         </div>
+
+        {/* Mobile menu button */}
+        <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden">
+          {menuOpen ? <X className="w-6 h-6 text-gray-700" /> : <Menu className="w-6 h-6 text-gray-700" />}
+        </button>
       </div>
 
-      {/* Mobile nav dropdown */}
+      {/* Mobile dropdown menu */}
       {menuOpen && (
-        <div className="md:hidden mt-4 flex flex-col gap-2">
+        <div className="md:hidden px-4 pb-4 flex flex-col gap-2 bg-white shadow-sm">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={clsx(
-                'text-sm font-medium',
-                pathname === item.href ? 'text-blue-600' : 'text-gray-600'
-              )}
               onClick={() => setMenuOpen(false)}
+              className={clsx(
+                'text-sm font-medium px-2 py-1 rounded hover:bg-blue-50',
+                pathname === item.href ? 'text-blue-600' : 'text-gray-700'
+              )}
             >
               {item.label}
             </Link>
@@ -120,18 +118,18 @@ export default function Navbar() {
                 handleLogout()
                 setMenuOpen(false)
               }}
-              className="text-sm text-red-600 text-left"
+              className="text-sm font-medium px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition text-left"
             >
               Logout
             </button>
           ) : (
             <Link
               href="/login"
-              className={clsx(
-                'text-sm font-medium',
-                pathname === '/login' ? 'text-blue-600' : 'text-gray-600'
-              )}
               onClick={() => setMenuOpen(false)}
+              className={clsx(
+                'text-sm font-medium px-2 py-1 hover:bg-blue-50 rounded',
+                pathname === '/login' ? 'text-blue-600' : 'text-gray-700'
+              )}
             >
               Login
             </Link>

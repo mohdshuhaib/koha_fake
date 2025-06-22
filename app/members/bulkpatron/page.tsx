@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Papa from 'papaparse'
 import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
+import Loading from '@/app/loading'
 
 type MemberRow = {
   name: string
@@ -14,6 +16,34 @@ type MemberRow = {
 export default function BulkUploadMembers() {
   const [message, setMessage] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [userload, setuserload] = useState(true)
+  const [checkingSession, setCheckingSession] = useState(true)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  const router = useRouter()
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        router.push('/login')
+      } else {
+        setIsLoggedIn(true)
+      }
+
+      setCheckingSession(false)
+      setuserload(false)
+    }
+
+    checkAuth()
+  }, [router])
+
+  if (userload) {
+    return (
+      <Loading/>
+    )
+  }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

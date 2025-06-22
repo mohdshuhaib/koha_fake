@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import Loading from '../loading'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -57,7 +58,7 @@ export default function DashboardPage() {
     checkAuthAndFetchStats()
   }, [router])
 
-  if (loading) return <div className="p-8 text-center">Loading...</div>
+  if (loading) return <Loading/>
 
   return (
     <div className="p-8">

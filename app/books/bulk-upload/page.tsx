@@ -1,12 +1,42 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import * as XLSX from 'xlsx'
+import { useRouter } from 'next/navigation'
+import Loading from '@/app/loading'
 
 export default function BulkUploadPage() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [userload, setuserload] = useState(true)
+  const [checkingSession, setCheckingSession] = useState(true)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  const router = useRouter()
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        router.push('/login')
+      } else {
+        setIsLoggedIn(true)
+      }
+
+      setCheckingSession(false)
+      setuserload(false)
+    }
+
+    checkAuth()
+  }, [router])
+
+  if (userload) {
+    return (
+      <Loading/>
+    )
+  }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

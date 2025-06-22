@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import Loading from '../loading'
 
 type Book = {
   id: number
@@ -44,7 +45,7 @@ export default function CatalogPage() {
     setFilteredBooks(results)
   }, [search, books])
 
-  if (loading) return <p className="text-center mt-10">Loading catalog...</p>
+  if (loading) return <Loading/>
 
   return (
     <div className="mt-6 max-w-6xl mx-auto p-4">
