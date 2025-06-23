@@ -11,15 +11,28 @@ export default function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [role, setRole] = useState<'member' | 'librarian' | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsLoggedIn(!!session)
-    })
+    const getSessionAndRole = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session)
+      if (user) {
+        setIsLoggedIn(true)
+        const rawRole = user.user_metadata?.role
+        setRole(rawRole === 'librarian' ? 'librarian' : 'member')
+      } else {
+        setIsLoggedIn(false)
+        setRole(null)
+      }
+    }
+
+    getSessionAndRole()
+
+    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+      getSessionAndRole()
     })
 
     return () => {
@@ -37,11 +50,19 @@ export default function Navbar() {
     { href: '/catalog', label: 'Catalog' },
     ...(isLoggedIn
       ? [
-        { href: '/dashboard', label: 'Dashboard' },
-        { href: '/check', label: 'Check In / Out' },
-        { href: '/books', label: 'Add Book' },
-        { href: '/members', label: 'Add Patron' },
-        { href: '/fines', label: 'Fines' },
+        {
+          href: role === 'librarian' ? '/dashboard' : '/member/dashboard-mem',
+          label: 'Dashboard',
+        },
+        ...(role === 'librarian'
+          ? [
+            { href: '/check', label: 'Check In / Out' },
+            { href: '/books', label: 'Add Book' },
+            { href: '/members', label: 'Add Patron' },
+            { href: '/fines', label: 'Fines' },
+            { href: '/history', label: 'Stats' },
+          ]
+          : []),
       ]
       : []),
   ]
@@ -72,21 +93,24 @@ export default function Navbar() {
             </Link>
           ))}
 
-          {isLoggedIn ? (
-            <button
-              onClick={handleLogout}
-              className="text-sm font-medium px-4 py-1.5 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
-            >
-              Logout
-            </button>
-          ) : (
-            <Link
-              href="/login"
-              className="text-sm font-medium px-4 py-1.5 rounded-full bg-sidekick text-black hover:bg-sidekick-dark transition"
-            >
-              Login
-            </Link>
+          {role === 'librarian' && (
+            isLoggedIn ? (
+              <button
+                onClick={handleLogout}
+                className="text-sm font-medium px-4 py-1.5 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="text-sm font-medium px-4 py-1.5 rounded-full bg-sidekick text-black hover:bg-sidekick-dark transition"
+              >
+                Login
+              </Link>
+            )
           )}
+
         </div>
 
         {/* Mobile menu toggle */}
@@ -118,24 +142,26 @@ export default function Navbar() {
             </Link>
           ))}
 
-          {isLoggedIn ? (
-            <button
-              onClick={() => {
-                handleLogout()
-                setMenuOpen(false)
-              }}
-              className="w-full text-sm font-medium px-4 py-2 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
-            >
-              Logout
-            </button>
-          ) : (
-            <Link
-              href="/login"
-              onClick={() => setMenuOpen(false)}
-              className="block w-full text-center text-sm font-medium px-4 py-2 rounded-full bg-sidekick text-black hover:bg-sidekick-dark transition"
-            >
-              Login
-            </Link>
+          {role === 'librarian' && (
+            isLoggedIn ? (
+              <button
+                onClick={() => {
+                  handleLogout()
+                  setMenuOpen(false)
+                }}
+                className="w-full text-sm font-medium px-4 py-2 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setMenuOpen(false)}
+                className="block w-full text-center text-sm font-medium px-4 py-2 rounded-full bg-sidekick text-black hover:bg-sidekick-dark transition"
+              >
+                Login
+              </Link>
+            )
           )}
         </div>
       )}

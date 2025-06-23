@@ -41,7 +41,7 @@ export default function AddBookPage() {
 
   if (userload) {
     return (
-      <Loading/>
+      <Loading />
     )
   }
 
@@ -82,7 +82,18 @@ export default function AddBookPage() {
 
         <input name="title" placeholder="Title" value={formData.title} onChange={handleChange} required className="w-full p-2 border rounded" />
         <input name="author" placeholder="Author" value={formData.author} onChange={handleChange} required className="w-full p-2 border rounded" />
-        <input name="language" placeholder="Language" value={formData.language} onChange={handleChange} required className="w-full p-2 border rounded" />
+        <select
+          name="language"
+          value={formData.language}
+          onChange={handleChange}
+          required
+          className="w-full p-2 border rounded"
+        >
+          <option value="">Select Language</option>
+          <option value="MAL">MAL</option>
+          <option value="ARB">ARB</option>
+          <option value="URD">URD</option>
+        </select>
         <input name="shelf_location" placeholder="Shelf Location" value={formData.shelf_location} onChange={handleChange} required className="w-full p-2 border rounded" />
         <input name="call_number" placeholder="Call Number" value={formData.call_number} onChange={handleChange} required className="w-full p-2 border rounded" />
         <input name="barcode" placeholder="Barcode" value={formData.barcode} onChange={handleChange} required className="w-full p-2 border rounded" />

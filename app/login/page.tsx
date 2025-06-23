@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import Loading from '../loading'
+import Loading from '@/app/loading'
 
 export default function LoginPage() {
   const router = useRouter()

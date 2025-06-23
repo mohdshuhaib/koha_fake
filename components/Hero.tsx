@@ -41,8 +41,18 @@ export default function Hero() {
           >
             🔐 Librarian Login
           </a>
+          <p className="text-sm text-white/70 pt-4">
+            Are you a member of PMSA Library?{' '}
+            <a
+              href="/member-login"
+              className="text-sidekick hover:underline transition font-medium"
+            >
+              Login here
+            </a>
+          </p>
+
         </div>
-        
+
         <div className="pt-4 text-xs text-white/60">
           Made with ❤️ by {devzora}
         </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import dayjs from 'dayjs'
 
@@ -10,7 +10,17 @@ export default function CheckOutForm() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const memberInputRef = useRef<HTMLInputElement>(null)
+  const bookInputRef = useRef<HTMLInputElement>(null)
+
+  // Auto focus member barcode on page load
+  useEffect(() => {
+    memberInputRef.current?.focus()
+  }, [])
+
   const handleCheckout = async () => {
+    if (!memberBarcode || !bookBarcode) return
+
     setLoading(true)
     setMessage('')
 
@@ -26,7 +36,7 @@ export default function CheckOutForm() {
 
     if (memberError || !member) {
       setMessage('❌ Member not found')
-      setLoading(false)
+      resetForm()
       return
     }
 
@@ -40,7 +50,7 @@ export default function CheckOutForm() {
 
     if (bookError || !book) {
       setMessage('❌ Book not available')
-      setLoading(false)
+      resetForm()
       return
     }
 
@@ -49,15 +59,15 @@ export default function CheckOutForm() {
       {
         book_id: book.id,
         member_id: member.id,
-        borrow_date: issueDate.toISOString(), // ensure proper format
-        due_date: dueDate, // already formatted YYYY-MM-DD
+        borrow_date: issueDate.toISOString(),
+        due_date: dueDate,
       },
     ])
 
     if (borrowError) {
       console.error('❌ Insert error:', borrowError)
       setMessage('❌ Failed to insert borrow record')
-      setLoading(false)
+      resetForm()
       return
     }
 
@@ -70,17 +80,37 @@ export default function CheckOutForm() {
     if (updateBookError) {
       console.error('❌ Book update error:', updateBookError)
       setMessage('❌ Failed to update book status')
-      setLoading(false)
+      resetForm()
       return
     }
 
     // Success
     setMessage(
-      `✅ "${book.title}" issued to ${member.name}. Return date: ${dayjs(dueDate).format('DD MMM YYYY')}`
+      `✅ "${book.title}" issued to ${member.name}. Return by ${dayjs(dueDate).format('DD MMM YYYY')}`
     )
+
+    resetForm()
+  }
+
+  const resetForm = () => {
     setBookBarcode('')
     setMemberBarcode('')
     setLoading(false)
+    setTimeout(() => memberInputRef.current?.focus(), 200) // refocus after delay
+  }
+
+  // If member scanned and Enter pressed, go to book field
+  const handleMemberKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      bookInputRef.current?.focus()
+    }
+  }
+
+  // If book scanned and Enter pressed, run checkout
+  const handleBookKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleCheckout()
+    }
   }
 
   return (
@@ -88,21 +118,23 @@ export default function CheckOutForm() {
       <h2 className="text-xl font-bold">📤 Check Out Book</h2>
 
       <input
+        ref={memberInputRef}
         type="text"
         className="w-full border p-2 rounded"
         placeholder="Scan member barcode"
         value={memberBarcode}
         onChange={(e) => setMemberBarcode(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && handleCheckout()}
+        onKeyDown={handleMemberKeyDown}
       />
 
       <input
+        ref={bookInputRef}
         type="text"
         className="w-full border p-2 rounded"
         placeholder="Scan book barcode"
         value={bookBarcode}
         onChange={(e) => setBookBarcode(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && handleCheckout()}
+        onKeyDown={handleBookKeyDown}
       />
 
       <button

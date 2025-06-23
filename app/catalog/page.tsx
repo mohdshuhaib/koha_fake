@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import Loading from '../loading'
+import Loading from '@/app/loading'
 
 type Book = {
   id: number

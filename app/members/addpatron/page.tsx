@@ -36,7 +36,7 @@ export default function AddMemberForm() {
 
   if (userload) {
     return (
-      <Loading/>
+      <Loading />
     )
   }
 
@@ -46,25 +46,24 @@ export default function AddMemberForm() {
       return
     }
 
-    const { error } = await supabase.from('members').insert([
-      {
-        name,
-        category,
-        barcode,
-        batch
-      },
-    ])
+    const res = await fetch('/api/create-member', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, barcode, category, batch }),
+    })
 
-    if (error) {
-      setMessage('❌ Failed to add member.')
-      console.error(error)
-    } else {
-      setMessage('✅ Member added successfully!')
-      setName('')
-      setCategory('')
-      setBarcode('')
-      setBatch('')
+    const result = await res.json()
+
+    if (!res.ok) {
+      setMessage(`❌ ${result.error}`)
+      return
     }
+
+    setMessage('✅ Member created successfully!')
+    setName('')
+    setBarcode('')
+    setCategory('')
+    setBatch('')
   }
 
   return (
@@ -72,21 +71,25 @@ export default function AddMemberForm() {
       <h2 className="text-xl font-semibold mb-2">Add Member Manually</h2>
       <input
         type="text"
-        placeholder="Name"
+        placeholder="Name (Shuhaib)"
         value={name}
         onChange={(e) => setName(e.target.value)}
         className="w-full p-2 border rounded mb-2"
       />
-        <input
-          type="text"
-          placeholder="Category (e.g. student, teacher, outside, foundation)"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="w-full p-2 border rounded mb-2"
-        />
+      <select
+        value={category}
+        onChange={(e) => setCategory(e.target.value)}
+        className="w-full p-2 border rounded mb-2"
+      >
+        <option value="">Select category</option>
+        <option value="student">student</option>
+        <option value="teacher">teacher</option>
+        <option value="outside">outside</option>
+        <option value="foundation">foundation</option>
+      </select>
       <input
         type="text"
-        placeholder="Barcode"
+        placeholder="Barcode (u445)"
         value={barcode}
         onChange={(e) => setBarcode(e.target.value)}
         className="w-full p-2 border rounded mb-2"

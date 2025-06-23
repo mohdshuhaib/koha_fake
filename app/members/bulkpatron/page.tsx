@@ -41,7 +41,7 @@ export default function BulkUploadMembers() {
 
   if (userload) {
     return (
-      <Loading/>
+      <Loading />
     )
   }
 
@@ -68,13 +68,26 @@ export default function BulkUploadMembers() {
           return
         }
 
-        const { error } = await supabase.from('members').insert(cleaned)
+        try {
+          const response = await fetch('/api/bulk-create-members', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cleaned),
+          })
 
-        if (error) {
-          console.error('❌ Supabase Insert Error:', error)
-          setMessage(`❌ Failed to upload: ${error.message}`)
-        } else {
-          setMessage(`✅ Uploaded ${cleaned.length} members successfully!`)
+          const result = await response.json()
+
+          if (!result.success) {
+            setMessage(`❌ Failed to upload: ${result.error || 'Unknown error'}`)
+          } else {
+            setMessage(`✅ ${result.addedCount} members added. ${result.failed.length} failed.`)
+            if (result.failed.length > 0) {
+              console.warn('Failures:', result.failed)
+            }
+          }
+        } catch (err) {
+          console.error('Bulk upload error:', err)
+          setMessage('❌ Something went wrong.')
         }
 
         setUploading(false)
@@ -99,7 +112,9 @@ export default function BulkUploadMembers() {
       {uploading && <p className="text-blue-600">Uploading...</p>}
       {message && <p className="text-sm text-gray-700">{message}</p>}
       <p className="text-xs mt-2 text-gray-500">
-        CSV must include: <code>name, category, barcode, batch</code>
+        CSV must include: <code>name, category, barcode, batch</code><br /><code>Example:</code>
+        <br />
+        <code>Shuhaib, student, u445, 12th Batch</code>
       </p>
     </div>
   )
