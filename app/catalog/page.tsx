@@ -10,7 +10,7 @@ type Book = {
   author: string
   language: string
   call_number: string
-  status: boolean
+  status: 'available' | 'borrowed'
 }
 
 export default function CatalogPage() {
@@ -83,7 +83,7 @@ export default function CatalogPage() {
                       <td className="px-4 py-3">{book.language}</td>
                       <td className="px-4 py-3">{book.call_number}</td>
                       <td className="px-4 py-3">
-                        {book.status ? (
+                        {book.status === 'available' ? (
                           <span className="text-green-400 font-medium">Available</span>
                         ) : (
                           <span className="text-red-400 font-medium">Checked Out</span>

@@ -42,7 +42,7 @@ export default function Hero() {
             🔐 Librarian Login
           </a>
         </div>
-
+        
         <div className="pt-4 text-xs text-white/60">
           Made with ❤️ by {devzora}
         </div>
