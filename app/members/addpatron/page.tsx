@@ -7,8 +7,8 @@ import Loading from '@/app/loading'
 
 export default function AddMemberForm() {
   const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [dob, setDob] = useState('')
+  const [batch, setBatch] = useState('')
+  const [barcode, setBarcode] = useState('')
   const [category, setCategory] = useState('')
   const [message, setMessage] = useState('')
   const [userload, setuserload] = useState(true)
@@ -41,7 +41,7 @@ export default function AddMemberForm() {
   }
 
   const handleAddMember = async () => {
-    if (!name || !email || !dob || !category) {
+    if (!name || !category || !barcode || !batch) {
       setMessage('⚠️ All fields are required.')
       return
     }
@@ -49,9 +49,9 @@ export default function AddMemberForm() {
     const { error } = await supabase.from('members').insert([
       {
         name,
-        email,
-        dob, // storing the date as provided, ensure it's in a valid date format (YYYY-MM-DD)
         category,
+        barcode,
+        batch
       },
     ])
 
@@ -61,9 +61,9 @@ export default function AddMemberForm() {
     } else {
       setMessage('✅ Member added successfully!')
       setName('')
-      setEmail('')
-      setDob('')
       setCategory('')
+      setBarcode('')
+      setBatch('')
     }
   }
 
@@ -77,32 +77,32 @@ export default function AddMemberForm() {
         onChange={(e) => setName(e.target.value)}
         className="w-full p-2 border rounded mb-2"
       />
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="w-full p-2 border rounded mb-2"
-      />
-      <input
-        type="date"
-        placeholder="Date of Birth"
-        value={dob}
-        onChange={(e) => setDob(e.target.value)}
-        className="w-full p-2 border rounded mb-2"
-      />
+        <input
+          type="text"
+          placeholder="Category (e.g. student, teacher, outside, foundation)"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="w-full p-2 border rounded mb-2"
+        />
       <input
         type="text"
-        placeholder="Category (e.g. Student, Staff)"
-        value={category}
-        onChange={(e) => setCategory(e.target.value)}
+        placeholder="Barcode"
+        value={barcode}
+        onChange={(e) => setBarcode(e.target.value)}
+        className="w-full p-2 border rounded mb-2"
+      />
+      <input
+        type="batch"
+        placeholder="12th Batch, Patron, Teacher"
+        value={batch}
+        onChange={(e) => setBatch(e.target.value)}
         className="w-full p-2 border rounded mb-2"
       />
       <button
         onClick={handleAddMember}
         className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
       >
-        Add Member
+        Add Patron
       </button>
       {message && <p className="mt-2 text-sm text-gray-700">{message}</p>}
     </div>

@@ -7,9 +7,9 @@ import Loading from '@/app/loading'
 type Member = {
   id: string
   name: string
-  email: string
-  dob: string  // stored as ISO date string (YYYY-MM-DD)
   category: string
+  barcode: string
+  batch: string
 }
 
 export default function MemberTable() {
@@ -39,18 +39,18 @@ export default function MemberTable() {
         <thead className="bg-gray-100 text-left">
           <tr>
             <th className="p-2 border">Name</th>
-            <th className="p-2 border">Email</th>
-            <th className="p-2 border">DOB</th>
             <th className="p-2 border">Category</th>
+            <th className="p-2 border">Barcode</th>
+            <th className="p-2 border">Batch</th>
           </tr>
         </thead>
         <tbody>
           {members.map((m) => (
             <tr key={m.id} className="hover:bg-gray-50">
               <td className="p-2 border">{m.name}</td>
-              <td className="p-2 border">{m.email}</td>
-              <td className="p-2 border">{m.dob}</td>
               <td className="p-2 border">{m.category}</td>
+              <td className="p-2 border">{m.barcode}</td>
+              <td className="p-2 border">{m.batch}</td>
             </tr>
           ))}
         </tbody>

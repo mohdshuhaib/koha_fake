@@ -8,9 +8,9 @@ import Loading from '@/app/loading'
 
 type MemberRow = {
   name: string
-  email: string
-  dob: string
   category: string
+  barcode: string
+  batch: string
 }
 
 export default function BulkUploadMembers() {
@@ -59,7 +59,7 @@ export default function BulkUploadMembers() {
         const rows: MemberRow[] = results.data as MemberRow[]
 
         const cleaned = rows.filter(
-          (r) => r.name && r.email && r.dob && r.category
+          (r) => r.name && r.category && r.barcode && r.batch
         )
 
         if (cleaned.length === 0) {
@@ -99,7 +99,7 @@ export default function BulkUploadMembers() {
       {uploading && <p className="text-blue-600">Uploading...</p>}
       {message && <p className="text-sm text-gray-700">{message}</p>}
       <p className="text-xs mt-2 text-gray-500">
-        CSV must include: <code>name, email, dob, category</code>
+        CSV must include: <code>name, category, barcode, batch</code>
       </p>
     </div>
   )

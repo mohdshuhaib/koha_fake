@@ -10,9 +10,9 @@ export default function AddBookPage() {
   const [formData, setFormData] = useState({
     title: '',
     author: '',
+    language: '',
     shelf_location: '',
     call_number: '',
-    language: '',
     barcode: '',
     status: 'available',
   })
@@ -63,9 +63,9 @@ export default function AddBookPage() {
       setFormData({
         title: '',
         author: '',
+        language: '',
         shelf_location: '',
         call_number: '',
-        language: '',
         barcode: '',
         status: 'available',
       })
@@ -82,9 +82,9 @@ export default function AddBookPage() {
 
         <input name="title" placeholder="Title" value={formData.title} onChange={handleChange} required className="w-full p-2 border rounded" />
         <input name="author" placeholder="Author" value={formData.author} onChange={handleChange} required className="w-full p-2 border rounded" />
+        <input name="language" placeholder="Language" value={formData.language} onChange={handleChange} required className="w-full p-2 border rounded" />
         <input name="shelf_location" placeholder="Shelf Location" value={formData.shelf_location} onChange={handleChange} required className="w-full p-2 border rounded" />
         <input name="call_number" placeholder="Call Number" value={formData.call_number} onChange={handleChange} required className="w-full p-2 border rounded" />
-        <input name="language" placeholder="Language" value={formData.language} onChange={handleChange} required className="w-full p-2 border rounded" />
         <input name="barcode" placeholder="Barcode" value={formData.barcode} onChange={handleChange} required className="w-full p-2 border rounded" />
 
         <select name="status" value={formData.status} onChange={handleChange} className="w-full p-2 border rounded">

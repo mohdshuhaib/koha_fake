@@ -56,9 +56,9 @@ export default function BulkUploadPage() {
       const books = jsonData.map((row: any) => ({
         title: row.title || '',
         author: row.author || '',
+        language: row.language || '',
         shelf_location: row.shelf_location || '',
         call_number: row.call_number || '',
-        language: row.language || '',
         barcode: row.barcode?.toString() || '',
         status: row.status || 'available',
       }))
