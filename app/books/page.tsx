@@ -29,7 +29,7 @@ export default function BooksHomePage() {
 
   if (loading) {
     return (
-      <Loading/>
+      <Loading />
     )
   }
 
@@ -52,6 +52,27 @@ export default function BooksHomePage() {
         >
           📦 Bulk Upload Books
         </Link>
+        <Link
+          href="books/delete"
+          className="block px-4 py-3 bg-red-600 text-white rounded shadow hover:bg-red-700 transition"
+        >
+          🗑️ Delete Book by Barcode
+        </Link>
+
+        <Link
+          href="books/delete-multiple"
+          className="block px-4 py-3 bg-red-500 text-white rounded shadow hover:bg-red-600 transition"
+        >
+          🗑️ Delete Multiple Books
+        </Link>
+
+        <Link
+          href="books/delete-all"
+          className="block px-4 py-3 bg-red-800 text-white rounded shadow hover:bg-red-900 transition"
+        >
+          🔥 Delete All Books and Records
+        </Link>
+
       </div>
     </div>
   )

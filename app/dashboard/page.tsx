@@ -10,6 +10,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
     totalBooks: 0,
+    malBooks: 0,
+    engBooks: 0,
+    urdBooks: 0,
+    arbBooks: 0,
     totalMembers: 0,
     borrowedNow: 0,
     pendingFines: 0,
@@ -24,13 +28,17 @@ export default function DashboardPage() {
         return
       }
 
-      // Authenticated: fetch stats and recent history
+      // Fetch stats and recent history
       const [
         { count: books },
         { count: members },
         { count: borrowed },
         { data: fines },
-        { data: recent }
+        { data: recent },
+        { count: malBooks },
+        { count: engBooks },
+        { count: urdBooks },
+        { count: arbBooks },
       ] = await Promise.all([
         supabase.from('books').select('*', { count: 'exact', head: true }),
         supabase.from('members').select('*', { count: 'exact', head: true }),
@@ -47,12 +55,21 @@ export default function DashboardPage() {
           `)
           .order('created_at', { ascending: false })
           .limit(5),
+
+        supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'MAL'),
+        supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'ENG'),
+        supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'URD'),
+        supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'ARB'),
       ])
 
       const pendingFinesTotal = fines?.reduce((sum, r) => sum + (r.fine || 0), 0)
 
       setStats({
         totalBooks: books || 0,
+        malBooks: malBooks || 0,
+        engBooks: engBooks || 0,
+        urdBooks: urdBooks || 0,
+        arbBooks: arbBooks || 0,
         totalMembers: members || 0,
         borrowedNow: borrowed || 0,
         pendingFines: pendingFinesTotal || 0,
@@ -72,7 +89,11 @@ export default function DashboardPage() {
       <h1 className="text-2xl font-bold">📊 Library Dashboard</h1>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="📚 Books" value={stats.totalBooks} />
+        <StatCard label="📚 Total Books" value={stats.totalBooks} />
+        <StatCard label="📖 Malayalam" value={stats.malBooks} />
+        <StatCard label="📘 English" value={stats.engBooks} />
+        <StatCard label="📕 Urdu" value={stats.urdBooks} />
+        <StatCard label="📙 Arabic" value={stats.arbBooks} />
         <StatCard label="👤 Members" value={stats.totalMembers} />
         <StatCard label="📕 Borrowed Now" value={stats.borrowedNow} />
         <StatCard label="💰 Pending Fines" value={`₹${stats.pendingFines}`} />

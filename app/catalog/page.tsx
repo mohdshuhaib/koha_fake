@@ -6,11 +6,18 @@ import Loading from '@/app/loading'
 
 type Book = {
   id: number
+  barcode: string
   title: string
   author: string
   language: string
   call_number: string
   status: 'available' | 'borrowed'
+  borrow_records?: {
+    return_date: string | null
+    members: {
+      name: string
+    }
+  }[]
 }
 
 export default function CatalogPage() {
@@ -21,7 +28,18 @@ export default function CatalogPage() {
 
   useEffect(() => {
     const fetchBooks = async () => {
-      const { data, error } = await supabase.from('books').select('*')
+      const { data, error } = await supabase
+        .from('books')
+        .select(`
+          *,
+          borrow_records (
+            return_date,
+            members (
+              name
+            )
+          )
+        `)
+
       if (error) {
         console.error('Error fetching books:', error)
       } else {
@@ -37,6 +55,7 @@ export default function CatalogPage() {
   useEffect(() => {
     const query = search.toLowerCase()
     const results = books.filter((book) =>
+      book.barcode.toLowerCase().includes(query) ||
       book.title.toLowerCase().includes(query) ||
       book.author.toLowerCase().includes(query) ||
       book.call_number.toLowerCase().includes(query) ||
@@ -68,6 +87,7 @@ export default function CatalogPage() {
               <table className="min-w-full text-sm text-white">
                 <thead className="bg-secondary sticky top-0 z-10 text-left text-white">
                   <tr>
+                    <th className="px-4 py-2">Barcode</th>
                     <th className="px-4 py-2">Title</th>
                     <th className="px-4 py-2">Author</th>
                     <th className="px-4 py-2">Language</th>
@@ -76,21 +96,31 @@ export default function CatalogPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredBooks.map((book) => (
-                    <tr key={book.id} className="hover:bg-[#1a1a1a] border-t border-gray-700">
-                      <td className="px-4 py-3">{book.title}</td>
-                      <td className="px-4 py-3">{book.author}</td>
-                      <td className="px-4 py-3">{book.language}</td>
-                      <td className="px-4 py-3">{book.call_number}</td>
-                      <td className="px-4 py-3">
-                        {book.status === 'available' ? (
-                          <span className="text-green-400 font-medium">Available</span>
-                        ) : (
-                          <span className="text-red-400 font-medium">Checked Out</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredBooks.map((book) => {
+                    const activeBorrow = book.borrow_records?.find(
+                      (br) => br.return_date === null
+                    )
+                    const borrowedBy = activeBorrow?.members?.name
+
+                    return (
+                      <tr key={book.id} className="hover:bg-[#1a1a1a] border-t border-gray-700">
+                        <td className="px-4 py-3">{book.barcode}</td>
+                        <td className="px-4 py-3">{book.title}</td>
+                        <td className="px-4 py-3">{book.author}</td>
+                        <td className="px-4 py-3">{book.language}</td>
+                        <td className="px-4 py-3">{book.call_number}</td>
+                        <td className="px-4 py-3">
+                          {book.status === 'available' ? (
+                            <span className="text-green-400 font-medium">Available</span>
+                          ) : (
+                            <span className="text-red-400 font-medium">
+                              Checked out to {borrowedBy ?? 'Unknown'}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
