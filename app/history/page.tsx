@@ -78,7 +78,7 @@ export default function HistoryPage() {
         }
       })
 
-      const sorted: Ranked[] = Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 3)
+      const sorted: Ranked[] = Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5)
       setTopMembers(sorted)
     }
   }
@@ -103,7 +103,7 @@ export default function HistoryPage() {
         }
       })
 
-      const sorted: Ranked[] = Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 3)
+      const sorted: Ranked[] = Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5)
       setTopBooks(sorted)
     }
   }
@@ -123,22 +123,22 @@ export default function HistoryPage() {
 
         <div className="grid md:grid-cols-2 gap-6">
           <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-white mb-3">🏅 Top 3 Readers</h2>
+            <h2 className="text-lg font-semibold text-white mb-3">🏅 Top 5 Readers</h2>
             <ol className="list-decimal ml-6 space-y-1 text-white/90">
               {topMembers.map((m, i) => (
                 <li key={i}>
-                  {['🥇', '🥈', '🥉'][i]} {m.name} ({m.count} books)
+                  {['🥇', '🥈', '🥉','4️⃣','5️⃣'][i]} {m.name} ({m.count} books)
                 </li>
               ))}
             </ol>
           </div>
 
           <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-white mb-3">📖 Top 3 Books</h2>
+            <h2 className="text-lg font-semibold text-white mb-3">📖 Top 5 Books</h2>
             <ol className="list-decimal ml-6 space-y-1 text-white/90">
               {topBooks.map((b, i) => (
                 <li key={i}>
-                  {['🥇', '🥈', '🥉'][i]} {b.name} ({b.count} times)
+                  {['🥇', '🥈', '🥉','4️⃣','5️⃣'][i]} {b.name} ({b.count} times)
                 </li>
               ))}
             </ol>

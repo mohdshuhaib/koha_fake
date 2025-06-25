@@ -101,21 +101,40 @@ export default function BulkUploadMembers() {
   }
 
   return (
-    <div className="max-w-md p-4 border rounded shadow">
-      <h2 className="text-xl font-semibold mb-2">📥 Bulk Upload Members</h2>
-      <input
-        type="file"
-        accept=".csv"
-        onChange={handleFileUpload}
-        className="mb-2"
-      />
-      {uploading && <p className="text-blue-600">Uploading...</p>}
-      {message && <p className="text-sm text-gray-700">{message}</p>}
-      <p className="text-xs mt-2 text-gray-500">
-        CSV must include: <code>name, category, barcode, batch</code><br /><code>Example:</code>
-        <br />
-        <code>Shuhaib, student, u445, 12th Batch</code>
-      </p>
-    </div>
+    <main className="min-h-screen pt-28 px-4 pb-10 bg-gradient-to-br from-primary via-secondary to-sidekick text-white">
+      <div className="max-w-lg mx-auto bg-white/5 backdrop-blur-lg p-6 md:p-8 rounded-2xl shadow-2xl border border-white/20 space-y-6">
+        <h1 className="text-3xl font-bold text-center text-sidekick-dark">
+          📥 Bulk Upload Members
+        </h1>
+
+        <div className="space-y-4">
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleFileUpload}
+            className="w-full file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-sidekick-dark file:text-sidekick file:font-semibold file:cursor-pointer bg-white/10 text-white placeholder-white/60 rounded-lg border border-white/20 focus:outline-none focus:ring-2 focus:ring-sidekick-dark transition"
+          />
+
+          {uploading && (
+            <p className="text-blue-300 font-medium">Uploading...</p>
+          )}
+
+          {message && (
+            <p className="text-green-400 font-medium">{message}</p>
+          )}
+
+          <div className="text-white/80 text-sm border-t border-white/10 pt-4 space-y-2">
+            <p>📝 <strong>CSV must include:</strong></p>
+            <code className="block bg-white/10 p-2 rounded text-white">
+              name, category, barcode, batch
+            </code>
+            <p>📌 <strong>Example:</strong></p>
+            <code className="block bg-white/10 p-2 rounded text-white">
+              Shuhaib, student, u445, 12th Batch
+            </code>
+          </div>
+        </div>
+      </div>
+    </main>
   )
 }

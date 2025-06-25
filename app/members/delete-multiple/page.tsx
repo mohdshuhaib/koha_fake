@@ -7,6 +7,7 @@ import { deleteAuthUserByEmail } from '@/app/actions/deleteMember'
 export default function DeleteMultipleMembers() {
   const [barcodes, setBarcodes] = useState('')
   const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const handleBulkDelete = async () => {
     const barcodeList = barcodes.split(',').map((b) => b.trim()).filter(Boolean)
@@ -22,6 +23,7 @@ export default function DeleteMultipleMembers() {
     if (!members?.length) return setMessage('No matching members found.')
 
     const memberIds = members.map((m) => m.id)
+    setLoading(true)
 
     // 2. Delete borrow records
     await supabase.from('borrow_records').delete().in('member_id', memberIds)
@@ -39,21 +41,33 @@ export default function DeleteMultipleMembers() {
   }
 
   return (
-    <div className="max-w-lg mx-auto p-4">
-      <h2 className="text-xl font-semibold mb-4">🗑️ Delete Multiple Members</h2>
-      <textarea
-        value={barcodes}
-        onChange={(e) => setBarcodes(e.target.value)}
-        placeholder="Enter barcodes separated by commas"
-        className="w-full h-32 border p-2 rounded mb-2"
-      />
-      <button
-        onClick={handleBulkDelete}
-        className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-      >
-        Delete Members
-      </button>
-      <p className="mt-2 text-sm text-gray-700">{message}</p>
-    </div>
+    <main className="min-h-screen pt-28 px-4 pb-10 bg-gradient-to-br from-primary via-secondary to-sidekick text-white">
+      <div className="max-w-lg mx-auto bg-white/5 backdrop-blur-lg p-6 md:p-8 rounded-2xl shadow-2xl border border-white/20 space-y-6">
+        <h1 className="text-3xl font-bold text-center text-sidekick-dark">
+          🗑️ Delete Multiple Members
+        </h1>
+
+        <div className="space-y-4">
+          <textarea
+            value={barcodes}
+            onChange={(e) => setBarcodes(e.target.value)}
+            placeholder="Enter barcodes separated by commas (e.g. u445,u446,u447)"
+            className="w-full h-36 p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-red-400 transition resize-none"
+          />
+
+          <button
+            onClick={handleBulkDelete}
+            disabled={loading}
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:opacity-50"
+          >
+            {loading ? 'Deleting...' : 'Delete Members'}
+          </button>
+
+          {message && (
+            <p className="text-sm text-white/80 mt-2">{message}</p>
+          )}
+        </div>
+      </div>
+    </main>
   )
 }

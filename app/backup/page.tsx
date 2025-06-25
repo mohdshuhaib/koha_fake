@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import dayjs from 'dayjs'
-import { motion } from 'framer-motion'
 
 export default function BackupPage() {
   const [loading, setLoading] = useState(false)
@@ -149,10 +148,7 @@ export default function BackupPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] pt-24 px-4 text-white">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+      <div
         className="max-w-xl mx-auto backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl shadow-2xl p-6 md:p-10 space-y-6"
       >
         <h1 className="text-3xl font-bold text-center text-white mb-6">📦 Backup & Delete Records</h1>
@@ -180,7 +176,7 @@ export default function BackupPage() {
             <p className="text-center text-sm text-white/80 mt-2">{message}</p>
           )}
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }

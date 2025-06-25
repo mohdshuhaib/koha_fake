@@ -8,7 +8,7 @@ export default function Hero() {
       href="https://devzoranet.vercel.app"
       target="_blank"
       rel="noreferrer"
-      className="text-sidebg-sidekick-dark-dark hover:underline transition"
+      className="text-sidekick-dark hover:underline transition"
     >
       DevZora
     </a>

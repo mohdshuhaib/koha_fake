@@ -43,35 +43,35 @@ export default function BooksHomePage() {
       <div className="space-y-5">
         <Link
           href="books/add"
-          className="block w-full bg-blue-600 hover:bg-blue-700 transition-colors duration-300 px-6 py-4 rounded-lg shadow text-lg font-semibold text-white"
+          className="block w-full bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg hover:shadow-blue-500"
         >
           ➕ Add Single Book
         </Link>
 
         <Link
           href="books/bulk-upload"
-          className="block w-full bg-green-600 hover:bg-green-700 transition-colors duration-300 px-6 py-4 rounded-lg shadow text-lg font-semibold text-white"
+          className="block w-full bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg hover:shadow-green-500"
         >
           📦 Bulk Upload Books
         </Link>
 
         <Link
           href="books/delete"
-          className="block w-full bg-red-600 hover:bg-red-700 transition-colors duration-300 px-6 py-4 rounded-lg shadow text-lg font-semibold text-white"
+          className="block w-full bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg hover:shadow-red-400"
         >
           🗑️ Delete Book by Barcode
         </Link>
 
         <Link
           href="books/delete-multiple"
-          className="block w-full bg-red-500 hover:bg-red-600 transition-colors duration-300 px-6 py-4 rounded-lg shadow text-lg font-semibold text-white"
+          className="block w-full bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg hover:shadow-red-600"
         >
           🗑️ Delete Multiple Books
         </Link>
 
         <Link
           href="books/delete-all"
-          className="block w-full bg-red-800 hover:bg-red-900 transition-colors duration-300 px-6 py-4 rounded-lg shadow text-lg font-semibold text-white"
+          className="block w-full bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg hover:shadow-red-800"
         >
           🔥 Delete All Books and Records
         </Link>
