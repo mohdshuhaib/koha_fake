@@ -115,74 +115,80 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-8">
-      <h1 className="text-2xl font-bold">📚 Borrow & Return History</h1>
+    <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] pt-24 px-4 text-white">
+      <div
+        className="max-w-7xl mx-auto space-y-10"
+      >
+        <h1 className="text-3xl font-bold text-center text-sidekick-dark">📚 Borrow & Return History</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white shadow rounded p-4">
-          <h2 className="text-lg font-semibold mb-2">🏅 Top 3 Readers</h2>
-          <ol className="list-decimal ml-6 space-y-1">
-            {topMembers.map((m, i) => (
-              <li key={i}>
-                {['🥇', '🥈', '🥉'][i]} {m.name} ({m.count} books)
-              </li>
-            ))}
-          </ol>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-white mb-3">🏅 Top 3 Readers</h2>
+            <ol className="list-decimal ml-6 space-y-1 text-white/90">
+              {topMembers.map((m, i) => (
+                <li key={i}>
+                  {['🥇', '🥈', '🥉'][i]} {m.name} ({m.count} books)
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-white mb-3">📖 Top 3 Books</h2>
+            <ol className="list-decimal ml-6 space-y-1 text-white/90">
+              {topBooks.map((b, i) => (
+                <li key={i}>
+                  {['🥇', '🥈', '🥉'][i]} {b.name} ({b.count} times)
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
 
-        <div className="bg-white shadow rounded p-4">
-          <h2 className="text-lg font-semibold mb-2">📖 Top 3 Books</h2>
-          <ol className="list-decimal ml-6 space-y-1">
-            {topBooks.map((b, i) => (
-              <li key={i}>
-                {['🥇', '🥈', '🥉'][i]} {b.name} ({b.count} times)
-              </li>
-            ))}
-          </ol>
-        </div>
-      </div>
-
-      <div className="bg-white shadow rounded overflow-x-auto p-4">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr className="border-b font-semibold">
-              <th className="text-left p-2">Member</th>
-              <th className="text-left p-2">Book</th>
-              <th className="text-left p-2">Borrowed</th>
-              <th className="text-left p-2">Due</th>
-              <th className="text-left p-2">Returned</th>
-              <th className="text-left p-2">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {records.slice((page - 1) * pageSize, page * pageSize).map((r) => (
-              <tr key={r.id} className="border-t">
-                <td className="p-2">{r.members?.name}</td>
-                <td className="p-2">{r.books?.title}</td>
-                <td className="p-2">{dayjs(r.borrow_date).format('DD MMM')}</td>
-                <td className="p-2">{dayjs(r.due_date).format('DD MMM')}</td>
-                <td className="p-2">
-                  {r.return_date ? dayjs(r.return_date).format('DD MMM') : '-'}
-                </td>
-                <td className="p-2">{getStatus(r)}</td>
+        <div className=" bg-white/10 backdrop-blur-md border border-white/20 rounded-xl overflow-x-auto p-4 shadow-lg">
+          <table className="min-w-full text-sm text-white/90">
+            <thead className="text-white/80 border-b border-white/20 bg-white/5 sticky top-0 backdrop-blur-sm">
+              <tr>
+                <th className="text-left p-3">Member</th>
+                <th className="text-left p-3">Book</th>
+                <th className="text-left p-3">Borrowed</th>
+                <th className="text-left p-3">Due</th>
+                <th className="text-left p-3">Returned</th>
+                <th className="text-left p-3">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {records.slice((page - 1) * pageSize, page * pageSize).map((r) => (
+                <tr key={r.id} className="border-t border-white/10 hover:bg-white/5 transition">
+                  <td className="p-3">{r.members?.name}</td>
+                  <td className="p-3">{r.books?.title}</td>
+                  <td className="p-3">{dayjs(r.borrow_date).format('DD MMM')}</td>
+                  <td className="p-3">{dayjs(r.due_date).format('DD MMM')}</td>
+                  <td className="p-3">{r.return_date ? dayjs(r.return_date).format('DD MMM') : '-'}</td>
+                  <td className="p-3">
+                    {getStatus(r) === 'Returned' && <span className="text-green-400 font-medium">Returned</span>}
+                    {getStatus(r) === 'Overdue' && <span className="text-yellow-400 font-medium">Overdue</span>}
+                    {getStatus(r) === 'Borrowed' && <span className="text-blue-400 font-medium">Borrowed</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-        <div className="flex justify-between items-center mt-4">
+        <div className="flex justify-between items-center mt-6  text-white/80">
           <button
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50"
+            className="px-4 py-1 rounded bg-white/10 border border-white/20 hover:bg-white/20 disabled:opacity-50"
           >
             ⬅ Prev
           </button>
-          <span>Page {page}</span>
+          <span className="px-4">Page {page}</span>
           <button
             disabled={page * pageSize >= records.length}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50"
+            className="px-4 py-1 rounded bg-white/10 border border-white/20 hover:bg-white/20 disabled:opacity-50"
           >
             Next ➡
           </button>

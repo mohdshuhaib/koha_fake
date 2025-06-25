@@ -76,48 +76,56 @@ export default function MemberDashboard() {
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>
 
   return (
-    <div className="min-h-screen bg-primary text-white p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Welcome, {member.name}</h1>
+    <div className="pt-32 min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] text-white px-4 pb-10">
+      <div className="max-w-4xl mx-auto space-y-8">
+        <div
+          className="flex justify-between items-center"
+        >
+          <h1 className="text-3xl font-bold">Welcome, {member.name}</h1>
           <button
             onClick={() => {
               supabase.auth.signOut()
               router.push('/member-login')
             }}
-            className="text-sm bg-red-500 px-3 py-1.5 rounded hover:bg-red-600"
+            className="text-sm bg-red-500 px-4 py-2 rounded-full hover:bg-red-600 transition"
           >
             Logout
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-sidekick-dark p-4 rounded-lg shadow">
-            <p className="text-lg font-semibold">📖 Books Read</p>
-            <p className="text-3xl font-bold">{member.booksRead}</p>
-
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 gap-6"
+        >
+          <div className="bg-white/10 backdrop-blur-lg p-6 rounded-xl shadow-lg">
+            <p className="text-lg font-medium">📖 Books Read</p>
+            <p className="text-4xl font-bold text-sidekick-dark mt-2">{member.booksRead}</p>
           </div>
-          <div className="bg-sidekick-dark p-4 rounded-lg shadow">
-            <p className="text-lg font-semibold">💸 Pending Fines</p>
-            <p className="text-3xl font-bold">₹{member.pendingFines}</p>
+          <div className="bg-white/10 backdrop-blur-lg p-6 rounded-xl shadow-lg">
+            <p className="text-lg font-medium">💸 Pending Fines</p>
+            <p className="text-4xl font-bold text-sidekick-dark mt-2">₹{member.pendingFines}</p>
           </div>
         </div>
 
-        <div className="bg-white text-black rounded-lg p-4 shadow">
-          <h2 className="text-xl font-bold mb-2">📖 Borrowing History</h2>
-          <ul className="space-y-2 text-sm">
+        <div
+          className="bg-white/10 backdrop-blur-lg text-white rounded-xl p-6 shadow-lg"
+        >
+          <h2 className="text-2xl font-bold mb-4">📚 Borrowing History</h2>
+          <ul className="space-y-4 text-sm">
             {member.history.length === 0 && (
-              <li className="text-gray-500">No borrowing history found.</li>
+              <li className="text-white/60">No borrowing history found.</li>
             )}
             {member.history.map((record: any, index: number) => (
-              <li key={index} className="border-b pb-2">
-                <p><strong>Book:</strong> {record.books?.title || 'Unknown Title'}</p>
-                <p><strong>Borrowed:</strong> {new Date(record.borrow_date).toLocaleDateString()}</p>
-                <p><strong>Due:</strong> {new Date(record.due_date).toLocaleDateString()}</p>
-                <p><strong>Returned:</strong> {record.return_date ? new Date(record.return_date).toLocaleDateString() : 'Not returned yet'}</p>
+              <li
+                key={index}
+                className="border-b border-white/20 pb-3 space-y-1"
+              >
+                <p><strong>📘 Book:</strong> {record.books?.title || 'Unknown Title'}</p>
+                <p><strong>📅 Borrowed:</strong> {new Date(record.borrow_date).toLocaleDateString()}</p>
+                <p><strong>📆 Due:</strong> {new Date(record.due_date).toLocaleDateString()}</p>
+                <p><strong>✅ Returned:</strong> {record.return_date ? new Date(record.return_date).toLocaleDateString() : 'Not returned yet'}</p>
                 {record.fine > 0 && (
-                  <p className={record.fine_paid ? 'text-green-600' : 'text-red-600'}>
-                    Fine: ₹{record.fine} {record.fine_paid ? '(Paid)' : '(Unpaid)'}
+                  <p className={record.fine_paid ? 'text-green-400' : 'text-red-400'}>
+                    💰 Fine: ₹{record.fine} {record.fine_paid ? '(Paid)' : '(Unpaid)'}
                   </p>
                 )}
               </li>

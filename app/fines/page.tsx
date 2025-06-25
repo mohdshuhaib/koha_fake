@@ -71,44 +71,57 @@ export default function FinesPage() {
   if (!isLoggedIn) return null
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">💰 Unpaid Fines</h1>
+    <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] pt-24 px-4 text-white">
+      <div
+        className="max-w-6xl mx-auto backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl shadow-2xl p-6 md:p-10"
+      >
+        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-sidekick-dark text-center">
+          💰 Unpaid Fines
+        </h1>
 
-      {loading ? (
-        <Loading/>
-      ) : fines.length === 0 ? (
-        <p>🎉 No unpaid fines</p>
-      ) : (
-        <table className="w-full border text-left">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2 border">Member</th>
-              <th className="p-2 border">Book</th>
-              <th className="p-2 border">Fine</th>
-              <th className="p-2 border">Returned On</th>
-              <th className="p-2 border">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {fines.map((f) => (
-              <tr key={f.id}>
-                <td className="p-2 border">{f.member?.name}</td>
-                <td className="p-2 border">{f.book?.title}</td>
-                <td className="p-2 border">₹{f.fine}</td>
-                <td className="p-2 border">{f.return_date ? new Date(f.return_date).toLocaleDateString() : 'Not returned'}</td>
-                <td className="p-2 border">
-                  <button
-                    onClick={() => markAsPaid(f.id)}
-                    className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+        {loading ? (
+          <Loading />
+        ) : fines.length === 0 ? (
+          <p className="text-white/70 text-center">🎉 No unpaid fines</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border text-sm text-left text-white">
+              <thead className="bg-white/10 backdrop-blur border-b border-white/20">
+                <tr>
+                  <th className="p-3 border">Member</th>
+                  <th className="p-3 border">Book</th>
+                  <th className="p-3 border">Fine</th>
+                  <th className="p-3 border">Returned On</th>
+                  <th className="p-3 border">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fines.map((f) => (
+                  <tr
+                    key={f.id}
+                    className="border-t border-white/10 hover:bg-white/5 transition"
                   >
-                    Mark as Paid
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+                    <td className="p-3 border">{f.member?.name}</td>
+                    <td className="p-3 border">{f.book?.title}</td>
+                    <td className="p-3 border">₹{f.fine}</td>
+                    <td className="p-3 border">
+                      {f.return_date ? new Date(f.return_date).toLocaleDateString() : 'Not returned'}
+                    </td>
+                    <td className="p-3 border">
+                      <button
+                        onClick={() => markAsPaid(f.id)}
+                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+                      >
+                        Mark as Paid
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

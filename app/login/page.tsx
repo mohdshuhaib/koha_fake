@@ -35,18 +35,22 @@ export default function LoginPage() {
   if (checkingSession) return <Loading />
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary via-secondary to-sidekick px-4">
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] px-4">
       <form
         onSubmit={handleLogin}
-        className="w-full max-w-md space-y-6 bg-primary/80 rounded-xl shadow-lg p-8"
+        className="w-full max-w-md space-y-6 backdrop-blur-lg bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-8"
       >
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-sidekick">Librarian Login</h1>
-          <p className="text-sm text-gray-500 mt-1">Welcome back! Please sign in.</p>
+          <h1 className="text-3xl font-extrabold text-sidekick-dark">🔐 Librarian Login</h1>
+          <p className="text-sm text-white/70 mt-1">Welcome back! Please sign in.</p>
         </div>
 
         {error && (
-          <p className="text-red-600 text-sm bg-red-100 px-4 py-2 rounded">{error}</p>
+          <p
+            className="text-red-600 text-sm bg-red-100/90 px-4 py-2 rounded shadow"
+          >
+            {error}
+          </p>
         )}
 
         <div className="space-y-4">
@@ -60,7 +64,8 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-sidekick"
+              className="mt-1 w-full px-4 py-2 bg-white/5 text-white border border-white/20 rounded-md shadow-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-sidekick-dark transition"
+              placeholder="you@domain.com"
             />
           </div>
 
@@ -74,14 +79,15 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-sidekick"
+              className="mt-1 w-full px-4 py-2 bg-white/5 text-white border border-white/20 rounded-md shadow-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-sidekick-dark transition"
+              placeholder="••••••••"
             />
           </div>
         </div>
 
         <button
           type="submit"
-          className="w-full py-2 rounded-md bg-sidekick text-black font-semibold hover:bg-sidekick-dark transition-colors"
+          className="w-full py-2 rounded-md bg-sidekick-dark text-black font-semibold hover:bg-white transition-colors"
         >
           Sign In
         </button>

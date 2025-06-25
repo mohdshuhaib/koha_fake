@@ -70,12 +70,14 @@ export default function CheckInForm() {
   }
 
   return (
-    <div className="space-y-4 max-w-xl mx-auto p-4 bg-white rounded shadow mt-6">
-      <h2 className="text-xl font-bold">📥 Check In Book (Barcode)</h2>
+    <div
+      className="space-y-5 mt-10"
+    >
+      <h2 className="text-2xl font-bold text-white">📥 Check In Book (Barcode)</h2>
 
       <input
         type="text"
-        className="w-full border p-2 rounded"
+        className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-green-500"
         placeholder="Scan book barcode"
         value={barcode}
         onChange={(e) => setBarcode(e.target.value)}
@@ -85,12 +87,14 @@ export default function CheckInForm() {
       <button
         onClick={handleCheckIn}
         disabled={loading}
-        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+        className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-300"
       >
         {loading ? 'Processing...' : 'Check In'}
       </button>
 
-      {message && <p className="text-sm mt-2">{message}</p>}
+      {message && (
+        <p className="text-sm font-medium text-white/80 pt-1">{message}</p>
+      )}
     </div>
   )
 }

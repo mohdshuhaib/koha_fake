@@ -114,13 +114,15 @@ export default function CheckOutForm() {
   }
 
   return (
-    <div className="space-y-4 max-w-xl mx-auto p-4 bg-white rounded shadow">
-      <h2 className="text-xl font-bold">📤 Check Out Book</h2>
+    <div
+      className="space-y-5"
+    >
+      <h2 className="text-2xl font-bold text-white">📤 Check Out Book</h2>
 
       <input
         ref={memberInputRef}
         type="text"
-        className="w-full border p-2 rounded"
+        className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-sidekick"
         placeholder="Scan member barcode"
         value={memberBarcode}
         onChange={(e) => setMemberBarcode(e.target.value)}
@@ -130,7 +132,7 @@ export default function CheckOutForm() {
       <input
         ref={bookInputRef}
         type="text"
-        className="w-full border p-2 rounded"
+        className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-sidekick"
         placeholder="Scan book barcode"
         value={bookBarcode}
         onChange={(e) => setBookBarcode(e.target.value)}
@@ -140,12 +142,14 @@ export default function CheckOutForm() {
       <button
         onClick={handleCheckout}
         disabled={loading}
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        className="bg-sidekick-dark text-white px-6 py-2 rounded-lg font-semibold hover:bg-sidekick-dark/80 transition duration-300"
       >
         {loading ? 'Processing...' : 'Check Out'}
       </button>
 
-      {message && <p className="text-sm mt-2">{message}</p>}
+      {message && (
+        <p className="text-sm font-medium text-white/80 pt-1">{message}</p>
+      )}
     </div>
   )
 }

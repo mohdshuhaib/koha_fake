@@ -82,65 +82,109 @@ export default function DashboardPage() {
     checkAuthAndFetchStats()
   }, [router])
 
+  const languageBreakdown = [
+    { label: 'Malayalam', count: stats.malBooks, color: 'bg-yellow-400' },
+    { label: 'English', count: stats.engBooks, color: 'bg-blue-500' },
+    { label: 'Urdu', count: stats.urdBooks, color: 'bg-red-500' },
+    { label: 'Arabic', count: stats.arbBooks, color: 'bg-green-500' },
+  ]
+
   if (loading) return <Loading />
 
   return (
-    <div className="p-8 space-y-10">
-      <h1 className="text-2xl font-bold">📊 Library Dashboard</h1>
+    <main className="pt-32 min-h-screen bg-gradient-to-br from-primary via-secondary to-sidekick text-white px-4 pb-10">
+      <div className="max-w-6xl mx-auto space-y-10">
+        <h1
+          className="text-3xl font-bold"
+        >
+          📊 Library Dashboard
+        </h1>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="📚 Total Books" value={stats.totalBooks} />
-        <StatCard label="📖 Malayalam" value={stats.malBooks} />
-        <StatCard label="📘 English" value={stats.engBooks} />
-        <StatCard label="📕 Urdu" value={stats.urdBooks} />
-        <StatCard label="📙 Arabic" value={stats.arbBooks} />
-        <StatCard label="👤 Members" value={stats.totalMembers} />
-        <StatCard label="📕 Borrowed Now" value={stats.borrowedNow} />
-        <StatCard label="💰 Pending Fines" value={`₹${stats.pendingFines}`} />
-      </div>
+        <div
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        >
+          <div
+            className="bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg"
+          >
+            <p className="text-sm text-white/80 mb-2 font-medium">📚 Total Books</p>
+            <p className="text-3xl font-bold text-sidekick-dark mb-4">{stats.totalBooks}</p>
+            <div className="space-y-2">
+              {languageBreakdown.map(({ label, count, color }) => {
+                const percent = stats.totalBooks ? (count / stats.totalBooks) * 100 : 0
+                return (
+                  <div key={label}>
+                    <div className="flex justify-between text-sm text-white/80">
+                      <span>{label}</span>
+                      <span>{count}</span>
+                    </div>
+                    <div className="w-full bg-white/20 h-2 rounded">
+                      <div
+                        className={`${color} h-2 rounded`}
+                        style={{ width: `${percent}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
 
-      <div>
-        <h2 className="text-xl font-semibold mt-6 mb-4">🕘 Recent Check In / Out</h2>
-        {history.length === 0 ? (
-          <p>No recent activity</p>
-        ) : (
-          <table className="w-full text-sm border border-gray-300">
-            <thead className="bg-gray-100 text-left">
-              <tr>
-                <th className="p-2 border">Barcode</th>
-                <th className="p-2 border">Book</th>
-                <th className="p-2 border">Member</th>
-                <th className="p-2 border">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map((r) => (
-                <tr key={r.id}>
-                  <td className="p-2 border">{r.book?.barcode || '—'}</td>
-                  <td className="p-2 border">{r.book?.title || 'Unknown Book'}</td>
-                  <td className="p-2 border">{r.member?.name || 'Unknown Member'}</td>
-                  <td className="p-2 border">
-                    {r.return_date ? (
-                      <span className="text-green-600">Checked In</span>
-                    ) : (
-                      <span className="text-orange-600">Checked Out</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatCard label="🙍‍♂️ Members" value={stats.totalMembers} />
+            <StatCard label="📕 Borrowed Now" value={stats.borrowedNow} />
+            <StatCard label="💰 Pending Fines" value={`₹${stats.pendingFines}`} />
+          </div>
+        </div>
+
+        <div
+          className="bg-white/10 backdrop-blur p-6 rounded-xl shadow-lg"
+        >
+          <h2 className="text-xl font-semibold mb-4">🕘 Recent Check In / Out</h2>
+          {history.length === 0 ? (
+            <p className="text-white/70">No recent activity</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm border border-white/20">
+                <thead className="text-white border-b border-white/20 backdrop-blur-sm bg-[#1a1a1a]/80">
+                  <tr>
+                    <th className="p-3 border-b border-white/20 text-left">Barcode</th>
+                    <th className="p-3 border-b border-white/20 text-left">Book</th>
+                    <th className="p-3 border-b border-white/20 text-left">Member</th>
+                    <th className="p-3 border-b border-white/20 text-left">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((r) => (
+                    <tr key={r.id} className="border-t border-white/10 hover:bg-white/5">
+                      <td className="p-3">{r.book?.barcode || '—'}</td>
+                      <td className="p-3">{r.book?.title || 'Unknown Book'}</td>
+                      <td className="p-3">{r.member?.name || 'Unknown Member'}</td>
+                      <td className="p-3">
+                        {r.return_date ? (
+                          <span className="text-green-400">Checked In</span>
+                        ) : (
+                          <span className="text-yellow-400">Checked Out</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </main>
   )
 }
 
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="bg-white shadow rounded p-4 text-center border">
-      <h2 className="text-sm text-gray-500 mb-1">{label}</h2>
-      <p className="text-xl font-bold text-blue-600">{value}</p>
+    <div
+      className="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-center shadow-lg"
+    >
+      <p className="text-sm text-white/80 mb-1 font-medium">{label}</p>
+      <p className="text-2xl font-bold text-sidekick-dark">{value}</p>
     </div>
   )
 }

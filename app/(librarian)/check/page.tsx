@@ -37,10 +37,24 @@ export default function CheckPage() {
   if (!isLoggedIn) return null
 
   return (
-    <div className="p-6 space-y-8">
-      <h1 className="text-xl font-semibold">🔁 Check In / Check Out</h1>
-      <CheckOutForm />
-      <CheckInForm />
-    </div>
+     <main className="pt-28 min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] text-white px-4 pb-10">
+      <div className="max-w-4xl mx-auto space-y-10">
+        <h1
+          className="text-3xl font-bold text-center"
+        >
+          🔁 Check In / Check Out
+        </h1>
+
+        <div
+        >
+          <CheckOutForm />
+        </div>
+
+        <div
+        >
+          <CheckInForm />
+        </div>
+      </div>
+    </main>
   )
 }
