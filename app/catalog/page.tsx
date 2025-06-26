@@ -11,10 +11,17 @@ type Book = {
   author: string
   language: string
   call_number: string
-  status: 'available' | 'borrowed'
+  status: 'available' | 'borrowed' | 'held'
   borrow_records?: {
     return_date: string | null
     members: {
+      name: string
+    }
+  }[]
+  hold_records?: {
+    released: boolean
+    hold_date: string
+    member: {
       name: string
     }
   }[]
@@ -37,7 +44,14 @@ export default function CatalogPage() {
             members (
               name
             )
-          )
+          ),
+          hold_records (
+          released,
+          hold_date,
+          member:members (
+          name
+        )
+      )
         `)
 
       if (error) {
@@ -108,6 +122,11 @@ export default function CatalogPage() {
                       )
                       const borrowedBy = activeBorrow?.members?.name
 
+                      const activeHold = book.hold_records?.find(
+                        (hr) => hr.released === false
+                      )
+                      const heldBy = activeHold?.member?.name
+
                       return (
                         <tr key={book.id} className="border-t border-white/10 hover:bg-white/5 transition">
                           <td className="px-4 py-3">{book.barcode}</td>
@@ -118,6 +137,10 @@ export default function CatalogPage() {
                           <td className="px-4 py-3">
                             {book.status === 'available' ? (
                               <span className="text-green-400 font-medium">Available</span>
+                            ) : book.status === 'held' ? (
+                              <span className="text-yellow-400 font-medium">
+                                Held by {heldBy ?? 'Unknown'}
+                              </span>
                             ) : (
                               <span className="text-red-400 font-medium">
                                 Checked out to {borrowedBy ?? 'Unknown'}
