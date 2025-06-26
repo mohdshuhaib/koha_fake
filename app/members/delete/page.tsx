@@ -27,9 +27,10 @@ export default function DeleteMemberPage() {
       setLoading(true)
 
       await supabase.from('borrow_records').delete().eq('member_id', member.id)
+      await supabase.from('hold_records').delete().eq('member_id', member.id)
       await supabase.from('members').delete().eq('id', member.id)
 
-      const deleted = await deleteAuthUserByEmail(`${barcode}@member.pmsa`)
+      const deleted = await deleteAuthUserByEmail(`${barcode.toLowerCase()}@member.pmsa`)
 
       setMessage(
         deleted

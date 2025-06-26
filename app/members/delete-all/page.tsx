@@ -24,13 +24,14 @@ export default function DeleteAllMembers() {
 
     // 2. Delete borrow records
     await supabase.from('borrow_records').delete().in('member_id', memberIds)
+    await supabase.from('hold_records').delete().in('member_id', memberIds)
 
     // 3. Delete members
     await supabase.from('members').delete().in('id', memberIds)
 
     // 4. Delete auth users
     for (const m of members) {
-      await deleteAuthUserByEmail(`${m.barcode}@member.pmsa`)
+      await deleteAuthUserByEmail(`${m.barcode.toLowerCase()}@member.pmsa`)
     }
 
     setMessage('All members, borrow records, and user accounts deleted.')

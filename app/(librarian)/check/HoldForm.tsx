@@ -88,7 +88,7 @@ export default function HoldForm() {
         placeholder="👤 Scan member barcode"
         className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-sidekick"
         value={memberBarcode}
-        onChange={(e) => setMemberBarcode(e.target.value.toLowerCase())}
+        onChange={(e) => setMemberBarcode(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && bookInputRef.current?.focus()}
       />
       <input

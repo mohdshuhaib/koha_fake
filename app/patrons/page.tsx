@@ -42,7 +42,6 @@ export default function MemberTable() {
   }, [search, members])
 
   if (loading) return <Loading />
-  if (members.length === 0) return <p>No members found.</p>
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-secondary to-sidekick pt-24 px-4 text-white">
