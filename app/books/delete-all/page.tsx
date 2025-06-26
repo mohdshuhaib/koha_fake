@@ -30,17 +30,26 @@ export default function DeleteAllBooks() {
     .in('book_id', bookIds)
 
   if (borrowDeleteError) return setMessage('Failed to delete borrow records.')
+    // Step 3: Delete related hold_records
+  const { error: holdDeleteError } = await supabase
+    .from('hold_records')
+    .delete()
+    .in('book_id', bookIds)
 
-  // Step 3: Delete books
+  if (holdDeleteError) return setMessage('Failed to delete hold records.')
+  // Step 4: Delete books
   const { error: bookDeleteError } = await supabase
     .from('books')
     .delete()
     .in('id', bookIds)
 
-  if (bookDeleteError) return setMessage('Failed to delete books.')
-
+  if (bookDeleteError) {
+  console.error('❌ Supabase delete error:', bookDeleteError)
+  return setMessage('Failed to delete books.')
+}
   setMessage('All books and borrow records deleted.')
   setConfirm('')
+  setLoading(false)
 }
 
   return (
