@@ -25,7 +25,7 @@ export default function CheckOutForm() {
     setMessage('')
 
     const issueDate = new Date()
-    const dueDate = dayjs(issueDate).add(15, 'day').format('YYYY-MM-DD')
+    let dueInDays = 15
 
     // Fetch member
     const { data: member, error: memberError } = await supabase
@@ -33,6 +33,13 @@ export default function CheckOutForm() {
       .select('*')
       .eq('barcode', memberBarcode)
       .single()
+
+    const category = member.category || 'student'
+    if (category === 'teacher' || category === 'class') {
+      dueInDays = 30
+    }
+
+    const dueDate = dayjs(issueDate).add(dueInDays, 'day').format('YYYY-MM-DD')
 
     if (memberError || !member) {
       setMessage('❌ Member not found')

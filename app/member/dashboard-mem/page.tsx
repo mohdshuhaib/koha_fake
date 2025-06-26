@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import Loading from '@/app/loading'
 
 export default function MemberDashboard() {
   const [member, setMember] = useState<any>(null)
@@ -27,7 +28,7 @@ export default function MemberDashboard() {
       const { data: memberData, error: memberError } = await supabase
         .from('members')
         .select('*')
-        .eq('barcode', barcode)
+        .eq('barcode', barcode.toUpperCase())
         .single()
 
       if (memberError || !memberData) {
@@ -72,8 +73,8 @@ export default function MemberDashboard() {
     fetchData()
   }, [router])
 
-  if (loading) return <div className="p-8 text-center text-white">Loading...</div>
-  if (error) return <div className="p-8 text-center text-red-500">{error}</div>
+  if (loading) return <Loading/>
+  if (error) return <div className="p-8 pt-14 text-center text-red-500">{error}</div>
 
   return (
     <div className="pt-32 min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] text-white px-4 pb-10">

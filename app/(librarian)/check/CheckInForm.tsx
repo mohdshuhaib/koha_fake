@@ -41,17 +41,26 @@ export default function CheckInForm() {
     }
 
     const returnDate = dayjs()
-    const borrowedAt = dayjs(record.created_at) // created_at = borrow date
+    const borrowedAt = dayjs(record.created_at)
     const daysBorrowed = returnDate.diff(borrowedAt, 'day')
 
     let fine = 0
-    if (daysBorrowed > 15) {
-      fine = 3 + (daysBorrowed - 16)
+    const category = record.member.category || 'student'
+
+    let allowedDays = 15
+    if (category === 'teacher') {
+      allowedDays = Infinity
+    } else if (category === 'class') {
+      allowedDays = 30
+    }
+
+    if (daysBorrowed > allowedDays) {
+      fine = 3 + (daysBorrowed - allowedDays - 1)
     }
 
     const { error: updateBorrow } = await supabase
       .from('borrow_records')
-      .update({ return_date: returnDate, fine })
+      .update({ return_date: returnDate.toISOString(), fine })
       .eq('id', record.id)
 
     const { error: updateBook } = await supabase
