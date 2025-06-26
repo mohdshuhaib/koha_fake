@@ -130,7 +130,7 @@ export default function BulkUploadMembers() {
             </code>
             <p>📌 <strong>Example:</strong></p>
             <code className="block bg-white/10 p-2 rounded text-white">
-              Shuhaib, student, u445, 12th Batch
+              Shuhaib, student, U445, 12th Batch
             </code>
           </div>
         </div>

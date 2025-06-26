@@ -96,7 +96,7 @@ export default function AddMemberForm() {
 
           <input
             type="text"
-            placeholder="🔖 Barcode (e.g. u445)"
+            placeholder="🔖 Barcode (e.g. U445)"
             value={barcode}
             onChange={(e) => setBarcode(e.target.value)}
             className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-sidekick-dark transition"
