@@ -24,29 +24,36 @@ export default function DeleteAllBooks() {
   if (!bookIds.length) return setMessage('No books to delete.')
     setLoading(true)
   // Step 2: Delete related borrow_records
+  const chunkArray = <T,>(arr: T[], size: number): T[][] =>
+  Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
+    arr.slice(i * size, i * size + size)
+  )
+
+const CHUNK_SIZE = 100  // Safe limit
+
+for (const chunk of chunkArray(bookIds, CHUNK_SIZE)) {
   const { error: borrowDeleteError } = await supabase
     .from('borrow_records')
     .delete()
-    .in('book_id', bookIds)
+    .in('book_id', chunk)
 
   if (borrowDeleteError) return setMessage('Failed to delete borrow records.')
-    // Step 3: Delete related hold_records
+
   const { error: holdDeleteError } = await supabase
     .from('hold_records')
     .delete()
-    .in('book_id', bookIds)
+    .in('book_id', chunk)
 
   if (holdDeleteError) return setMessage('Failed to delete hold records.')
-  // Step 4: Delete books
+
   const { error: bookDeleteError } = await supabase
     .from('books')
     .delete()
-    .in('id', bookIds)
+    .in('id', chunk)
 
-  if (bookDeleteError) {
-  console.error('❌ Supabase delete error:', bookDeleteError)
-  return setMessage('Failed to delete books.')
+  if (bookDeleteError) return setMessage('Failed to delete books.')
 }
+
   setMessage('All books and borrow records deleted.')
   setConfirm('')
   setLoading(false)
