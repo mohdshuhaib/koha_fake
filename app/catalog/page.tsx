@@ -27,81 +27,97 @@ type Book = {
   }[]
 }
 
+const PAGE_SIZE = 50
+
 export default function CatalogPage() {
   const [books, setBooks] = useState<Book[]>([])
-  const [filteredBooks, setFilteredBooks] = useState<Book[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [totalBooks, setTotalBooks] = useState(0)
 
   useEffect(() => {
-    const fetchBooks = async () => {
-      const { data, error } = await supabase
-        .from('books')
-        .select(`
-          *,
-          borrow_records (
-            return_date,
-            members (
-              name
-            )
-          ),
-          hold_records (
-          released,
-          hold_date,
-          member:members (
+    fetchBooks()
+  }, [page, search])
+
+  const fetchBooks = async () => {
+  setLoading(true)
+  const from = (page - 1) * PAGE_SIZE
+  const to = from + PAGE_SIZE - 1
+
+  let query = supabase
+    .from('books')
+    .select(
+      `
+      *,
+      borrow_records (
+        return_date,
+        members (
+          name
+        )
+      ),
+      hold_records (
+        released,
+        hold_date,
+        member:members (
           name
         )
       )
-        `)
-
-      if (error) {
-        console.error('Error fetching books:', error)
-      } else {
-        setBooks(data)
-        setFilteredBooks(data)
-      }
-      setLoading(false)
-    }
-
-    fetchBooks()
-  }, [])
-
-  useEffect(() => {
-    const query = search.toLowerCase()
-    const results = books.filter((book) =>
-      book.barcode.toLowerCase().includes(query) ||
-      book.title.toLowerCase().includes(query) ||
-      book.author.toLowerCase().includes(query) ||
-      book.call_number.toLowerCase().includes(query) ||
-      book.language.toLowerCase().includes(query)
+      `,
+      { count: 'exact' }
     )
-    setFilteredBooks(results)
-  }, [search, books])
 
-  if (loading) return <Loading />
+  // Handle search across multiple columns
+  if (search.trim()) {
+    const searchText = `%${search.trim()}%`
+
+    query = query.or(
+      `title.ilike.${searchText},author.ilike.${searchText},language.ilike.${searchText},call_number.ilike.${searchText},barcode.ilike.${searchText}`
+    )
+  }
+
+  query = query.range(from, to)
+
+  const { data, error, count } = await query
+
+  if (error) {
+    console.error('Search error:', error)
+    setBooks([])
+    setTotalBooks(0)
+  } else {
+    setBooks(data || [])
+    setTotalBooks(count || 0)
+  }
+
+  setLoading(false)
+}
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value)
+    setPage(1) // reset to first page on new search
+  }
+
+  const totalPages = Math.ceil(totalBooks / PAGE_SIZE)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] pt-24 px-4 text-white">
-      <div
-        className="max-w-6xl mx-auto backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl shadow-2xl p-6 md:p-10"
-      >
-        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-sidekick-dark text-center">
-          📚 Book Catalog
-        </h1>
+      <div className="max-w-6xl mx-auto backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl shadow-2xl p-6 md:p-10">
+        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-sidekick-dark text-center">📚 Book Catalog</h1>
 
         <input
           type="text"
-          placeholder="Search by title, author, language or call number"
+          placeholder="Search by title, author, language, or call number"
           className="w-full p-3 mb-6 rounded-md bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-sidekick transition"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={handleSearchChange}
         />
 
-        {filteredBooks.length === 0 ? (
+        {loading ? (
+          <Loading />
+        ) : books.length === 0 ? (
           <p className="text-white/60 text-center">No books found in the catalog.</p>
         ) : (
           <>
-            {/* Desktop Table */}
             <div className="overflow-x-auto">
               <div className="max-h-[65vh] overflow-y-auto rounded-md border border-white/20 shadow-inner custom-scroll">
                 <table className="min-w-full text-sm text-left">
@@ -116,15 +132,11 @@ export default function CatalogPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredBooks.map((book) => {
-                      const activeBorrow = book.borrow_records?.find(
-                        (br) => br.return_date === null
-                      )
+                    {books.map((book) => {
+                      const activeBorrow = book.borrow_records?.find((br) => br.return_date === null)
                       const borrowedBy = activeBorrow?.members?.name
 
-                      const activeHold = book.hold_records?.find(
-                        (hr) => hr.released === false
-                      )
+                      const activeHold = book.hold_records?.find((hr) => !hr.released)
                       const heldBy = activeHold?.member?.name
 
                       return (
@@ -138,13 +150,9 @@ export default function CatalogPage() {
                             {book.status === 'available' ? (
                               <span className="text-green-400 font-medium">Available</span>
                             ) : book.status === 'held' ? (
-                              <span className="text-yellow-400 font-medium">
-                                Held by {heldBy ?? 'Unknown'}
-                              </span>
+                              <span className="text-yellow-400 font-medium">Held by {heldBy ?? 'Unknown'}</span>
                             ) : (
-                              <span className="text-red-400 font-medium">
-                                Checked out to {borrowedBy ?? 'Unknown'}
-                              </span>
+                              <span className="text-red-400 font-medium">Checked out to {borrowedBy ?? 'Unknown'}</span>
                             )}
                           </td>
                         </tr>
@@ -153,6 +161,29 @@ export default function CatalogPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="mt-6 flex items-center justify-between">
+              <button
+                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                disabled={page === 1}
+                className="px-4 py-2 rounded bg-white/10 text-white hover:bg-white/20 disabled:opacity-40"
+              >
+                ← Previous
+              </button>
+
+              <p className="text-white/70 text-sm">
+                Page {page} of {totalPages}
+              </p>
+
+              <button
+                onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={page >= totalPages}
+                className="px-4 py-2 rounded bg-white/10 text-white hover:bg-white/20 disabled:opacity-40"
+              >
+                Next →
+              </button>
             </div>
           </>
         )}
