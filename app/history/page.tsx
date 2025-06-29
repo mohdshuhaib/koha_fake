@@ -22,6 +22,7 @@ export default function HistoryPage() {
   const [records, setRecords] = useState<Record[]>([])
   const [topMembers, setTopMembers] = useState<Ranked[]>([])
   const [topBooks, setTopBooks] = useState<Ranked[]>([])
+  const [topBatches, setTopBatches] = useState<Ranked[]>([])
   const [page, setPage] = useState(1)
   const pageSize = 10
 
@@ -29,6 +30,7 @@ export default function HistoryPage() {
     fetchData()
     fetchTopMembers()
     fetchTopBooks()
+    fetchTopBatches()
   }, [])
 
   const fetchData = async () => {
@@ -108,6 +110,31 @@ export default function HistoryPage() {
     }
   }
 
+  const fetchTopBatches = async () => {
+    const { data, error } = await supabase
+      .from('borrow_records')
+      .select('id, member_id, members(batch)')
+
+    if (!error && data) {
+      const counts: { [batch: string]: number } = {}
+
+      data.forEach((record: any) => {
+        const member = Array.isArray(record.members) ? record.members[0] : record.members
+        const batch = member?.batch
+        if (!batch) return
+
+        counts[batch] = (counts[batch] || 0) + 1
+      })
+
+      const sorted: Ranked[] = Object.entries(counts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5)
+
+      setTopBatches(sorted)
+    }
+  }
+
   const getStatus = (r: Record) => {
     if (r.return_date) return 'Returned'
     if (dayjs().isAfter(r.due_date)) return 'Overdue'
@@ -121,13 +148,13 @@ export default function HistoryPage() {
       >
         <h1 className="text-3xl font-bold text-center text-sidekick-dark">📚 Borrow & Return History</h1>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-3 gap-6">
           <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
             <h2 className="text-lg font-semibold text-white mb-3">🏅 Top 5 Readers</h2>
             <ol className="list-decimal ml-6 space-y-1 text-white/90">
               {topMembers.map((m, i) => (
                 <li key={i}>
-                  {['🥇', '🥈', '🥉','4️⃣','5️⃣'][i]} {m.name} ({m.count} books)
+                  {['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]} {m.name} ({m.count} books)
                 </li>
               ))}
             </ol>
@@ -138,11 +165,23 @@ export default function HistoryPage() {
             <ol className="list-decimal ml-6 space-y-1 text-white/90">
               {topBooks.map((b, i) => (
                 <li key={i}>
-                  {['🥇', '🥈', '🥉','4️⃣','5️⃣'][i]} {b.name} ({b.count} times)
+                  {['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]} {b.name} ({b.count} times)
                 </li>
               ))}
             </ol>
           </div>
+
+          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-white mb-3">🎓 Top Batches</h2>
+            <ol className="list-decimal ml-6 space-y-1 text-white/90">
+              {topBatches.map((b, i) => (
+                <li key={i}>
+                  {['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]} {b.name} ({b.count} checkouts)
+                </li>
+              ))}
+            </ol>
+          </div>
+
         </div>
 
         <div className=" bg-white/10 backdrop-blur-md border border-white/20 rounded-xl overflow-x-auto p-4 shadow-lg">
