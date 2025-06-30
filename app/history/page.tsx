@@ -117,29 +117,31 @@ export default function HistoryPage() {
   }
 
   const fetchTopBatches = async () => {
-    const { data, error } = await supabase
-      .from('borrow_records')
-      .select('id, member_id, members(batch)')
+  const { data, error } = await supabase
+    .from('borrow_records')
+    .select('id, member_id, members(batch, category)') // fetch category too
 
-    if (!error && data) {
-      const counts: { [batch: string]: number } = {}
+  if (!error && data) {
+    const counts: { [batch: string]: number } = {}
 
-      data.forEach((record: any) => {
-        const member = Array.isArray(record.members) ? record.members[0] : record.members
-        const batch = member?.batch
-        if (!batch) return
+    data.forEach((record: any) => {
+      const member = Array.isArray(record.members) ? record.members[0] : record.members
+      const batch = member?.batch
+      const category = member?.category
 
-        counts[batch] = (counts[batch] || 0) + 1
-      })
+      if (!batch || category === 'class') return // exclude 'class' members
 
-      const sorted: Ranked[] = Object.entries(counts)
-        .map(([name, count]) => ({ name, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5)
+      counts[batch] = (counts[batch] || 0) + 1
+    })
 
-      setTopBatches(sorted)
-    }
+    const sorted: Ranked[] = Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+
+    setTopBatches(sorted)
   }
+}
 
   const getStatus = (r: Record) => {
     if (r.return_date) return 'Returned'
