@@ -9,14 +9,46 @@ export default function CheckOutForm() {
   const [bookBarcode, setBookBarcode] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [memberQuery, setMemberQuery] = useState('')
+  const [suggestions, setSuggestions] = useState<any[]>([])
 
   const memberInputRef = useRef<HTMLInputElement>(null)
   const bookInputRef = useRef<HTMLInputElement>(null)
 
-  // Auto focus member barcode on page load
   useEffect(() => {
     memberInputRef.current?.focus()
   }, [])
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      fetchMemberSuggestions()
+    }, 300)
+    return () => clearTimeout(delayDebounce)
+  }, [memberQuery])
+
+  const fetchMemberSuggestions = async () => {
+    if (memberQuery.trim().length === 0) {
+      setSuggestions([])
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('members')
+      .select('name, barcode')
+      .ilike('name', `%${memberQuery.trim()}%`)
+      .limit(5)
+
+    if (!error) {
+      setSuggestions(data)
+    }
+  }
+
+  const handleSelectMember = (member: any) => {
+    setMemberBarcode(member.barcode)
+    setMemberQuery(member.barcode)
+    setSuggestions([])
+    setTimeout(() => bookInputRef.current?.focus(), 100)
+  }
 
   const handleCheckout = async () => {
     if (!memberBarcode || !bookBarcode) return
@@ -27,12 +59,17 @@ export default function CheckOutForm() {
     const issueDate = new Date()
     let dueInDays = 15
 
-    // Fetch member
     const { data: member, error: memberError } = await supabase
       .from('members')
       .select('*')
       .eq('barcode', memberBarcode)
       .single()
+
+    if (memberError || !member) {
+      setMessage('❌ Member not found')
+      resetForm()
+      return
+    }
 
     const category = member.category || 'student'
     if (category === 'teacher' || category === 'class') {
@@ -41,13 +78,6 @@ export default function CheckOutForm() {
 
     const dueDate = dayjs(issueDate).add(dueInDays, 'day').format('YYYY-MM-DD')
 
-    if (memberError || !member) {
-      setMessage('❌ Member not found')
-      resetForm()
-      return
-    }
-
-    // Fetch book
     const { data: book, error: bookError } = await supabase
       .from('books')
       .select('*')
@@ -61,7 +91,6 @@ export default function CheckOutForm() {
       return
     }
 
-    // Insert borrow record
     const { error: borrowError } = await supabase.from('borrow_records').insert([
       {
         book_id: book.id,
@@ -72,26 +101,22 @@ export default function CheckOutForm() {
     ])
 
     if (borrowError) {
-      console.error('❌ Insert error:', borrowError)
       setMessage('❌ Failed to insert borrow record')
       resetForm()
       return
     }
 
-    // Update book status
     const { error: updateBookError } = await supabase
       .from('books')
       .update({ status: 'borrowed' })
       .eq('id', book.id)
 
     if (updateBookError) {
-      console.error('❌ Book update error:', updateBookError)
       setMessage('❌ Failed to update book status')
       resetForm()
       return
     }
 
-    // Success
     setMessage(
       `✅ "${book.title}" issued to ${member.name}. Return by ${dayjs(dueDate).format('DD MMM YYYY')}`
     )
@@ -102,18 +127,18 @@ export default function CheckOutForm() {
   const resetForm = () => {
     setBookBarcode('')
     setMemberBarcode('')
+    setMemberQuery('')
+    setSuggestions([])
     setLoading(false)
-    setTimeout(() => memberInputRef.current?.focus(), 200) // refocus after delay
+    setTimeout(() => memberInputRef.current?.focus(), 200)
   }
 
-  // If member scanned and Enter pressed, go to book field
   const handleMemberKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       bookInputRef.current?.focus()
     }
   }
 
-  // If book scanned and Enter pressed, run checkout
   const handleBookKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleCheckout()
@@ -121,20 +146,38 @@ export default function CheckOutForm() {
   }
 
   return (
-    <div
-      className="space-y-5"
-    >
+    <div className="space-y-5">
       <h2 className="text-2xl font-bold text-white">📤 Check Out Book</h2>
 
-      <input
-        ref={memberInputRef}
-        type="text"
-        className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-sidekick"
-        placeholder="Scan member barcode"
-        value={memberBarcode}
-        onChange={(e) => setMemberBarcode(e.target.value)}
-        onKeyDown={handleMemberKeyDown}
-      />
+      <div className="relative">
+        <input
+          ref={memberInputRef}
+          type="text"
+          className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-sidekick"
+          placeholder="Enter member name or scan barcode"
+          value={memberQuery}
+          onChange={(e) => {
+            setMemberQuery(e.target.value)
+            setMemberBarcode('') // clear barcode if manual input changes
+          }}
+          onKeyDown={handleMemberKeyDown}
+        />
+
+        {suggestions.length > 0 && (
+          <ul className="absolute z-10 mt-1 w-full bg-white/5 backdrop-blur-md text-white border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+            {suggestions.map((member) => (
+              <li
+                key={member.barcode}
+                onClick={() => handleSelectMember(member)}
+                className="px-4 py-3 hover:bg-white/20 cursor-pointer transition duration-200"
+              >
+                <span className="block text-sm font-medium">{member.name}</span>
+                <span className="block text-xs text-white/60">{member.barcode}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <input
         ref={bookInputRef}
