@@ -61,29 +61,35 @@ export default function HistoryPage() {
   }
 
   const fetchTopMembers = async () => {
-    const { data, error } = await supabase
-      .from('borrow_records')
-      .select('member_id, members(name)')
+  const { data, error } = await supabase
+    .from('borrow_records')
+    .select('member_id, members(name, category)')
 
-    if (!error && data) {
-      const counts: { [memberId: string]: Ranked } = {}
+  if (!error && data) {
+    const counts: { [memberId: string]: Ranked } = {}
 
-      data.forEach((d: any) => {
-        const member = Array.isArray(d.members) ? d.members[0] : d.members
-        const name = member?.name
-        if (!name) return
+    data.forEach((d: any) => {
+      const member = Array.isArray(d.members) ? d.members[0] : d.members
+      const name = member?.name
+      const category = member?.category
 
-        if (!counts[d.member_id]) {
-          counts[d.member_id] = { name, count: 1 }
-        } else {
-          counts[d.member_id].count++
-        }
-      })
+      // Only count if category is "student"
+      if (!name || category !== 'student') return
 
-      const sorted: Ranked[] = Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5)
-      setTopMembers(sorted)
-    }
+      if (!counts[d.member_id]) {
+        counts[d.member_id] = { name, count: 1 }
+      } else {
+        counts[d.member_id].count++
+      }
+    })
+
+    const sorted: Ranked[] = Object.values(counts)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+
+    setTopMembers(sorted)
   }
+}
 
   const fetchTopBooks = async () => {
     const { data, error } = await supabase

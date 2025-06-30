@@ -69,12 +69,12 @@ export default function BooksHomePage() {
           🗑️ Delete Multiple Books
         </Link>
 
-        <Link
+        {/* <Link
           href="books/delete-all"
           className="block w-full bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg hover:shadow-red-800"
         >
           🔥 Delete All Books and Records
-        </Link>
+        </Link> */}
       </div>
     </div>
   )

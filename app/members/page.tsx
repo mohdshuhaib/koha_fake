@@ -68,12 +68,12 @@ export default function MemberPage() {
           🗑️ Delete Multiple Patrons
         </Link>
 
-        <Link
+        {/* <Link
           href="/members/delete-all"
           className="block w-full bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg hover:shadow-red-800"
         >
           🔥 Delete All Patrons and Records
-        </Link>
+        </Link> */}
       </div>
     </div>
   )
