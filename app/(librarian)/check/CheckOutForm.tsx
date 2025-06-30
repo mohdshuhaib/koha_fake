@@ -140,10 +140,11 @@ export default function CheckOutForm() {
   }
 
   const handleBookKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleCheckout()
-    }
+  if (e.key === 'Enter') {
+    e.preventDefault() // <-- This prevents default form submission or page reload
+    handleCheckout()
   }
+}
 
   return (
     <div className="space-y-5">
