@@ -66,7 +66,7 @@ export default function CatalogPage() {
       )
       `,
       { count: 'exact' }
-    )
+    ).order('barcode', { ascending: true })
 
   // Handle search across multiple columns
   if (search.trim()) {
