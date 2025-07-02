@@ -20,7 +20,7 @@ export default function BackupPage() {
         borrow_date,
         due_date,
         return_date,
-        members(name),
+        members(name, batch),
         books(title),
         member_id,
         book_id
@@ -65,7 +65,20 @@ export default function BackupPage() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5)
 
-    const csv = convertToCSVWithSummary(normalized, topMembers, topBooks)
+    // Count top batches
+    const batchCounts: Record<string, { batch: string; count: number }> = {}
+    data.forEach((r: any) => {
+      const batch = Array.isArray(r.members) ? r.members[0]?.batch : r.members?.batch
+      if (!batch) return
+      batchCounts[batch] = batchCounts[batch] || { batch, count: 0 }
+      batchCounts[batch].count++
+    })
+
+    const topBatches = Object.values(batchCounts)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+
+    const csv = convertToCSVWithSummary(normalized, topMembers, topBooks, topBatches)
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
 
@@ -84,7 +97,8 @@ export default function BackupPage() {
   const convertToCSVWithSummary = (
     records: any[],
     topMembers: { name: string; count: number }[],
-    topBooks: { name: string; count: number }[]
+    topBooks: { name: string; count: number }[],
+    topBatches: { batch: string; count: number }[]
   ) => {
     const keys = Object.keys(records[0] || {})
     const rows = records.map(row => keys.map(k => `"${row[k] ?? ''}"`).join(','))
@@ -102,7 +116,14 @@ export default function BackupPage() {
       ...topBooks.map((b, i) => `${i + 1},"${b.name}",${b.count}`)
     ].join('\n')
 
-    return `${csvMain}${memberSection}${bookSection}`
+    const batchSection = [
+      '\n\nTop 5 Batches,',
+      'Rank,Batch,Times Borrowed',
+      ...topBatches.map((b, i) => `${i + 1},"${b.batch}",${b.count}`)
+    ].join('\n')
+
+    return `${csvMain}${memberSection}${bookSection}${batchSection}`
+
   }
 
   const deleteAllRecords = async () => {
