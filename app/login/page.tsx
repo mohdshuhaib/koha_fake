@@ -13,17 +13,24 @@ export default function LoginPage() {
   const [checkingSession, setCheckingSession] = useState(true)
 
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        router.replace('/dashboard')
-      } else {
-        setCheckingSession(false)
-      }
-    }
+  const checkSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
 
-    checkSession()
-  }, [router])
+    if (session) {
+      const role = session.user.user_metadata?.role || 'member'
+
+      if (role === 'librarian') {
+        router.replace('/dashboard') // Librarian dashboard
+      } else {
+        router.replace('/member/dashboard-mem') // Redirect member to their dashboard
+      }
+    } else {
+      setCheckingSession(false)
+    }
+  }
+
+  checkSession()
+}, [router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

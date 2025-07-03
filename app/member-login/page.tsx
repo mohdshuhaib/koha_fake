@@ -1,13 +1,34 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 export default function MemberLogin() {
   const [barcode, setBarcode] = useState('')
   const [error, setError] = useState('')
+  const [checkingSession, setCheckingSession] = useState(true)
   const router = useRouter()
+
+  useEffect(() => {
+  const checkSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (session) {
+      const role = session.user.user_metadata?.role || 'member'
+
+      if (role === 'librarian') {
+        router.replace('/dashboard') // Redirect librarian away from member login
+      } else {
+        router.replace('/member/dashboard-mem') // Member dashboard
+      }
+    } else {
+      setCheckingSession(false)
+    }
+  }
+
+  checkSession()
+}, [router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
