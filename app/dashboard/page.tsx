@@ -28,13 +28,16 @@ export default function DashboardPage() {
         return
       }
 
+      // Get today's date in YYYY-MM-DD format
+      const today = new Date().toISOString().split('T')[0]
+
       // Fetch stats and recent history
       const [
         { count: books },
         { count: members },
         { count: borrowed },
         { data: fines },
-        { data: recent },
+        { data: dueToday },
         { count: malBooks },
         { count: engBooks },
         { count: urdBooks },
@@ -53,8 +56,8 @@ export default function DashboardPage() {
             book:book_id ( title, barcode ),
             member:member_id ( name )
           `)
-          .order('created_at', { ascending: false })
-          .limit(5),
+          .eq('return_date', null)
+          .eq('due_date', today),
 
         supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'MAL'),
         supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'ENG'),
@@ -75,7 +78,7 @@ export default function DashboardPage() {
         pendingFines: pendingFinesTotal || 0,
       })
 
-      setHistory(recent || [])
+      setHistory(dueToday || [])
       setLoading(false)
     }
 
@@ -139,9 +142,9 @@ export default function DashboardPage() {
         <div
           className="bg-white/10 backdrop-blur p-6 rounded-xl shadow-lg"
         >
-          <h2 className="text-xl font-semibold mb-4">🕘 Recent Check In / Out</h2>
+          <h2 className="text-xl font-semibold mb-4">📅 Books Due for Return Today</h2>
           {history.length === 0 ? (
-            <p className="text-white/70">No recent activity</p>
+            <p className="text-white/70">No books due for return today</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm border border-white/20">
