@@ -35,42 +35,42 @@ export default function MemberPage() {
 
   return (
     <div
-      className="pt-32 min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] text-white px-4 pb-10"
+      className="pt-32 min-h-screen bg-primary-grey px-4 pb-10"
     >
-      <h1 className="text-3xl font-bold mb-6">👥 Patron Management</h1>
+      <h1 className="text-3xl font-bold mb-6 text-heading-text-black">👥 Patron Management</h1>
 
       <div className="space-y-5">
         <Link
           href="/members/addpatron"
-          className="block w-full bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg hover:shadow-blue-500"
+          className="block w-full bg-secondary-white rounded-xl p-6 shadow-lg hover:shadow-secondary-light-black"
         >
           ➕ Add Single Patron
         </Link>
 
         <Link
           href="/members/bulkpatron"
-          className="block w-full bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg hover:shadow-green-500"
+          className="block w-full bg-secondary-white rounded-xl p-6 shadow-lg hover:shadow-secondary-light-black"
         >
           📦 Bulk Upload Patron
         </Link>
 
         <Link
           href="/members/delete"
-          className="block w-full bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg hover:shadow-red-400"
+          className="block w-full bg-secondary-white rounded-xl p-6 shadow-lg hover:shadow-secondary-light-black"
         >
           🗑️ Delete Patron by Barcode
         </Link>
 
         <Link
           href="/members/delete-multiple"
-          className="block w-full bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg hover:shadow-red-600"
+          className="block w-full bg-secondary-white rounded-xl p-6 shadow-lg hover:shadow-secondary-light-black"
         >
           🗑️ Delete Multiple Patrons
         </Link>
 
         {/* <Link
           href="/members/delete-all"
-          className="block w-full bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg hover:shadow-red-800"
+          className="block w-full bg-secondary-white rounded-xl p-6 shadow-lg hover:shadow-secondary-light-black"
         >
           🔥 Delete All Patrons and Records
         </Link> */}

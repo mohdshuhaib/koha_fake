@@ -86,7 +86,7 @@ export default function HoldForm() {
         ref={memberInputRef}
         type="text"
         placeholder="👤 Scan member barcode"
-        className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-sidekick"
+        className="w-full px-4 py-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-1 focus:ring-primary-dark-grey"
         value={memberBarcode}
         onChange={(e) => setMemberBarcode(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && bookInputRef.current?.focus()}
@@ -95,19 +95,19 @@ export default function HoldForm() {
         ref={bookInputRef}
         type="text"
         placeholder="📘 Scan book barcode"
-        className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-sidekick"
+        className="w-full px-4 py-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-1 focus:ring-primary-dark-grey"
         value={bookBarcode}
         onChange={(e) => setBookBarcode(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && handleHold()}
       />
       <button
         onClick={handleHold}
-        className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium px-6 py-2 rounded-lg shadow-md transition disabled:opacity-50"
+        className="bg-button-yellow hover:bg-primary-dark-grey text-button-text-black font-medium px-6 py-2 rounded-lg shadow-md transition disabled:opacity-50"
         disabled={loading}
       >
         {loading ? '⏳ Holding...' : '📌 Hold Book'}
       </button>
-      {message && <p className="text-sm text-white/80 pt-1">{message}</p>}
+      {message && <p className="text-sm text-text-grey pt-1">{message}</p>}
     </div>
   )
 }

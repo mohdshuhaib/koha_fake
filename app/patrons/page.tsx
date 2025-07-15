@@ -44,31 +44,31 @@ export default function MemberTable() {
   if (loading) return <Loading />
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary via-secondary to-sidekick pt-24 px-4 text-white">
+    <div className="min-h-screen bg-primary-grey pt-24 px-4">
       <div
-        className="max-w-6xl mx-auto backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl shadow-2xl p-6 md:p-10"
+        className="max-w-6xl mx-auto bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-6 md:p-10"
       >
-        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-sidekick-dark text-center">
+        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-heading-text-black text-center">
           🧑‍🤝‍🧑 Available Patrons
         </h1>
 
         <input
           type="text"
           placeholder="Search by name, category, barcode or batch"
-          className="w-full p-3 mb-6 rounded-md bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-sidekick-dark transition"
+          className="w-full p-3 mb-6 rounded-md bg-secondary-white border border-dark-green text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
 
         {filteredMembers.length === 0 ? (
-          <p className="text-white/60 text-center">No patrons found.</p>
+          <p className="text-text-grey text-center">No patrons found.</p>
         ) : (
           <>
             {/* Desktop Table */}
             <div className="overflow-x-auto">
-              <div className="max-h-[65vh] overflow-y-auto rounded-md border border-white/20 shadow-inner custom-scroll">
+              <div className="max-h-[65vh] overflow-y-auto rounded-md border border-primary-dark-grey shadow-inner custom-scroll">
                 <table className="min-w-full text-sm text-left">
-                  <thead className="sticky top-0 z-10 bg-[#1a1a1a]/80 backdrop-blur-sm text-white border-b border-white/20">
+                  <thead className="sticky top-0 z-10 bg-secondary-light-black backdrop-blur-sm text-white border-b border-primary-dark-grey">
                     <tr>
                       <th className="px-4 py-3">Name</th>
                       <th className="px-4 py-3">Category</th>
@@ -78,7 +78,7 @@ export default function MemberTable() {
                   </thead>
                   <tbody>
                     {filteredMembers.map((m) => (
-                      <tr key={m.id} className="border-t border-white/10 hover:bg-white/5 transition">
+                      <tr key={m.id} className="border-t border-primary-dark-grey hover:bg-primary-dark-grey transition">
                         <td className="px-4 py-3">{m.name}</td>
                         <td className="px-4 py-3">{m.category}</td>
                         <td className="px-4 py-3">{m.barcode}</td>

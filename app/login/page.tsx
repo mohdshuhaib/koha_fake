@@ -42,14 +42,14 @@ export default function LoginPage() {
   if (checkingSession) return <Loading />
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] px-4">
+    <main className="flex min-h-screen items-center justify-center bg-primary-grey px-4">
       <form
         onSubmit={handleLogin}
-        className="w-full max-w-md space-y-6 backdrop-blur-lg bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-8"
+        className="w-full max-w-md space-y-6  bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-8"
       >
         <div className="text-center">
-          <h1 className="text-3xl font-extrabold text-sidekick-dark">🔐 Librarian Login</h1>
-          <p className="text-sm text-white/70 mt-1">Welcome back! Please sign in.</p>
+          <h1 className="text-3xl font-extrabold text-heading-text-black">🔐 Librarian Login</h1>
+          <p className="text-sm text-sub-heading-text-grey mt-1">Welcome back! Please sign in.</p>
         </div>
 
         {error && (
@@ -62,7 +62,7 @@ export default function LoginPage() {
 
         <div className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-white/90">
+            <label htmlFor="email" className="block text-sm font-medium text-text-grey">
               Email
             </label>
             <input
@@ -71,13 +71,13 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full px-4 py-2 bg-white/5 text-white border border-white/20 rounded-md shadow-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-sidekick-dark transition"
+              className="mt-1 w-full px-4 py-2 bg-secondary-white text-text-grey border border-primary-dark-grey rounded-md shadow-sm placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition"
               placeholder="you@domain.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-white/90">
+            <label htmlFor="password" className="block text-sm font-medium text-text-grey">
               Password
             </label>
             <input
@@ -86,7 +86,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full px-4 py-2 bg-white/5 text-white border border-white/20 rounded-md shadow-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-sidekick-dark transition"
+              className="mt-1 w-full px-4 py-2 bg-secondary-white text-text-grey border border-primary-dark-grey rounded-md shadow-sm placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition "
               placeholder="••••••••"
             />
           </div>
@@ -94,7 +94,7 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          className="w-full py-2 rounded-md bg-sidekick-dark text-black font-semibold hover:bg-white transition-colors"
+          className="w-full py-2 rounded-md bg-button-yellow text-button-text-black font-semibold hover:bg-primary-dark-grey transition-colors"
         >
           Sign In
         </button>

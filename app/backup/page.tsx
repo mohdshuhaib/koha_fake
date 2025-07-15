@@ -168,17 +168,17 @@ export default function BackupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] pt-24 px-4 text-white">
+    <div className="min-h-screen bg-primary-grey pt-24 px-4">
       <div
-        className="max-w-xl mx-auto backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl shadow-2xl p-6 md:p-10 space-y-6"
+        className="max-w-xl mx-auto bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-6 md:p-10 space-y-6"
       >
-        <h1 className="text-3xl font-bold text-center text-white mb-6">📦 Backup & Delete Records</h1>
+        <h1 className="text-3xl font-bold text-center text-heading-text-black mb-6">📦 Backup & Delete Records</h1>
 
         <div className="space-y-4">
           <button
             onClick={fetchAndDownloadBackup}
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 transition text-white font-semibold py-3 px-4 rounded-lg shadow"
+            className="w-full bg-button-yellow hover:bg-primary-dark-grey transition text-button-text-black font-semibold py-3 px-4 rounded-lg shadow"
           >
             ⬇️ Download Backup
           </button>
@@ -194,7 +194,7 @@ export default function BackupPage() {
           )}
 
           {message && (
-            <p className="text-center text-sm text-white/80 mt-2">{message}</p>
+            <p className="text-center text-sm text-text-grey mt-2">{message}</p>
           )}
         </div>
       </div>

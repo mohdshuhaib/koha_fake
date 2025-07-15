@@ -78,9 +78,9 @@ export default function BulkUploadPage() {
   }
 
   return (
-     <main className="min-h-screen pt-28 px-4 pb-10 bg-gradient-to-br from-primary via-secondary to-sidekick text-white">
-      <div className="max-w-xl mx-auto bg-white/5 backdrop-blur-lg p-6 md:p-8 rounded-2xl shadow-2xl border border-white/20">
-        <h1 className="text-3xl font-bold text-center mb-6 text-sidekick-dark">
+     <main className="min-h-screen pt-28 px-4 pb-10 bg-primary-grey">
+      <div className="max-w-xl mx-auto bg-secondary-white p-6 md:p-8 rounded-2xl shadow-2xl border border-primary-dark-grey">
+        <h1 className="text-3xl font-bold text-center mb-6 text-heading-text-black">
           📘 Bulk Upload Books (.xlsx)
         </h1>
 
@@ -88,17 +88,17 @@ export default function BulkUploadPage() {
           type="file"
           accept=".xlsx"
           onChange={handleFileUpload}
-          className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-sidekick-dark file:text-black file:font-semibold hover:file:bg-yellow-500 transition"
+          className="w-full p-3 bg-secondary-white border border-primary-dark-grey rounded-lg text-text-grey placeholder-text-grey file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-button-yellow file:text-button-text-black file:font-semibold hover:file:bg-primary-dark-grey transition"
         />
 
-        {loading && <p className="mt-4 text-blue-400">Uploading...</p>}
+        {loading && <p className="mt-4 text-link-text-green">Uploading...</p>}
         {message && (
-          <p className={`mt-4 text-sm ${message.includes('✅') ? 'text-green-400' : 'text-red-400'}`}>
+          <p className={`mt-4 text-sm ${message.includes('✅') ? 'text-green-600' : 'text-red-600'}`}>
             {message}
           </p>
         )}
 
-        <p className="text-xs mt-6 text-white/70">
+        <p className="text-xs mt-6 text-text-grey">
           Make sure your Excel file includes the columns: <code>title, author, language, shelf_location, call_number, barcode, status</code><br />
           <code>Example:</code><br />
           <code>Book Title, Author Name, MAL, 77, 823.9/KMK, 123, available</code>

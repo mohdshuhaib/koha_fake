@@ -101,14 +101,14 @@ export default function CatalogPage() {
   const totalPages = Math.ceil(totalBooks / PAGE_SIZE)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] pt-24 px-4 text-white">
-      <div className="max-w-6xl mx-auto backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl shadow-2xl p-6 md:p-10">
-        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-sidekick-dark text-center">📚 Book Catalog</h1>
+    <div className="min-h-screen bg-primary-grey pt-24 px-4">
+      <div className="max-w-6xl mx-auto bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-6 md:p-10">
+        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-heading-text-black text-center">📚 Book Catalog</h1>
 
         <input
           type="text"
           placeholder="Search by title, author, language, or call number"
-          className="w-full p-3 mb-6 rounded-md bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-sidekick transition"
+          className="w-full p-3 mb-6 rounded-md bg-secondary-white border border-dark-green text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green transition"
           value={search}
           onChange={handleSearchChange}
         />
@@ -116,13 +116,13 @@ export default function CatalogPage() {
         {loading ? (
           <Loading />
         ) : books.length === 0 ? (
-          <p className="text-white/60 text-center">No books found in the catalog.</p>
+          <p className="text-text-grey text-center">No books found in the catalog.</p>
         ) : (
           <>
             <div className="overflow-x-auto">
-              <div className="max-h-[65vh] overflow-y-auto rounded-md border border-white/20 shadow-inner custom-scroll">
+              <div className="max-h-[65vh] overflow-y-auto rounded-md border border-primary-dark-grey shadow-inner custom-scroll">
                 <table className="min-w-full text-sm text-left">
-                  <thead className="sticky top-0 z-10 bg-[#1a1a1a]/80 backdrop-blur-sm text-white border-b border-white/20">
+                  <thead className="sticky top-0 z-10 bg-secondary-light-black backdrop-blur-sm text-white border-b border-primary-dark-grey">
                     <tr>
                       <th className="px-4 py-3">Barcode</th>
                       <th className="px-4 py-3">Title</th>
@@ -142,7 +142,7 @@ export default function CatalogPage() {
                       const heldBy = activeHold?.member?.name
 
                       return (
-                        <tr key={book.id} className="border-t border-white/10 hover:bg-white/5 transition">
+                        <tr key={book.id} className="border-t border-primary-dark-grey hover:bg-primary-dark-grey transition">
                           <td className="px-4 py-3">{book.barcode}</td>
                           <td className="px-4 py-3">{book.title}</td>
                           <td className="px-4 py-3">{book.author}</td>
@@ -151,11 +151,11 @@ export default function CatalogPage() {
                           <td className="px-4 py-3">{book.shelf_location}</td>
                           <td className="px-4 py-3">
                             {book.status === 'available' ? (
-                              <span className="text-green-400 font-medium">Available</span>
+                              <span className="text-green-600 font-medium">Available</span>
                             ) : book.status === 'held' ? (
-                              <span className="text-yellow-400 font-medium">Held by {heldBy ?? 'Unknown'}</span>
+                              <span className="text-yellow-600 font-medium">Held by {heldBy ?? 'Unknown'}</span>
                             ) : (
-                              <span className="text-red-400 font-medium">Checked out to {borrowedBy ?? 'Unknown'}</span>
+                              <span className="text-red-600 font-medium">Checked out to {borrowedBy ?? 'Unknown'}</span>
                             )}
                           </td>
                         </tr>
@@ -171,7 +171,7 @@ export default function CatalogPage() {
               <button
                 onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
                 disabled={page === 1}
-                className="px-4 py-2 rounded bg-white/10 text-white hover:bg-white/20 disabled:opacity-40"
+                className="px-4 py-2 rounded bg-button-yellow text-button-text-black hover:bg-primary-dark-grey disabled:opacity-50"
               >
                 ← Previous
               </button>
@@ -183,7 +183,7 @@ export default function CatalogPage() {
               <button
                 onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
                 disabled={page >= totalPages}
-                className="px-4 py-2 rounded bg-white/10 text-white hover:bg-white/20 disabled:opacity-40"
+                className="px-4 py-2 rounded bg-button-yellow text-button-text-black hover:bg-primary-dark-grey disabled:opacity-50"
               >
                 Next →
               </button>

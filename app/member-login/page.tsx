@@ -51,14 +51,14 @@ export default function MemberLogin() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] px-4">
+    <main className="flex min-h-screen items-center justify-center bg-primary-grey px-4">
       <form
         onSubmit={handleLogin}
-        className="w-full max-w-md space-y-6 backdrop-blur-lg bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-8"
+        className="w-full max-w-md space-y-6 backdrop-blur-lg bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-8"
       >
         <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-sidekick-dark">📘 Member Login</h2>
-          <p className="text-sm text-white/70 mt-1">Access your library dashboard</p>
+          <h2 className="text-3xl font-extrabold text-heading-text-black">📘 Member Login</h2>
+          <p className="text-sm text-sub-heading-text-grey mt-1">Access your library dashboard</p>
         </div>
 
         {error && (
@@ -70,7 +70,7 @@ export default function MemberLogin() {
         )}
 
         <div>
-          <label htmlFor="barcode" className="block text-sm font-medium text-white/90">
+          <label htmlFor="barcode" className="block text-sm font-medium text-text-grey">
             Barcode
           </label>
           <input
@@ -79,14 +79,14 @@ export default function MemberLogin() {
             placeholder="Enter your barcode"
             value={barcode}
             onChange={(e) => setBarcode(e.target.value)}
-            className="mt-1 w-full px-4 py-2 bg-white/5 text-white border border-white/20 rounded-md shadow-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-sidekick-dark transition"
+            className="mt-1 w-full px-4 py-2 bg-secondary-white text-text-grey border border-primary-dark-grey rounded-md shadow-sm placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition"
             required
           />
         </div>
 
         <button
           type="submit"
-          className="w-full py-2 rounded-md bg-sidekick-dark text-black font-semibold hover:bg-white transition-colors"
+          className="w-full py-2 rounded-md bg-button-yellow text-button-text-black font-semibold hover:bg-primary-dark-grey transition-colors"
         >
           Login
         </button>

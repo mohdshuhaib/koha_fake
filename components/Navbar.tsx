@@ -71,12 +71,12 @@ export default function Navbar() {
 
   return (
     <nav
-      className="fixed top-0 z-50 w-full backdrop-blur-md bg-white/10 border-b border-white/20 shadow-md"
+      className="fixed top-0 z-50 w-full backdrop-blur-md bg-dark-green border-b border-light-green shadow-md"
     >
 
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="text-xl font-bold text-sidekick-dark flex items-center gap-2">
+        <Link href="/" className="text-xl font-bold text-white flex items-center gap-2">
           📚 <span>PMSA Library</span>
         </Link>
 
@@ -87,8 +87,8 @@ export default function Navbar() {
               key={item.href}
               href={item.href}
               className={clsx(
-                'text-sm font-medium hover:text-sidekick-dark transition',
-                pathname === item.href ? 'text-sidekick-dark' : 'text-white'
+                'text-sm font-medium transition text-white',
+                pathname === item.href ? 'bg-icon-green border px-4 py-2 rounded-full border-none' : 'text-white'
               )}
 
             >
@@ -100,7 +100,7 @@ export default function Navbar() {
             isLoggedIn ? (
               <button
                 onClick={handleLogout}
-                className="text-sm font-medium px-4 py-1.5 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
+                className="text-sm font-medium px-4 py-1.5 rounded-full bg-red-600 text-white hover:bg-red-700 transition"
               >
                 Logout
               </button>

@@ -14,7 +14,7 @@ html, body {
   width: 6px;
 }
 .custom-scroll::-webkit-scrollbar-thumb {
-  background-color: #5F4B8B; /* secondary color */
+  background-color: #342d2d; /* secondary color */
   border-radius: 10px;
 }
 .custom-scroll::-webkit-scrollbar-track {

@@ -101,9 +101,9 @@ export default function BulkUploadMembers() {
   }
 
   return (
-    <main className="min-h-screen pt-28 px-4 pb-10 bg-gradient-to-br from-primary via-secondary to-sidekick text-white">
-      <div className="max-w-lg mx-auto bg-white/5 backdrop-blur-lg p-6 md:p-8 rounded-2xl shadow-2xl border border-white/20 space-y-6">
-        <h1 className="text-3xl font-bold text-center text-sidekick-dark">
+    <main className="min-h-screen pt-28 px-4 pb-10 bg-primary-grey">
+      <div className="max-w-lg mx-auto bg-secondary-white p-6 md:p-8 rounded-2xl shadow-2xl border border-primary-dark-grey space-y-6">
+        <h1 className="text-3xl font-bold text-center text-heading-text-black">
           📥 Bulk Upload Members
         </h1>
 
@@ -112,24 +112,24 @@ export default function BulkUploadMembers() {
             type="file"
             accept=".csv"
             onChange={handleFileUpload}
-            className="w-full file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-sidekick-dark file:text-sidekick file:font-semibold file:cursor-pointer bg-white/10 text-white placeholder-white/60 rounded-lg border border-white/20 focus:outline-none focus:ring-2 focus:ring-sidekick-dark transition"
+            className="w-full file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-button-yellow file:text-button-text-black file:font-semibold file:cursor-pointer bg-secondary-white text-text-grey placeholder-text-grey rounded-lg border border-primary-dark-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition"
           />
 
           {uploading && (
-            <p className="text-blue-300 font-medium">Uploading...</p>
+            <p className="text-blue-600 font-medium">Uploading...</p>
           )}
 
           {message && (
-            <p className="text-green-400 font-medium">{message}</p>
+            <p className="text-green-600 font-medium">{message}</p>
           )}
 
-          <div className="text-white/80 text-sm border-t border-white/10 pt-4 space-y-2">
+          <div className="text-text-grey text-sm border-t border-primary-dark-grey pt-4 space-y-2">
             <p>📝 <strong>CSV must include:</strong></p>
-            <code className="block bg-white/10 p-2 rounded text-white">
+            <code className="block bg-primary-grey p-2 rounded text-text-grey">
               name, category, barcode, batch
             </code>
             <p>📌 <strong>Example:</strong></p>
-            <code className="block bg-white/10 p-2 rounded text-white">
+            <code className="block bg-primary-grey p-2 rounded text-text-grey">
               Shuhaib, student, U445, 12th Batch
             </code>
           </div>

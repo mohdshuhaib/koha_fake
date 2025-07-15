@@ -82,11 +82,11 @@ export default function CheckInForm() {
     <div
       className="space-y-5 mt-10"
     >
-      <h2 className="text-2xl font-bold text-white">📥 Check In Book (Barcode)</h2>
+      <h2 className="text-2xl font-bold text-heading-text-black">📥 Check In Book</h2>
 
       <input
         type="text"
-        className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-green-500"
+        className="w-full px-4 py-3 rounded-lg border border-dark-green bg-secondary-white text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green"
         placeholder="Scan book barcode"
         value={barcode}
         onChange={(e) => setBarcode(e.target.value)}

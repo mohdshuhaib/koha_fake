@@ -67,9 +67,9 @@ export default function AddMemberForm() {
   }
 
   return (
-    <main className="min-h-screen pt-28 px-4 pb-10 bg-gradient-to-br from-primary via-secondary to-sidekick text-white">
-      <div className="max-w-lg mx-auto bg-white/5 backdrop-blur-lg p-6 md:p-8 rounded-2xl shadow-2xl border border-white/20 space-y-6">
-        <h1 className="text-3xl font-bold text-center text-sidekick-dark">
+    <main className="min-h-screen pt-28 px-4 pb-10 bg-primary-grey">
+      <div className="max-w-lg mx-auto bg-secondary-white p-6 md:p-8 rounded-2xl shadow-2xl border border-primary-dark-grey space-y-6">
+        <h1 className="text-3xl font-bold text-center text-heading-text-black">
           🙍‍♂️ Add New Patron
         </h1>
 
@@ -79,19 +79,19 @@ export default function AddMemberForm() {
             placeholder="👤 Name (e.g. Shuhaib)"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-sidekick-dark transition"
+            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition"
           />
 
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-sidekick-dark transition"
+            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition"
           >
             <option value="">🎓 Select Category</option>
-            <option value="student" className='text-black'>student</option>
-            <option value="teacher" className='text-black'>teacher</option>
-            <option value="outside" className='text-black'>outside</option>
-            <option value="foundation" className='text-black'>foundation</option>
+            <option value="student" className='text-text-grey'>student</option>
+            <option value="teacher" className='text-text-grey'>teacher</option>
+            <option value="outside" className='text-text-grey'>outside</option>
+            <option value="foundation" className='text-text-grey'>foundation</option>
           </select>
 
           <input
@@ -99,7 +99,7 @@ export default function AddMemberForm() {
             placeholder="🔖 Barcode (e.g. U445)"
             value={barcode}
             onChange={(e) => setBarcode(e.target.value)}
-            className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-sidekick-dark transition"
+            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition"
           />
 
           <input
@@ -107,20 +107,20 @@ export default function AddMemberForm() {
             placeholder="🏷️ Batch (e.g. 12th Batch, Patron)"
             value={batch}
             onChange={(e) => setBatch(e.target.value)}
-            className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-sidekick-dark transition"
+            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition"
           />
         </div>
 
         <button
           onClick={handleAddMember}
           disabled={!name || !category || !barcode}
-          className="w-full bg-sidekick-dark hover:bg-yellow-500 text-sidekick font-semibold px-4 py-3 rounded-lg transition disabled:opacity-50"
+          className="w-full bg-button-yellow hover:bg-primary-dark-grey text-button-text-black font-semibold px-4 py-3 rounded-lg transition disabled:opacity-50"
         >
           ➕ Add Patron
         </button>
 
         {message && (
-          <p className="text-center text-sm text-white/80 border-t border-white/10 pt-4">
+          <p className="text-center text-sm text-text-grey border-t border-white/10 pt-4">
             {message}
           </p>
         )}

@@ -73,13 +73,13 @@ export default function AddBookPage() {
   }
 
   return (
-    <main className="min-h-screen pt-28 px-4 pb-10 bg-gradient-to-br from-primary via-secondary to-sidekick text-white">
-      <div className="max-w-xl mx-auto bg-white/5 backdrop-blur-lg p-6 md:p-8 rounded-2xl shadow-2xl border border-white/20">
-        <h1 className="text-3xl font-bold text-center mb-6 text-sidekick-dark">📘 Add New Book</h1>
+    <main className="min-h-screen pt-28 px-4 pb-10 bg-primary-grey">
+      <div className="max-w-xl mx-auto bg-secondary-white p-6 md:p-8 rounded-2xl shadow-2xl border border-primary-dark-grey">
+        <h1 className="text-3xl font-bold text-center mb-6 text-heading-text-black">📘 Add New Book</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <p className="text-red-400">{error}</p>}
-          {success && <p className="text-green-400">{success}</p>}
+          {error && <p className="text-red-600">{error}</p>}
+          {success && <p className="text-green-600">{success}</p>}
 
           <input
             name="title"
@@ -87,7 +87,7 @@ export default function AddBookPage() {
             value={formData.title}
             onChange={handleChange}
             required
-            className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-sidekick-dark"
+            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey"
           />
           <input
             name="author"
@@ -95,19 +95,19 @@ export default function AddBookPage() {
             value={formData.author}
             onChange={handleChange}
             required
-            className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50"
+            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey"
           />
           <select
             name="language"
             value={formData.language}
             onChange={handleChange}
             required
-            className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white"
+            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey"
           >
             <option value="">Select Language</option>
-            <option value="MAL" className='text-black'>MAL</option>
-            <option value="ARB" className='text-black'>ARB</option>
-            <option value="URD" className='text-black'>URD</option>
+            <option value="MAL" className='text-text-grey'>MAL</option>
+            <option value="ARB" className='text-text-grey'>ARB</option>
+            <option value="URD" className='text-text-grey'>URD</option>
           </select>
           <input
             name="shelf_location"
@@ -115,7 +115,7 @@ export default function AddBookPage() {
             value={formData.shelf_location}
             onChange={handleChange}
             required
-            className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50"
+            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey"
           />
           <input
             name="call_number"
@@ -123,7 +123,7 @@ export default function AddBookPage() {
             value={formData.call_number}
             onChange={handleChange}
             required
-            className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50"
+            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey"
           />
           <input
             name="barcode"
@@ -131,21 +131,21 @@ export default function AddBookPage() {
             value={formData.barcode}
             onChange={handleChange}
             required
-            className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50"
+            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey"
           />
           <select
             name="status"
             value={formData.status}
             onChange={handleChange}
-            className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white"
+            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey"
           >
-            <option value="available">Available</option>
-            <option value="issued" className='text-black'>Issued</option>
+            <option value="available" className='text-text-grey'>Available</option>
+            <option value="issued" className='text-text-grey'>Issued</option>
           </select>
 
           <button
             type="submit"
-            className="w-full bg-sidekick-dark hover:bg-yellow-500 text-black font-semibold py-2 px-4 rounded-lg transition"
+            className="w-full bg-button-yellow hover:bg-primary-dark-grey text-button-text-black font-semibold py-2 px-4 rounded-lg transition"
           >
             ➕ Add Book
           </button>

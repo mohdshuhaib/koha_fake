@@ -148,13 +148,13 @@ export default function CheckOutForm() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-2xl font-bold text-white">📤 Check Out Book</h2>
+      <h2 className="text-2xl font-bold">📤 Check Out Book</h2>
 
       <div className="relative">
         <input
           ref={memberInputRef}
           type="text"
-          className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-sidekick"
+          className="w-full px-4 py-3 rounded-lg border border-primary-dark-grey bg-secondary-white text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey"
           placeholder="Enter member name or scan barcode"
           value={memberQuery}
           onChange={(e) => {
@@ -165,15 +165,15 @@ export default function CheckOutForm() {
         />
 
         {suggestions.length > 0 && (
-          <ul className="absolute z-10 mt-1 w-full bg-white/5 backdrop-blur-md text-white border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          <ul className="absolute z-10 mt-1 w-full bg-secondary-white text-text-grey border border-primary-dark-grey rounded-lg shadow-lg max-h-60 overflow-y-auto">
             {suggestions.map((member) => (
               <li
                 key={member.barcode}
                 onClick={() => handleSelectMember(member)}
-                className="px-4 py-3 hover:bg-white/20 cursor-pointer transition duration-200"
+                className="px-4 py-3 hover:bg-primary-dark-grey cursor-pointer transition duration-200"
               >
                 <span className="block text-sm font-medium">{member.name}</span>
-                <span className="block text-xs text-white/60">{member.barcode}</span>
+                <span className="block text-xs">{member.barcode}</span>
               </li>
             ))}
           </ul>
@@ -183,7 +183,7 @@ export default function CheckOutForm() {
       <input
         ref={bookInputRef}
         type="text"
-        className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-sidekick"
+        className="w-full px-4 py-3 rounded-lg border border-primary-dark-grey bg-secondary-white text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey"
         placeholder="Scan book barcode"
         value={bookBarcode}
         onChange={(e) => setBookBarcode(e.target.value)}
@@ -193,7 +193,7 @@ export default function CheckOutForm() {
       <button
         onClick={handleCheckout}
         disabled={loading}
-        className="bg-sidekick-dark text-white px-6 py-2 rounded-lg font-semibold hover:bg-sidekick-dark/80 transition duration-300"
+        className="bg-button-yellow text-button-text-black px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark-grey transition duration-300"
       >
         {loading ? 'Processing...' : 'Check Out'}
       </button>

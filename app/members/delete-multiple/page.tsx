@@ -41,9 +41,9 @@ export default function DeleteMultipleMembers() {
   }
 
   return (
-    <main className="min-h-screen pt-28 px-4 pb-10 bg-gradient-to-br from-primary via-secondary to-sidekick text-white">
-      <div className="max-w-lg mx-auto bg-white/5 backdrop-blur-lg p-6 md:p-8 rounded-2xl shadow-2xl border border-white/20 space-y-6">
-        <h1 className="text-3xl font-bold text-center text-sidekick-dark">
+    <main className="min-h-screen pt-28 px-4 pb-10 bg-primary-grey">
+      <div className="max-w-lg mx-auto bg-secondary-white p-6 md:p-8 rounded-2xl shadow-2xl border border-primary-dark-grey space-y-6">
+        <h1 className="text-3xl font-bold text-center text-heading-text-black">
           🗑️ Delete Multiple Members
         </h1>
 
@@ -51,8 +51,8 @@ export default function DeleteMultipleMembers() {
           <textarea
             value={barcodes}
             onChange={(e) => setBarcodes(e.target.value)}
-            placeholder="Enter barcodes separated by commas (e.g. u445,u446,u447)"
-            className="w-full h-36 p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-red-400 transition resize-none"
+            placeholder="Enter barcodes separated by commas (e.g. U445,U446,U447)"
+            className="w-full h-36 p-3 bg-secondary-white border border-red-600 rounded-lg text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-red-700 transition resize-none"
           />
 
           <button
@@ -64,7 +64,7 @@ export default function DeleteMultipleMembers() {
           </button>
 
           {message && (
-            <p className="text-sm text-white/80 mt-2">{message}</p>
+            <p className="text-sm text-text-grey mt-2">{message}</p>
           )}
         </div>
       </div>

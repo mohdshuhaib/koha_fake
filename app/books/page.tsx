@@ -33,41 +33,41 @@ export default function BooksHomePage() {
   if (!isLoggedIn) return null
 
   return (
-    <div className="pt-32 min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] text-white px-4 pb-10">
-      <h1 className="text-3xl font-extrabold mb-8">📚 Book Management</h1>
+    <div className="pt-32 min-h-screen bg-primary-grey px-4 pb-10">
+      <h1 className="text-3xl font-extrabold mb-8 text-heading-text-black">📚 Book Management</h1>
 
-      <div className="space-y-5">
+      <div className="space-y-5 text-heading-text-black">
         <Link
           href="books/add"
-          className="block w-full bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg hover:shadow-blue-500"
+          className="block w-full bg-secondary-white rounded-xl p-6 shadow-lg hover:shadow-secondary-light-black"
         >
           ➕ Add Single Book
         </Link>
 
         <Link
           href="books/bulk-upload"
-          className="block w-full bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg hover:shadow-green-500"
+          className="block w-full bg-secondary-white rounded-xl p-6 shadow-lg hover:shadow-secondary-light-black"
         >
           📦 Bulk Upload Books
         </Link>
 
         <Link
           href="books/delete"
-          className="block w-full bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg hover:shadow-red-400"
+          className="block w-full bg-secondary-white rounded-xl p-6 shadow-lg hover:shadow-secondary-light-black"
         >
           🗑️ Delete Book by Barcode
         </Link>
 
         <Link
           href="books/delete-multiple"
-          className="block w-full bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-lg hover:shadow-red-600"
+          className="block w-full bg-secondary-white rounded-xl p-6 shadow-lg hover:shadow-secondary-light-black"
         >
           🗑️ Delete Multiple Books
         </Link>
 
         <button
           onClick={() => setShowUpdatePanel(true)}
-          className="fixed top-1/2 right-0 -translate-y-1/2 z-50 bg-white/10 backdrop-blur-md text-white px-2 py-4 rounded-r-xl border border-white/20 shadow-lg hover:bg-white/20 transition transform hover:scale-105 origin-center rotate-180 writing-vertical"
+          className="fixed top-1/2 right-0 -translate-y-1/2 z-50 bg-secondary-white text-button-text-black px-2 py-4 rounded-r-xl border border-primary-dark-grey shadow-lg transition transform hover:scale-105 origin-center rotate-180 writing-vertical"
         >
           <span className="rotate-180 tracking-wide font-semibold">Update Book</span>
         </button>

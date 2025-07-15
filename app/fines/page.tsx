@@ -71,23 +71,23 @@ export default function FinesPage() {
   if (!isLoggedIn) return null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] pt-24 px-4 text-white">
+    <div className="min-h-screen bg-primary-grey pt-24 px-4">
       <div
-        className="max-w-6xl mx-auto backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl shadow-2xl p-6 md:p-10"
+        className="max-w-6xl mx-auto backdrop-blur-md bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-6 md:p-10"
       >
-        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-sidekick-dark text-center">
+        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-heading-text-black text-center">
           💰 Unpaid Fines
         </h1>
 
         {loading ? (
           <Loading />
         ) : fines.length === 0 ? (
-          <p className="text-white/70 text-center">🎉 No unpaid fines</p>
+          <p className="text-text-grey text-center">🎉 No unpaid fines</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full border text-sm text-left text-white">
-              <thead className="bg-white/10 backdrop-blur border-b border-white/20">
-                <tr>
+            <table className="min-w-full border text-sm text-left text-text-grey">
+              <thead className="bg-secondary-light-black backdrop-blur border-b border-primary-dark-grey">
+                <tr className='text-white'>
                   <th className="p-3 border">Member</th>
                   <th className="p-3 border">Book</th>
                   <th className="p-3 border">Fine</th>
@@ -99,7 +99,7 @@ export default function FinesPage() {
                 {fines.map((f) => (
                   <tr
                     key={f.id}
-                    className="border-t border-white/10 hover:bg-white/5 transition"
+                    className="border-t border-primary-dark-grey hover:bg-primary-dark-grey transition"
                   >
                     <td className="p-3 border">{f.member?.name}</td>
                     <td className="p-3 border">{f.book?.title}</td>

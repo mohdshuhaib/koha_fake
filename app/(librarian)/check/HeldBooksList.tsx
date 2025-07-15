@@ -80,25 +80,25 @@ export default function HeldBooksList() {
   }
 
   return (
-    <div className="space-y-4 text-white">
+    <div className="space-y-4">
       {loading ? (
-        <p className="text-white/80">⏳ Loading held books...</p>
+        <p className="text-text-grey">⏳ Loading held books...</p>
       ) : records.length === 0 ? (
-        <p className="text-white/50">📭 No books currently held.</p>
+        <p className="text-text-grey">📭 No books currently held.</p>
       ) : (
         records.map((r) => (
           <div
             key={r.id}
-            className="bg-white/10 backdrop-blur-sm border border-white/20 p-4 rounded-xl shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 transition hover:bg-white/20"
+            className="bg-secondary-white backdrop-blur-sm border border-primary-dark-grey p-4 rounded-xl shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 transition"
           >
             <div className="space-y-1 text-sm sm:text-base">
-              <p className="font-semibold text-sidekick-dark">{r.book.title}</p>
-              <p className="text-white/80">
-                📚 <span className="text-white">{r.book.barcode}</span> &nbsp;&nbsp;|&nbsp;&nbsp;
-                👤 <span className="text-white">{r.member.name}</span> ({r.member.barcode})
+              <p className="font-semibold text-heading-text-black">{r.book.title}</p>
+              <p className="text-text-grey">
+                📚 <span>{r.book.barcode}</span> &nbsp;&nbsp;|&nbsp;&nbsp;
+                👤 <span>{r.member.name}</span> ({r.member.barcode})
               </p>
-              <p className="text-white/60">
-                ⏳ Held on: <span className="text-white">{new Date(r.hold_date).toLocaleString()}</span>
+              <p className="text-text-grey">
+                ⏳ Held on: <span>{new Date(r.hold_date).toLocaleString()}</span>
               </p>
             </div>
             <button

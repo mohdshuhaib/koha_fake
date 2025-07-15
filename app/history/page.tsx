@@ -150,16 +150,16 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] pt-24 px-4 text-white">
+    <div className="min-h-screen bg-primary-grey pt-24 px-4">
       <div
         className="max-w-7xl mx-auto space-y-10"
       >
-        <h1 className="text-3xl font-bold text-center text-sidekick-dark">📚 Borrow & Return History</h1>
+        <h1 className="text-3xl font-bold text-center text-heading-text-black">📚 Borrow & Return History</h1>
 
         <div className="grid md:grid-cols-3 gap-6">
-          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-white mb-3">🏅 Top 5 Readers</h2>
-            <ol className="list-decimal ml-6 space-y-1 text-white/90">
+          <div className="bg-secondary-white border border-primary-dark-grey rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-heading-text-black mb-3">🏅 Top 5 Readers</h2>
+            <ol className="list-decimal ml-6 space-y-1 text-text-grey">
               {topMembers.map((m, i) => (
                 <li key={i}>
                   {['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]} {m.name} ({m.count} books)
@@ -168,9 +168,9 @@ export default function HistoryPage() {
             </ol>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-white mb-3">📖 Top 5 Books</h2>
-            <ol className="list-decimal ml-6 space-y-1 text-white/90">
+          <div className="bg-secondary-white border border-primary-dark-grey rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-heading-text-black mb-3">📖 Top 5 Books</h2>
+            <ol className="list-decimal ml-6 space-y-1 text-text-grey">
               {topBooks.map((b, i) => (
                 <li key={i}>
                   {['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]} {b.name} ({b.count} times)
@@ -179,9 +179,9 @@ export default function HistoryPage() {
             </ol>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-white mb-3">🎓 Top Batches</h2>
-            <ol className="list-decimal ml-6 space-y-1 text-white/90">
+          <div className="bg-secondary-white border border-primary-dark-grey rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-heading-text-black mb-3">🎓 Top Batches</h2>
+            <ol className="list-decimal ml-6 space-y-1 text-text-grey">
               {topBatches.map((b, i) => (
                 <li key={i}>
                   {['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]} {b.name} ({b.count} checkouts)
@@ -192,9 +192,9 @@ export default function HistoryPage() {
 
         </div>
 
-        <div className=" bg-white/10 backdrop-blur-md border border-white/20 rounded-xl overflow-x-auto p-4 shadow-lg">
-          <table className="min-w-full text-sm text-white/90">
-            <thead className="text-white/80 border-b border-white/20 bg-white/5 sticky top-0 backdrop-blur-sm">
+        <div className=" bg-secondary-white border border-primary-dark-grey rounded-xl overflow-x-auto p-4 shadow-lg">
+          <table className="min-w-full text-sm">
+            <thead className="text-white border-b border-primary-dark-grey bg-secondary-light-black sticky top-0">
               <tr>
                 <th className="text-left p-3">Member</th>
                 <th className="text-left p-3">Book</th>
@@ -206,16 +206,16 @@ export default function HistoryPage() {
             </thead>
             <tbody>
               {records.slice((page - 1) * pageSize, page * pageSize).map((r) => (
-                <tr key={r.id} className="border-t border-white/10 hover:bg-white/5 transition">
+                <tr key={r.id} className="border-t border-primary-dark-grey hover:bg-primary-dark-grey transition text-text-grey">
                   <td className="p-3">{r.members?.name}</td>
                   <td className="p-3">{r.books?.title}</td>
                   <td className="p-3">{dayjs(r.borrow_date).format('DD MMM')}</td>
                   <td className="p-3">{dayjs(r.due_date).format('DD MMM')}</td>
                   <td className="p-3">{r.return_date ? dayjs(r.return_date).format('DD MMM') : '-'}</td>
                   <td className="p-3">
-                    {getStatus(r) === 'Returned' && <span className="text-green-400 font-medium">Returned</span>}
-                    {getStatus(r) === 'Overdue' && <span className="text-yellow-400 font-medium">Overdue</span>}
-                    {getStatus(r) === 'Borrowed' && <span className="text-blue-400 font-medium">Borrowed</span>}
+                    {getStatus(r) === 'Returned' && <span className="text-green-600 font-medium">Returned</span>}
+                    {getStatus(r) === 'Overdue' && <span className="text-yellow-600 font-medium">Overdue</span>}
+                    {getStatus(r) === 'Borrowed' && <span className="text-blue-600 font-medium">Borrowed</span>}
                   </td>
                 </tr>
               ))}
@@ -223,21 +223,21 @@ export default function HistoryPage() {
           </table>
         </div>
 
-        <div className="flex justify-between items-center mt-6  text-white/80">
+        <div className="flex justify-between items-center mt-6 pb-10">
           <button
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-4 py-1 rounded bg-white/10 border border-white/20 hover:bg-white/20 disabled:opacity-50"
+            className="px-4 py-1 rounded bg-button-yellow border text-button-text-black border-primary-dark-grey hover:bg-primary-dark-grey disabled:opacity-50"
           >
-            ⬅ Prev
+            ← Prev
           </button>
-          <span className="px-4">Page {page}</span>
+          <span className="px-4 text-heading-text-black">Page {page}</span>
           <button
             disabled={page * pageSize >= records.length}
             onClick={() => setPage((p) => p + 1)}
-            className="px-4 py-1 rounded bg-white/10 border border-white/20 hover:bg-white/20 disabled:opacity-50"
+            className="px-4 py-1 rounded bg-button-yellow border text-button-text-black border-primary-dark-grey hover:bg-primary-dark-grey disabled:opacity-50"
           >
-            Next ➡
+            Next →
           </button>
         </div>
       </div>
