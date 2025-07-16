@@ -199,7 +199,7 @@ export default function CheckOutForm() {
       </button>
 
       {message && (
-        <p className="text-sm font-medium text-white/80 pt-1">{message}</p>
+        <p className="text-sm font-medium text-text-grey pt-1">{message}</p>
       )}
     </div>
   )
