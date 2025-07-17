@@ -28,10 +28,15 @@ export default function DashboardPage() {
         return
       }
 
-      // Get today's date in YYYY-MM-DD format
-      const today = new Date().toISOString().split('T')[0]
+      // Define today's start and end in UTC
+      const tomorrowStart = new Date()
+      tomorrowStart.setUTCDate(tomorrowStart.getUTCDate() + 1)
+      tomorrowStart.setUTCHours(0, 0, 0, 0)
 
-      // Fetch stats and recent history
+      const tomorrowEnd = new Date()
+      tomorrowEnd.setUTCDate(tomorrowEnd.getUTCDate() + 1)
+      tomorrowEnd.setUTCHours(23, 59, 59, 999)
+
       const [
         { count: books },
         { count: members },
@@ -53,11 +58,13 @@ export default function DashboardPage() {
             id,
             return_date,
             created_at,
+            due_date,
             book:book_id ( title, barcode ),
             member:member_id ( name )
           `)
-          .eq('return_date', null)
-          .eq('due_date', today),
+          .is('return_date', null)
+          .gte('due_date', tomorrowStart.toISOString())
+          .lt('due_date', tomorrowEnd.toISOString()),
 
         supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'MAL'),
         supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'ENG'),
@@ -97,18 +104,12 @@ export default function DashboardPage() {
   return (
     <main className="pt-32 min-h-screen bg-primary-grey px-4 pb-10">
       <div className="max-w-6xl mx-auto space-y-10">
-        <h1
-          className="text-3xl font-bold text-heading-text-black"
-        >
+        <h1 className="text-3xl font-bold text-heading-text-black">
           📊 Library Dashboard
         </h1>
 
-        <div
-          className="grid grid-cols-1 md:grid-cols-2 gap-6"
-        >
-          <div
-            className="bg-secondary-white rounded-xl p-6 shadow-lg"
-          >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-secondary-white rounded-xl p-6 shadow-lg">
             <p className="text-sm text-heading-text-black mb-2 font-medium">📚 Total Books</p>
             <p className="text-3xl font-bold text-heading-text-black mb-4">{stats.totalBooks}</p>
             <div className="space-y-2">
@@ -121,10 +122,7 @@ export default function DashboardPage() {
                       <span>{count}</span>
                     </div>
                     <div className="w-full bg-primary-dark-grey h-2 rounded">
-                      <div
-                        className={`${color} h-2 rounded`}
-                        style={{ width: `${percent}%` }}
-                      ></div>
+                      <div className={`${color} h-2 rounded`} style={{ width: `${percent}%` }} />
                     </div>
                   </div>
                 )
@@ -139,21 +137,19 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div
-          className="bg-secondary-white backdrop-blur p-6 rounded-xl shadow-lg"
-        >
+        <div className="bg-secondary-white p-6 rounded-xl shadow-lg">
           <h2 className="text-xl font-semibold mb-4">📅 Books Due for Return Today</h2>
           {history.length === 0 ? (
             <p className="text-black">No books due for return today</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm border border-primary-dark-grey">
-                <thead className="text-white border-b border-primary-dark-grey backdrop-blur-sm bg-secondary-light-black">
+                <thead className="text-white border-b border-primary-dark-grey bg-secondary-light-black">
                   <tr>
-                    <th className="p-3 border-b border-primary-dark-grey text-left">Barcode</th>
-                    <th className="p-3 border-b border-primary-dark-grey text-left">Book</th>
-                    <th className="p-3 border-b border-primary-dark-grey text-left">Member</th>
-                    <th className="p-3 border-b border-primary-dark-grey text-left">Status</th>
+                    <th className="p-3 text-left">Barcode</th>
+                    <th className="p-3 text-left">Book</th>
+                    <th className="p-3 text-left">Member</th>
+                    <th className="p-3 text-left">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -166,7 +162,7 @@ export default function DashboardPage() {
                         {r.return_date ? (
                           <span className="text-green-600">Checked In</span>
                         ) : (
-                          <span className="text-yellow-600">Checked Out</span>
+                          <span className="text-red-600">Last Day</span>
                         )}
                       </td>
                     </tr>
@@ -183,9 +179,7 @@ export default function DashboardPage() {
 
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
-    <div
-      className="bg-secondary-white rounded-xl p-6 text-center shadow-lg"
-    >
+    <div className="bg-secondary-white rounded-xl p-6 text-center shadow-lg">
       <p className="text-sm text-heading-text-black mb-1 font-medium">{label}</p>
       <p className="text-2xl font-bold text-heading-text-black">{value}</p>
     </div>

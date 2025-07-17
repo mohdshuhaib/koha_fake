@@ -46,6 +46,7 @@ export default function UpdateBookSidebar({ showSidebar, setShowSidebar }: { sho
   const handleUpdate = async () => {
     if (!book) return
     setLoading(true)
+    resetForm()
     setMessage('')
 
     const { error } = await supabase
