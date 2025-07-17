@@ -8,6 +8,7 @@ import HeldBooksList from './HeldBooksList'
 import CheckOutForm from './CheckOutForm'
 import CheckInForm from './CheckInForm'
 import Loading from '@/app/loading'
+import RenewBookForm from './RenewBookForm'
 
 export default function CheckPage() {
   const [loading, setLoading] = useState(true)
@@ -91,6 +92,7 @@ export default function CheckPage() {
       <div className="max-w-4xl mx-auto space-y-10">
         <h1 className="text-3xl font-bold text-center text-heading-text-black">🔁 Check In / Check Out</h1>
         <CheckOutForm />
+        <RenewBookForm/>
         <CheckInForm />
       </div>
     </main>
