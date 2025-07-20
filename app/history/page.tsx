@@ -61,35 +61,35 @@ export default function HistoryPage() {
   }
 
   const fetchTopMembers = async () => {
-  const { data, error } = await supabase
-    .from('borrow_records')
-    .select('member_id, members(name, category)')
+    const { data, error } = await supabase
+      .from('borrow_records')
+      .select('member_id, members(name, category)')
 
-  if (!error && data) {
-    const counts: { [memberId: string]: Ranked } = {}
+    if (!error && data) {
+      const counts: { [memberId: string]: Ranked } = {}
 
-    data.forEach((d: any) => {
-      const member = Array.isArray(d.members) ? d.members[0] : d.members
-      const name = member?.name
-      const category = member?.category
+      data.forEach((d: any) => {
+        const member = Array.isArray(d.members) ? d.members[0] : d.members
+        const name = member?.name
+        const category = member?.category
 
-      // Only count if category is "student"
-      if (!name || category !== 'student') return
+        // Only count if category is "student"
+        if (!name || category !== 'student') return
 
-      if (!counts[d.member_id]) {
-        counts[d.member_id] = { name, count: 1 }
-      } else {
-        counts[d.member_id].count++
-      }
-    })
+        if (!counts[d.member_id]) {
+          counts[d.member_id] = { name, count: 1 }
+        } else {
+          counts[d.member_id].count++
+        }
+      })
 
-    const sorted: Ranked[] = Object.values(counts)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
+      const sorted: Ranked[] = Object.values(counts)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5)
 
-    setTopMembers(sorted)
+      setTopMembers(sorted)
+    }
   }
-}
 
   const fetchTopBooks = async () => {
     const { data, error } = await supabase
@@ -117,31 +117,46 @@ export default function HistoryPage() {
   }
 
   const fetchTopBatches = async () => {
-  const { data, error } = await supabase
-    .from('borrow_records')
-    .select('id, member_id, members(batch, category)') // fetch category too
+    const { data, error } = await supabase
+      .from('borrow_records')
+      .select('id, member_id, members(batch, category)') // fetch category too
 
-  if (!error && data) {
-    const counts: { [batch: string]: number } = {}
+    if (!error && data) {
+      const counts: { [batch: string]: number } = {}
 
-    data.forEach((record: any) => {
-      const member = Array.isArray(record.members) ? record.members[0] : record.members
-      const batch = member?.batch
-      const category = member?.category
+      data.forEach((record: any) => {
+        const member = Array.isArray(record.members) ? record.members[0] : record.members
+        const batch = member?.batch
+        const category = member?.category
 
-      if (!batch || category === 'class') return // exclude 'class' members
+        if (!batch || category === 'class') return // exclude 'class' members
 
-      counts[batch] = (counts[batch] || 0) + 1
-    })
+        counts[batch] = (counts[batch] || 0) + 1
+      })
 
-    const sorted: Ranked[] = Object.entries(counts)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
+      const sorted: Ranked[] = Object.entries(counts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5)
 
-    setTopBatches(sorted)
+      setTopBatches(sorted)
+    }
   }
-}
+
+  const handleDelete = async (id: number) => {
+    const confirmed = confirm('Are you sure you want to delete this record?')
+    if (!confirmed) return
+
+    const { error } = await supabase.from('borrow_records').delete().eq('id', id)
+
+    if (error) {
+      alert('Failed to delete the record.')
+      console.error(error)
+    } else {
+      alert('Record deleted successfully.')
+      setRecords((prev) => prev.filter((r) => r.id !== id))
+    }
+  }
 
   const getStatus = (r: Record) => {
     if (r.return_date) return 'Returned'
@@ -202,6 +217,7 @@ export default function HistoryPage() {
                 <th className="text-left p-3">Due</th>
                 <th className="text-left p-3">Returned</th>
                 <th className="text-left p-3">Status</th>
+                <th className="text-left p-3">Delete</th>
               </tr>
             </thead>
             <tbody>
@@ -217,6 +233,15 @@ export default function HistoryPage() {
                     {getStatus(r) === 'Overdue' && <span className="text-yellow-600 font-medium">Overdue</span>}
                     {getStatus(r) === 'Borrowed' && <span className="text-blue-600 font-medium">Borrowed</span>}
                   </td>
+                  <td className='p-3'>
+                    <button
+                      onClick={() => handleDelete(r.id)}
+                      className="ml-2 text-red-600 hover:text-red-800 underline"
+                      title="Delete this record"
+                    >
+                      Delete
+                    </button></td>
+
                 </tr>
               ))}
             </tbody>
