@@ -38,12 +38,22 @@ export default function RenewBookForm() {
       .from('borrow_records')
       .select('id, due_date, member_id')
       .eq('book_id', book.id)
+      .is('return_date', null)
       .order('borrow_date', { ascending: false })
       .limit(1)
       .single()
 
     if (recordError || !borrowRecord) {
       setMessage('❌ No active borrow record found.')
+      resetForm()
+      return
+    }
+
+    // ✅ Check if overdue
+    const today = dayjs().startOf('day')
+    const dueDate = dayjs(borrowRecord.due_date)
+    if (today.isAfter(dueDate)) {
+      setMessage('⚠️ Book is overdue. Please check in before borrowing again.')
       resetForm()
       return
     }
