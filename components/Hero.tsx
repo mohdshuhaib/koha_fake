@@ -15,13 +15,13 @@ export default function Hero() {
   )
 
   return (
-    <div className="min-h-[100vh] pt-20 w-full bg-primary-grey flex items-center justify-center px-4">
+    <div className="min-h-[100vh] pt-20 w-full bg-primary-grey flex items-center justify-center px-4 font-body">
 
       <div
         className="max-w-3xl w-full text-center backdrop-blur-md bg-secondary-white border border-primary-dark-grey rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.4)] p-6 md:p-12 space-y-6"
       >
         <h1
-          className="text-4xl md:text-5xl font-extrabold text-heading-text-black drop-shadow-lg leading-tight"
+          className="text-4xl md:text-5xl font-extrabold font-heading text-heading-text-black drop-shadow-lg leading-tight"
         >
           📚 Welcome to PMSA Library
         </h1>

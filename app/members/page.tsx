@@ -37,7 +37,7 @@ export default function MemberPage() {
     <div
       className="pt-32 min-h-screen bg-primary-grey px-4 pb-10"
     >
-      <h1 className="text-3xl font-bold mb-6 text-heading-text-black">👥 Patron Management</h1>
+      <h1 className="text-3xl font-bold mb-6 text-heading-text-black font-heading">👥 Patron Management</h1>
 
       <div className="space-y-5">
         <Link

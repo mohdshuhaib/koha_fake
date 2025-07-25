@@ -42,7 +42,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    router.push('/login')
+    router.push('/')
   }
 
   const navItems = [
@@ -76,7 +76,7 @@ export default function Navbar() {
 
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="text-xl font-bold text-white flex items-center gap-2">
+        <Link href="/" className="text-xl font-heading font-bold text-white flex items-center gap-2">
           📚 <span>PMSA Library</span>
         </Link>
 

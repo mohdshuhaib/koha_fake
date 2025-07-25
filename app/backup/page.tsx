@@ -172,7 +172,7 @@ export default function BackupPage() {
       <div
         className="max-w-xl mx-auto bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-6 md:p-10 space-y-6"
       >
-        <h1 className="text-3xl font-bold text-center text-heading-text-black mb-6">📦 Backup & Delete Records</h1>
+        <h1 className="text-3xl font-bold text-center text-heading-text-black mb-6 font-heading">📦 Backup & Delete Records</h1>
 
         <div className="space-y-4">
           <button

@@ -28,7 +28,7 @@ export default function ResetPasswordPage() {
         onSubmit={handleUpdatePassword}
         className="w-full max-w-md space-y-6  bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-8"
       >
-        <h1 className="text-xl font-bold text-center">🔐 Set New Password</h1>
+        <h1 className="text-xl font-bold text-center font-heading">🔐 Set New Password</h1>
         {error && <p className="text-red-600 text-sm">{error}</p>}
         {success && <p className="text-green-600 text-sm">{success}</p>}
 

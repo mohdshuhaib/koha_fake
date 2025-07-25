@@ -169,7 +169,7 @@ export default function HistoryPage() {
       <div
         className="max-w-7xl mx-auto space-y-10"
       >
-        <h1 className="text-3xl font-bold text-center text-heading-text-black">📚 Borrow & Return History</h1>
+        <h1 className="text-3xl font-bold text-center text-heading-text-black font-heading">📚 Borrow & Return History</h1>
 
         <div className="grid md:grid-cols-3 gap-6">
           <div className="bg-secondary-white border border-primary-dark-grey rounded-xl p-6">
@@ -185,7 +185,7 @@ export default function HistoryPage() {
 
           <div className="bg-secondary-white border border-primary-dark-grey rounded-xl p-6">
             <h2 className="text-lg font-semibold text-heading-text-black mb-3">📖 Top 5 Books</h2>
-            <ol className="list-decimal ml-6 space-y-1 text-text-grey">
+            <ol className="list-decimal ml-6 space-y-1 text-text-grey font-malayalam">
               {topBooks.map((b, i) => (
                 <li key={i}>
                   {['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]} {b.name} ({b.count} times)
@@ -224,7 +224,7 @@ export default function HistoryPage() {
               {records.slice((page - 1) * pageSize, page * pageSize).map((r) => (
                 <tr key={r.id} className="border-t border-primary-dark-grey hover:bg-primary-dark-grey transition text-text-grey">
                   <td className="p-3">{r.members?.name}</td>
-                  <td className="p-3">{r.books?.title}</td>
+                  <td className="p-3 font-malayalam">{r.books?.title}</td>
                   <td className="p-3">{dayjs(r.borrow_date).format('DD MMM')}</td>
                   <td className="p-3">{dayjs(r.due_date).format('DD MMM')}</td>
                   <td className="p-3">{r.return_date ? dayjs(r.return_date).format('DD MMM') : '-'}</td>

@@ -34,7 +34,7 @@ export default function BooksHomePage() {
 
   return (
     <div className="pt-32 min-h-screen bg-primary-grey px-4 pb-10">
-      <h1 className="text-3xl font-extrabold mb-8 text-heading-text-black">📚 Book Management</h1>
+      <h1 className="text-3xl font-extrabold mb-8 text-heading-text-black font-heading">📚 Book Management</h1>
 
       <div className="space-y-5 text-heading-text-black">
         <Link

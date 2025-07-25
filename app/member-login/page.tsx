@@ -57,7 +57,7 @@ export default function MemberLogin() {
         className="w-full max-w-md space-y-6 backdrop-blur-lg bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-8"
       >
         <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-heading-text-black">📘 Member Login</h2>
+          <h2 className="text-3xl font-extrabold text-heading-text-black font-heading">📘 Member Login</h2>
           <p className="text-sm text-sub-heading-text-grey mt-1">Access your library dashboard</p>
         </div>
 

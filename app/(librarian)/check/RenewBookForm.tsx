@@ -127,7 +127,7 @@ export default function RenewBookForm() {
       </button>
 
       {message && (
-        <p className="text-sm font-medium text-text-grey pt-1">{message}</p>
+        <p className="text-sm font-medium text-text-grey pt-1 font-malayalam">{message}</p>
       )}
     </div>
   )

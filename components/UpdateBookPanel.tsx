@@ -82,7 +82,7 @@ export default function UpdateBookSidebar({ showSidebar, setShowSidebar }: { sho
       }`}
     >
       <div className="flex justify-between items-center px-4 py-4 border-b border-primary-dark-grey">
-        <h2 className="text-xl font-bold text-heading-text-black">✏️ Update Book</h2>
+        <h2 className="text-xl font-bold text-heading-text-black font-heading">✏️ Update Book</h2>
         <button onClick={() => setShowSidebar(false)} className="text-red-600 hover:text-red-700 font-extrabold transition text-xl">
           ✕
         </button>
@@ -119,7 +119,7 @@ export default function UpdateBookSidebar({ showSidebar, setShowSidebar }: { sho
               value={book.title}
               onChange={(e) => setBook({ ...book, title: e.target.value })}
               placeholder="📖 Title"
-              className="w-full px-4 py-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none"
+              className="w-full px-4 py-3 font-malayalam rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none"
             />
             <p className='text-sm font-medium'>Author</p>
             <input
@@ -127,7 +127,7 @@ export default function UpdateBookSidebar({ showSidebar, setShowSidebar }: { sho
               value={book.author}
               onChange={(e) => setBook({ ...book, author: e.target.value })}
               placeholder="✍️ Author"
-              className="w-full px-4 py-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none"
+              className="w-full px-4 font-malayalam py-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none"
             />
             <p className='text-sm font-medium'>Language</p>
             <input

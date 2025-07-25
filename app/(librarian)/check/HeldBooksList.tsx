@@ -91,7 +91,7 @@ export default function HeldBooksList() {
             key={r.id}
             className="bg-secondary-white backdrop-blur-sm border border-primary-dark-grey p-4 rounded-xl shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 transition"
           >
-            <div className="space-y-1 text-sm sm:text-base">
+            <div className="space-y-1 text-sm sm:text-base font-malayalam">
               <p className="font-semibold text-heading-text-black">{r.book.title}</p>
               <p className="text-text-grey">
                 📚 <span>{r.book.barcode}</span> &nbsp;&nbsp;|&nbsp;&nbsp;

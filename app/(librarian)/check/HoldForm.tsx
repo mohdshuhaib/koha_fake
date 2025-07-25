@@ -107,7 +107,7 @@ export default function HoldForm() {
       >
         {loading ? '⏳ Holding...' : '📌 Hold Book'}
       </button>
-      {message && <p className="text-sm text-text-grey pt-1">{message}</p>}
+      {message && <p className="text-sm text-text-grey pt-1 font-malayalam">{message}</p>}
     </div>
   )
 }

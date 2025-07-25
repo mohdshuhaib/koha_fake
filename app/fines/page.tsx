@@ -75,7 +75,7 @@ export default function FinesPage() {
       <div
         className="max-w-6xl mx-auto backdrop-blur-md bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-6 md:p-10"
       >
-        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-heading-text-black text-center">
+        <h1 className="text-3xl md:text-4xl font-bold font-heading mb-6 text-heading-text-black text-center">
           💰 Unpaid Fines
         </h1>
 
@@ -102,7 +102,7 @@ export default function FinesPage() {
                     className="border-t border-primary-dark-grey hover:bg-primary-dark-grey transition"
                   >
                     <td className="p-3 border">{f.member?.name}</td>
-                    <td className="p-3 border">{f.book?.title}</td>
+                    <td className="p-3 border font-malayalam">{f.book?.title}</td>
                     <td className="p-3 border">₹{f.fine}</td>
                     <td className="p-3 border">
                       {f.return_date ? new Date(f.return_date).toLocaleDateString() : 'Not returned'}

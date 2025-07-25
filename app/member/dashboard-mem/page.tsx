@@ -82,11 +82,11 @@ export default function MemberDashboard() {
         <div
           className="flex justify-between items-center"
         >
-          <h1 className="text-3xl font-bold text-heading-text-black">Welcome, {member.name}</h1>
+          <h1 className="text-3xl font-bold text-heading-text-black font-heading">Welcome, {member.name}</h1>
           <button
             onClick={() => {
               supabase.auth.signOut()
-              router.push('/member-login')
+              router.push('/')
             }}
             className="text-sm bg-red-600 text-white font-bold px-4 py-2 rounded-full hover:bg-red-700 transition"
           >
@@ -120,7 +120,7 @@ export default function MemberDashboard() {
                 key={index}
                 className="border-b border-primary-dark-grey pb-3 space-y-1"
               >
-                <p className='text-text-grey'><strong className='text-heading-text-black'>📘 Book:</strong> {record.books?.title || 'Unknown Title'}</p>
+                <p className='text-text-grey'><strong className='text-heading-text-black font-malayalam'>📘 Book:</strong> {record.books?.title || 'Unknown Title'}</p>
                 <p className='text-text-grey'><strong className='text-heading-text-black'>📅 Borrowed:</strong> {new Date(record.borrow_date).toLocaleDateString()}</p>
                 <p className='text-text-grey'><strong className='text-heading-text-black'>📆 Due:</strong> {new Date(record.due_date).toLocaleDateString()}</p>
                 <p className='text-text-grey'><strong className='text-heading-text-black'>✅ Returned:</strong> {record.return_date ? new Date(record.return_date).toLocaleDateString() : 'Not returned yet'}</p>

@@ -154,7 +154,7 @@ export default function DashboardPage() {
                 </thead>
                 <tbody>
                   {history.map((r) => (
-                    <tr key={r.id} className="border-t border-primary-dark-grey hover:bg-primary-dark-grey">
+                    <tr key={r.id} className="border-t border-primary-dark-grey hover:bg-primary-dark-grey font-malayalam">
                       <td className="p-3">{r.book?.barcode || '—'}</td>
                       <td className="p-3">{r.book?.title || 'Unknown Book'}</td>
                       <td className="p-3">{r.member?.name || 'Unknown Member'}</td>

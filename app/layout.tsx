@@ -13,7 +13,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable} ${anekMal.variable}`}>
       <head><meta name="apple-mobile-web-app-title" content="pmsalibrary" /></head>
-      <body>
+      <body className='font-body'>
         <Navbar />
           {children}
       </body>
