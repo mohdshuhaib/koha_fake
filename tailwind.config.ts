@@ -21,6 +21,11 @@ module.exports = {
         'sub-heading-text-grey': '#6e716e',
         'link-text-green': '#016501',
       },
+      fontFamily: {
+        body: "var(--font-inter)",
+        heading: "var(--font-playfair)",
+        malayalam: "var(--font-anek)"
+      },
     },
   },
   plugins: [],
