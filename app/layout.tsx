@@ -1,7 +1,7 @@
 // app/layout.tsx
 import '@/app/globals.css'
 import Navbar from '@/components/Navbar'
-import { inter, playfair, anekMal } from "./fonts";
+import { muller2, muller, anekMal } from "./fonts";
 import { ReactNode } from 'react'
 
 export const metadata = {
@@ -11,7 +11,7 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable} ${anekMal.variable}`}>
+    <html lang="en" className={`${muller2.variable} ${muller.variable} ${anekMal.variable}`}>
       <head><meta name="apple-mobile-web-app-title" content="pmsalibrary" /></head>
       <body className='font-body'>
         <Navbar />

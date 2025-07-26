@@ -48,8 +48,8 @@ export default function MemberTable() {
       <div
         className="max-w-6xl mx-auto bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-6 md:p-10"
       >
-        <h1 className="text-3xl md:text-4xl font-heading font-bold mb-6 text-heading-text-black text-center">
-          🧑‍🤝‍🧑 Available Patrons
+        <h1 className="text-3xl md:text-4xl font-heading font-bold mb-6 text-heading-text-black uppercase text-center">
+          Available Patrons
         </h1>
 
         <input

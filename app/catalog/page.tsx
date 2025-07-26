@@ -103,7 +103,7 @@ export default function CatalogPage() {
   return (
     <div className="min-h-screen bg-primary-grey pt-24 px-4 font-malayalam">
       <div className="max-w-6xl mx-auto bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-6 md:p-10">
-        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-heading-text-black font-heading text-center">📚 Book Catalog</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-heading-text-black font-heading uppercase text-center">Book Catalog</h1>
 
         <input
           type="text"

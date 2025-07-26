@@ -13,7 +13,8 @@ export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [role, setRole] = useState<'member' | 'librarian' | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-
+        // #3c041a
+        // #fffdd1
   useEffect(() => {
     const getSessionAndRole = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -76,18 +77,18 @@ export default function Navbar() {
 
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="text-xl font-heading font-bold text-white flex items-center gap-2">
-          📚 <span>PMSA Library</span>
+        <Link href="/" className="text-xl font-heading uppercase text-icon-green flex items-center gap-2">
+          <span>PMSA Library</span>
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden md:flex items-center font-heading uppercase gap-6">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={clsx(
-                'text-sm font-medium transition text-white',
+                'text-sm font-medium transition text-black',
                 pathname === item.href ? 'bg-icon-green border px-4 py-2 rounded-full border-none' : 'text-white'
               )}
 

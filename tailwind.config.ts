@@ -22,9 +22,9 @@ module.exports = {
         'link-text-green': '#016501',
       },
       fontFamily: {
-        body: "var(--font-inter)",
-        heading: "var(--font-playfair)",
-        malayalam: "var(--font-anek)"
+        body: "var(--font-muller2)",
+        heading: "var(--font-muller)",
+        malayalam: "var(--font-anek)",
       },
     },
   },
