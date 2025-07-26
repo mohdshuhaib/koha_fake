@@ -55,7 +55,7 @@ export default function MemberTable() {
         <input
           type="text"
           placeholder="Search by name, category, barcode or batch"
-          className="w-full p-3 mb-6 rounded-md bg-secondary-white border border-dark-green text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition"
+          className="w-full p-3 mb-6 rounded-md bg-secondary-white border border-icon-green text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -68,7 +68,7 @@ export default function MemberTable() {
             <div className="overflow-x-auto">
               <div className="max-h-[65vh] overflow-y-auto rounded-md border border-primary-dark-grey shadow-inner custom-scroll">
                 <table className="min-w-full text-sm text-left">
-                  <thead className="sticky top-0 z-10 bg-secondary-light-black backdrop-blur-sm text-white border-b border-primary-dark-grey">
+                  <thead className="sticky top-0 z-10 bg-icon-green backdrop-blur-sm text-black border-b border-primary-dark-grey">
                     <tr>
                       <th className="px-4 py-3">Name</th>
                       <th className="px-4 py-3">Category</th>
@@ -78,7 +78,7 @@ export default function MemberTable() {
                   </thead>
                   <tbody>
                     {filteredMembers.map((m) => (
-                      <tr key={m.id} className="border-t border-primary-dark-grey hover:bg-primary-dark-grey transition">
+                      <tr key={m.id} className="border-t text-text-grey border-primary-dark-grey hover:bg-secondary-light-black transition">
                         <td className="px-4 py-3">{m.name}</td>
                         <td className="px-4 py-3">{m.category}</td>
                         <td className="px-4 py-3">{m.barcode}</td>

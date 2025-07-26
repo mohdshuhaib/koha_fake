@@ -47,7 +47,7 @@ export default function CheckPage() {
       {/* Stylish Sidebar Toggle Button (TOP RIGHT) */}
       <button
         onClick={() => setShowSidebar(true)}
-        className="fixed top-1/2 right-0 -translate-y-1/2 z-50 bg-secondary-white text-heading-text-black px-2 py-4 rounded-r-xl border border-primary-dark-grey shadow-lg hover:bg-primary-dark-grey transition transform hover:scale-105 origin-center rotate-180 writing-vertical"
+        className="fixed top-1/2 right-0 -translate-y-1/2 z-50 bg-secondary-white text-heading-text-black px-2 py-4 rounded-r-xl border border-primary-dark-grey shadow-lg transition transform hover:scale-105 origin-center rotate-180 writing-vertical"
       >
         <span className="rotate-180 tracking-wide font-semibold">Hold Books</span>
       </button>
@@ -58,7 +58,7 @@ export default function CheckPage() {
           }`}
       >
         <div className="flex justify-between items-center px-4 py-4 border-b border-primary-dark-grey">
-          <h2 className="text-xl font-bold text-heading-text-black">📌 Hold Book</h2>
+          <h2 className="text-xl font-bold text-heading-text-black uppercase">Hold Book</h2>
           <button onClick={() => setShowSidebar(false)} className="text-red-600 hover:text-red-700 text-xl font-extrabold">
             ✕
           </button>
@@ -68,14 +68,14 @@ export default function CheckPage() {
           <div className="flex space-x-2">
             <button
               onClick={() => setTab('hold')}
-              className={`px-4 py-2 rounded-lg font-medium text-sm text-heading-text-black ${tab === 'hold' ? 'bg-button-yellow' : 'bg-primary-dark-grey'
+              className={`px-4 py-2 rounded-lg font-medium text-sm text-black ${tab === 'hold' ? 'bg-icon-green' : 'bg-white'
                 } transition`}
             >
               Hold Book
             </button>
             <button
               onClick={() => setTab('held')}
-              className={`px-4 py-2 rounded-lg font-medium text-sm ${tab === 'held' ? 'bg-button-yellow' : 'bg-primary-dark-grey'
+              className={`px-4 py-2 rounded-lg font-medium text-sm ${tab === 'held' ? 'bg-icon-green' : 'bg-white'
                 } transition`}
             >
               Held Books
@@ -90,7 +90,7 @@ export default function CheckPage() {
 
       {/* Main Check In / Check Out Section */}
       <div className="max-w-4xl mx-auto space-y-10">
-        <h1 className="text-3xl font-bold text-center text-heading-text-black">🔁 Check In / Check Out</h1>
+        <h1 className="text-3xl font-bold text-center text-black uppercase">Check In / Check Out</h1>
         <CheckOutForm />
         <RenewBookForm/>
         <CheckInForm />

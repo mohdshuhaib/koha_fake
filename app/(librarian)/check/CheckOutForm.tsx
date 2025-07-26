@@ -147,8 +147,8 @@ export default function CheckOutForm() {
 }
 
   return (
-    <div className="space-y-5">
-      <h2 className="text-2xl font-bold">📤 Check Out Book</h2>
+    <div className="space-y-5 bg-dark-green p-4 border rounded-lg">
+      <h2 className="text-2xl font-bold text-heading-text-black uppercase">Check Out Book</h2>
 
       <div className="relative">
         <input
@@ -193,7 +193,7 @@ export default function CheckOutForm() {
       <button
         onClick={handleCheckout}
         disabled={loading}
-        className="bg-button-yellow text-button-text-black px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark-grey transition duration-300"
+        className="bg-icon-green text-button-text-black px-6 py-2 rounded-lg font-semibold hover:bg-white transition duration-300"
       >
         {loading ? 'Processing...' : 'Check Out'}
       </button>

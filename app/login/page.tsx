@@ -53,7 +53,7 @@ export default function LoginPage() {
     if (error) {
       setResetMsg('❌ ' + error.message)
     } else {
-      setResetMsg('📧 Password reset email sent. Check your inbox.')
+      setResetMsg('Password reset email sent. Check your inbox.')
     }
     setResetLoading(false)
   }
@@ -67,7 +67,7 @@ export default function LoginPage() {
         className="w-full max-w-md space-y-6  bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-8"
       >
         <div className="text-center">
-          <h1 className="text-3xl font-extrabold text-heading-text-black font-heading">🔐 Librarian Login</h1>
+          <h1 className="text-3xl font-extrabold text-heading-text-black font-heading">Librarian Login</h1>
           <p className="text-sm text-sub-heading-text-grey mt-1">Welcome back! Please sign in.</p>
         </div>
 
@@ -120,7 +120,7 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          className="w-full py-2 rounded-md bg-button-yellow text-button-text-black font-semibold hover:bg-primary-dark-grey transition-colors"
+          className="w-full py-2 rounded-md bg-icon-green text-button-text-black font-semibold hover:bg-white transition-colors"
         >
           Sign In
         </button>

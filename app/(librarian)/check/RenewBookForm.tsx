@@ -105,13 +105,13 @@ export default function RenewBookForm() {
   }
 
   return (
-    <div className="space-y-5 mt-8">
-      <h2 className="text-2xl font-bold">🔄 Renew Book</h2>
+    <div className="space-y-5 mt-8 bg-dark-green p-4 border rounded-lg">
+      <h2 className="text-2xl font-bold text-heading-text-black uppercase">Renew Book</h2>
 
       <input
         ref={inputRef}
         type="text"
-        className="w-full px-4 py-3 rounded-lg border border-primary-dark-grey bg-secondary-white text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey"
+        className="w-full px-4 py-3 rounded-lg border border-icon-green bg-secondary-white text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey"
         placeholder="Scan book barcode"
         value={bookBarcode}
         onChange={(e) => setBookBarcode(e.target.value)}
@@ -121,7 +121,7 @@ export default function RenewBookForm() {
       <button
         onClick={handleRenew}
         disabled={loading}
-        className="bg-button-yellow text-button-text-black px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark-grey transition duration-300"
+        className="bg-icon-green text-button-text-black px-6 py-2 rounded-lg font-semibold hover:bg-white transition duration-300"
       >
         {loading ? 'Renewing...' : 'Renew Book'}
       </button>

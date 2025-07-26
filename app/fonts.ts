@@ -8,7 +8,7 @@ export const muller = localFont({
 });
 
 export const muller2 = localFont({
-  src: "./fonts/muller.otf",
+  src: "./fonts/MullerMedium.ttf",
   variable: "--font-muller2",
   display: "swap",
 });

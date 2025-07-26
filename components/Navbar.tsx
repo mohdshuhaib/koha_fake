@@ -13,8 +13,7 @@ export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [role, setRole] = useState<'member' | 'librarian' | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-        // #3c041a
-        // #fffdd1
+
   useEffect(() => {
     const getSessionAndRole = async () => {
       const { data: { session } } = await supabase.auth.getSession()
