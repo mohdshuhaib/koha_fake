@@ -104,20 +104,20 @@ export default function DashboardPage() {
   return (
     <main className="pt-32 min-h-screen bg-primary-grey px-4 pb-10">
       <div className="max-w-6xl mx-auto space-y-10">
-        <h1 className="text-3xl font-bold text-heading-text-black">
-          📊 Library Dashboard
+        <h1 className="text-3xl uppercase font-heading font-bold text-heading-text-black">
+          Library Dashboard
         </h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-secondary-white rounded-xl p-6 shadow-lg">
-            <p className="text-sm text-heading-text-black mb-2 font-medium">📚 Total Books</p>
+            <p className="text-sm text-heading-text-black mb-2 uppercase font-heading">Total Books</p>
             <p className="text-3xl font-bold text-heading-text-black mb-4">{stats.totalBooks}</p>
             <div className="space-y-2">
               {languageBreakdown.map(({ label, count, color }) => {
                 const percent = stats.totalBooks ? (count / stats.totalBooks) * 100 : 0
                 return (
                   <div key={label}>
-                    <div className="flex justify-between text-sm text-heading-text-black">
+                    <div className="flex justify-between uppercase text-sm text-heading-text-black">
                       <span>{label}</span>
                       <span>{count}</span>
                     </div>
@@ -130,21 +130,21 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatCard label="🙍‍♂️ Members" value={stats.totalMembers} />
-            <StatCard label="📕 Borrowed Now" value={stats.borrowedNow} />
-            <StatCard label="💰 Pending Fines" value={`₹${stats.pendingFines}`} />
+          <div className="grid uppercase font-heading grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatCard label="Members" value={stats.totalMembers} />
+            <StatCard label="Borrowed Now" value={stats.borrowedNow} />
+            <StatCard label="Pending Fines" value={`₹${stats.pendingFines}`} />
           </div>
         </div>
 
         <div className="bg-secondary-white p-6 rounded-xl shadow-lg">
-          <h2 className="text-xl font-semibold mb-4">📅 Books Due for Return Today</h2>
+          <h2 className="text-xl font-semibold mb-4 uppercase">Books Due for Return Today</h2>
           {history.length === 0 ? (
             <p className="text-black">No books due for return today</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm border border-primary-dark-grey">
-                <thead className="text-white border-b border-primary-dark-grey bg-secondary-light-black">
+                <thead className="text-white border-b uppercase border-primary-dark-grey bg-secondary-light-black">
                   <tr>
                     <th className="p-3 text-left">Barcode</th>
                     <th className="p-3 text-left">Book</th>

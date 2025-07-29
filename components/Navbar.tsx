@@ -75,7 +75,7 @@ export default function Navbar() {
       className="fixed top-0 z-50 w-full backdrop-blur-md bg-dark-green border-b border-light-green shadow-md"
     >
 
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="text-xl font-heading uppercase text-secondary-white flex items-center gap-2">
           <span>PMSA Library</span>
@@ -88,8 +88,8 @@ export default function Navbar() {
               key={item.href}
               href={item.href}
               className={clsx(
-                'text-sm font-medium transition text-black',
-                pathname === item.href ? 'bg-icon-green border px-4 py-2 rounded-full border-none' : 'text-white'
+                'text-sm font-medium transition text-secondary-white',
+                pathname === item.href ? 'bg-icon-green border px-4 py-2 rounded-full border-none' : 'text-secondary-white'
               )}
 
             >

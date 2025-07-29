@@ -21,7 +21,7 @@ export default function Hero() {
         className="max-w-3xl w-full text-center backdrop-blur-md bg-secondary-white border border-primary-dark-grey rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.4)] p-6 md:p-12 space-y-6"
       >
         <h1
-          className="text-4xl md:text-4xl uppercase font-heading text-dark-green drop-shadow-lg leading-tight"
+          className="text-4xl md:text-4xl uppercase font-heading text-heading-text-black drop-shadow-lg leading-tight"
         >
           Welcome to PMSA Library
         </h1>
@@ -43,7 +43,7 @@ export default function Hero() {
         >
           <Link
             href="/catalog"
-            className="px-6 py-2.5 bg-dark-green text-button-text-black rounded-full shadow-md hover:bg-primary-dark-grey transition"
+            className="px-6 py-2.5 bg-button-yellow text-heading-text-black rounded-full shadow-md hover:bg-primary-dark-grey transition"
           >
             Browse Catalog
           </Link>

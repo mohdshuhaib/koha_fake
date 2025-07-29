@@ -103,8 +103,8 @@ export default function BulkUploadMembers() {
   return (
     <main className="min-h-screen pt-28 px-4 pb-10 bg-primary-grey">
       <div className="max-w-lg mx-auto bg-secondary-white p-6 md:p-8 rounded-2xl shadow-2xl border border-primary-dark-grey space-y-6">
-        <h1 className="text-3xl font-bold text-center text-heading-text-black">
-          📥 Bulk Upload Members
+        <h1 className="text-3xl uppercase font-heading font-bold text-center text-heading-text-black">
+          Bulk Upload Members
         </h1>
 
         <div className="space-y-4">
@@ -124,11 +124,11 @@ export default function BulkUploadMembers() {
           )}
 
           <div className="text-text-grey text-sm border-t border-primary-dark-grey pt-4 space-y-2">
-            <p>📝 <strong>CSV must include:</strong></p>
+            <p><strong>CSV must include:</strong></p>
             <code className="block bg-primary-grey p-2 rounded text-text-grey">
               name, category, barcode, batch
             </code>
-            <p>📌 <strong>Example:</strong></p>
+            <p><strong>Example:</strong></p>
             <code className="block bg-primary-grey p-2 rounded text-text-grey">
               Shuhaib, student, U445, 12th Batch
             </code>

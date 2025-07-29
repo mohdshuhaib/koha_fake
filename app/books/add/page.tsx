@@ -75,7 +75,7 @@ export default function AddBookPage() {
   return (
     <main className="min-h-screen pt-28 px-4 pb-10 bg-primary-grey">
       <div className="max-w-xl mx-auto bg-secondary-white p-6 md:p-8 rounded-2xl shadow-2xl border border-primary-dark-grey">
-        <h1 className="text-3xl font-bold text-center mb-6 text-heading-text-black">📘 Add New Book</h1>
+        <h1 className="text-3xl font-bold text-center mb-6 text-heading-text-black uppercase">Add New Book</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <p className="text-red-600">{error}</p>}
@@ -145,9 +145,9 @@ export default function AddBookPage() {
 
           <button
             type="submit"
-            className="w-full bg-button-yellow hover:bg-primary-dark-grey text-button-text-black font-semibold py-2 px-4 rounded-lg transition"
+            className="w-full uppercase bg-button-yellow hover:bg-primary-dark-grey text-button-text-black font-semibold py-2 px-4 rounded-lg transition"
           >
-            ➕ Add Book
+            Add Book
           </button>
         </form>
       </div>

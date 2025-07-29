@@ -169,14 +169,14 @@ export default function HistoryPage() {
       <div
         className="max-w-7xl mx-auto space-y-10"
       >
-        <h1 className="text-3xl font-bold text-center text-heading-text-black font-heading">📚 Borrow & Return History</h1>
+        <h1 className="text-3xl font-bold text-center text-heading-text-black font-heading uppercase">Borrow & Return History</h1>
 
         <div className="grid md:grid-cols-3 gap-6">
           <div className="bg-secondary-white border border-primary-dark-grey rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-heading-text-black mb-3">🏅 Top 5 Readers</h2>
+            <h2 className="text-lg font-semibold text-heading-text-black mb-3 uppercase">Top 5 Readers</h2>
             <ol className="list-decimal ml-6 space-y-1 text-text-grey">
               {topMembers.map((m, i) => (
-                <li key={i}>
+                <li key={i} style={{listStyleType: 'none'}}>
                   {['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]} {m.name} ({m.count} books)
                 </li>
               ))}
@@ -184,21 +184,21 @@ export default function HistoryPage() {
           </div>
 
           <div className="bg-secondary-white border border-primary-dark-grey rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-heading-text-black mb-3">📖 Top 5 Books</h2>
+            <h2 className="text-lg font-semibold text-heading-text-black mb-3 uppercase">Top 5 Books</h2>
             <ol className="list-decimal ml-6 space-y-1 text-text-grey font-malayalam">
               {topBooks.map((b, i) => (
-                <li key={i}>
-                  {['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]} {b.name} ({b.count} times)
+                <li key={i} style={{listStyleType: 'none'}}>
+                  {['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]} {b.name} ({b.count} checkouts)
                 </li>
               ))}
             </ol>
           </div>
 
           <div className="bg-secondary-white border border-primary-dark-grey rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-heading-text-black mb-3">🎓 Top Batches</h2>
+            <h2 className="text-lg font-semibold text-heading-text-black mb-3 uppercase">Top Batches</h2>
             <ol className="list-decimal ml-6 space-y-1 text-text-grey">
               {topBatches.map((b, i) => (
-                <li key={i}>
+                <li key={i} style={{listStyleType: 'none'}}>
                   {['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]} {b.name} ({b.count} checkouts)
                 </li>
               ))}
@@ -209,7 +209,7 @@ export default function HistoryPage() {
 
         <div className=" bg-secondary-white border border-primary-dark-grey rounded-xl overflow-x-auto p-4 shadow-lg">
           <table className="min-w-full text-sm">
-            <thead className="text-white border-b border-primary-dark-grey bg-secondary-light-black sticky top-0">
+            <thead className="text-white uppercase border-b border-primary-dark-grey bg-secondary-light-black sticky top-0">
               <tr>
                 <th className="text-left p-3">Member</th>
                 <th className="text-left p-3">Book</th>

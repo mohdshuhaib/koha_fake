@@ -172,7 +172,7 @@ export default function BackupPage() {
       <div
         className="max-w-xl mx-auto bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-6 md:p-10 space-y-6"
       >
-        <h1 className="text-3xl font-bold text-center text-heading-text-black mb-6 font-heading">📦 Backup & Delete Records</h1>
+        <h1 className="text-3xl font-bold text-center text-heading-text-black mb-6 font-heading uppercase">Backup & Delete Records</h1>
 
         <div className="space-y-4">
           <button
@@ -180,7 +180,7 @@ export default function BackupPage() {
             disabled={loading}
             className="w-full bg-button-yellow hover:bg-primary-dark-grey transition text-button-text-black font-semibold py-3 px-4 rounded-lg shadow"
           >
-            ⬇️ Download Backup
+            Download Backup
           </button>
 
           {backupData.length > 0 && (
@@ -189,7 +189,7 @@ export default function BackupPage() {
               disabled={loading}
               className="w-full bg-red-600 hover:bg-red-700 transition text-white font-semibold py-3 px-4 rounded-lg shadow"
             >
-              🗑️ Delete All Borrow Records
+              Delete All Borrow Records
             </button>
           )}
 

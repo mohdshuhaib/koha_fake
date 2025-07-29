@@ -47,8 +47,8 @@ export default function DeleteMemberPage() {
   return (
      <main className="min-h-screen pt-28 px-4 pb-10 bg-primary-grey">
       <div className="max-w-lg mx-auto bg-secondary-white p-6 md:p-8 rounded-2xl shadow-2xl border border-primary-dark-grey space-y-6">
-        <h1 className="text-3xl font-bold text-center text-heading-text-black">
-          🗑️ Delete Member by Barcode
+        <h1 className="text-3xl uppercase font-bold text-center text-heading-text-black">
+          Delete Member by Barcode
         </h1>
 
         <div className="space-y-4">

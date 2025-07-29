@@ -69,14 +69,14 @@ export default function AddMemberForm() {
   return (
     <main className="min-h-screen pt-28 px-4 pb-10 bg-primary-grey">
       <div className="max-w-lg mx-auto bg-secondary-white p-6 md:p-8 rounded-2xl shadow-2xl border border-primary-dark-grey space-y-6">
-        <h1 className="text-3xl font-bold text-center text-heading-text-black">
-          🙍‍♂️ Add New Patron
+        <h1 className="text-3xl uppercase font-heading font-bold text-center text-heading-text-black">
+          Add New Patron
         </h1>
 
         <div className="space-y-4">
           <input
             type="text"
-            placeholder="👤 Name (e.g. Shuhaib)"
+            placeholder="Name (e.g. Shuhaib)"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition"
@@ -87,7 +87,7 @@ export default function AddMemberForm() {
             onChange={(e) => setCategory(e.target.value)}
             className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition"
           >
-            <option value="">🎓 Select Category</option>
+            <option value="">Select Category</option>
             <option value="student" className='text-text-grey'>student</option>
             <option value="teacher" className='text-text-grey'>teacher</option>
             <option value="outside" className='text-text-grey'>outside</option>
@@ -96,7 +96,7 @@ export default function AddMemberForm() {
 
           <input
             type="text"
-            placeholder="🔖 Barcode (e.g. U445)"
+            placeholder="Barcode (e.g. U445)"
             value={barcode}
             onChange={(e) => setBarcode(e.target.value)}
             className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition"
@@ -104,7 +104,7 @@ export default function AddMemberForm() {
 
           <input
             type="text"
-            placeholder="🏷️ Batch (e.g. 12th Batch, Patron)"
+            placeholder="Batch (e.g. 12th Batch, Patron)"
             value={batch}
             onChange={(e) => setBatch(e.target.value)}
             className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition"
@@ -114,9 +114,9 @@ export default function AddMemberForm() {
         <button
           onClick={handleAddMember}
           disabled={!name || !category || !barcode}
-          className="w-full bg-button-yellow hover:bg-primary-dark-grey text-button-text-black font-semibold px-4 py-3 rounded-lg transition disabled:opacity-50"
+          className="w-full uppercase bg-button-yellow hover:bg-primary-dark-grey text-button-text-black font-semibold px-4 py-3 rounded-lg transition disabled:opacity-50"
         >
-          ➕ Add Patron
+          Add Patron
         </button>
 
         {message && (

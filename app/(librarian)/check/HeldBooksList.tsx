@@ -82,9 +82,9 @@ export default function HeldBooksList() {
   return (
     <div className="space-y-4">
       {loading ? (
-        <p className="text-text-grey">⏳ Loading held books...</p>
+        <p className="text-text-grey">Loading held books...</p>
       ) : records.length === 0 ? (
-        <p className="text-text-grey">📭 No books currently held.</p>
+        <p className="text-text-grey">No books currently held.</p>
       ) : (
         records.map((r) => (
           <div
@@ -94,11 +94,11 @@ export default function HeldBooksList() {
             <div className="space-y-1 text-sm sm:text-base font-malayalam">
               <p className="font-semibold text-heading-text-black">{r.book.title}</p>
               <p className="text-text-grey">
-                📚 <span>{r.book.barcode}</span> &nbsp;&nbsp;|&nbsp;&nbsp;
-                👤 <span>{r.member.name}</span> ({r.member.barcode})
+                <span>{r.book.barcode}</span> &nbsp;&nbsp;|&nbsp;&nbsp;
+                <span>{r.member.name}</span> ({r.member.barcode})
               </p>
               <p className="text-text-grey">
-                ⏳ Held on: <span>{new Date(r.hold_date).toLocaleString()}</span>
+                Held on: <span>{new Date(r.hold_date).toLocaleString()}</span>
               </p>
             </div>
             <button

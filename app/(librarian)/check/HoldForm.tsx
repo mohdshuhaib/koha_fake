@@ -85,7 +85,7 @@ export default function HoldForm() {
       <input
         ref={memberInputRef}
         type="text"
-        placeholder="👤 Scan member barcode"
+        placeholder="Scan member barcode"
         className="w-full px-4 py-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-1 focus:ring-primary-dark-grey"
         value={memberBarcode}
         onChange={(e) => setMemberBarcode(e.target.value)}
@@ -94,7 +94,7 @@ export default function HoldForm() {
       <input
         ref={bookInputRef}
         type="text"
-        placeholder="📘 Scan book barcode"
+        placeholder="Scan book barcode"
         className="w-full px-4 py-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-1 focus:ring-primary-dark-grey"
         value={bookBarcode}
         onChange={(e) => setBookBarcode(e.target.value)}
@@ -105,7 +105,7 @@ export default function HoldForm() {
         className="bg-button-yellow hover:bg-primary-dark-grey text-button-text-black font-medium px-6 py-2 rounded-lg shadow-md transition disabled:opacity-50"
         disabled={loading}
       >
-        {loading ? '⏳ Holding...' : '📌 Hold Book'}
+        {loading ? 'Holding...' : 'Hold Book'}
       </button>
       {message && <p className="text-sm text-text-grey pt-1 font-malayalam">{message}</p>}
     </div>

@@ -82,7 +82,7 @@ export default function CheckInForm() {
     <div
       className="space-y-5 mt-10"
     >
-      <h2 className="text-2xl font-bold text-heading-text-black">📥 Check In Book</h2>
+      <h2 className="text-2xl font-bold text-heading-text-black uppercase">Check In Book</h2>
 
       <input
         type="text"
@@ -96,7 +96,7 @@ export default function CheckInForm() {
       <button
         onClick={handleCheckIn}
         disabled={loading}
-        className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-300"
+        className="bg-button-yellow text-button-text-black px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark-grey transition duration-300"
       >
         {loading ? 'Processing...' : 'Check In'}
       </button>

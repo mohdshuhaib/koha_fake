@@ -37,35 +37,35 @@ export default function MemberPage() {
     <div
       className="pt-32 min-h-screen bg-primary-grey px-4 pb-10"
     >
-      <h1 className="text-3xl font-bold mb-6 text-heading-text-black font-heading">👥 Patron Management</h1>
+      <h1 className="text-3xl font-bold mb-6 text-heading-text-black uppercase font-heading">Patron Management</h1>
 
-      <div className="space-y-5">
+      <div className="space-y-5 uppercase font-heading">
         <Link
           href="/members/addpatron"
           className="block w-full bg-secondary-white rounded-xl p-6 shadow-lg hover:shadow-secondary-light-black"
         >
-          ➕ Add Single Patron
+          Add Single Patron
         </Link>
 
         <Link
           href="/members/bulkpatron"
           className="block w-full bg-secondary-white rounded-xl p-6 shadow-lg hover:shadow-secondary-light-black"
         >
-          📦 Bulk Upload Patron
+          Bulk Upload Patron
         </Link>
 
         <Link
           href="/members/delete"
           className="block w-full bg-secondary-white rounded-xl p-6 shadow-lg hover:shadow-secondary-light-black"
         >
-          🗑️ Delete Patron by Barcode
+          Delete Patron by Barcode
         </Link>
 
         <Link
           href="/members/delete-multiple"
           className="block w-full bg-secondary-white rounded-xl p-6 shadow-lg hover:shadow-secondary-light-black"
         >
-          🗑️ Delete Multiple Patrons
+          Delete Multiple Patrons
         </Link>
 
         {/* <Link

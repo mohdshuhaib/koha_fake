@@ -106,7 +106,7 @@ export default function RenewBookForm() {
 
   return (
     <div className="space-y-5 mt-8">
-      <h2 className="text-2xl font-bold">🔄 Renew Book</h2>
+      <h2 className="text-2xl font-bold uppercase">Renew Book</h2>
 
       <input
         ref={inputRef}

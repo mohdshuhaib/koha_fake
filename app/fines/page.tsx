@@ -75,8 +75,8 @@ export default function FinesPage() {
       <div
         className="max-w-6xl mx-auto backdrop-blur-md bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-6 md:p-10"
       >
-        <h1 className="text-3xl md:text-4xl font-bold font-heading mb-6 text-heading-text-black text-center">
-          💰 Unpaid Fines
+        <h1 className="text-3xl uppercase md:text-4xl font-bold font-heading mb-6 text-heading-text-black text-center">
+          Unpaid Fines
         </h1>
 
         {loading ? (
@@ -87,7 +87,7 @@ export default function FinesPage() {
           <div className="overflow-x-auto">
             <table className="min-w-full border text-sm text-left text-text-grey">
               <thead className="bg-secondary-light-black backdrop-blur border-b border-primary-dark-grey">
-                <tr className='text-white'>
+                <tr className='text-white uppercase'>
                   <th className="p-3 border">Member</th>
                   <th className="p-3 border">Book</th>
                   <th className="p-3 border">Fine</th>

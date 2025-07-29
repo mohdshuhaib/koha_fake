@@ -148,7 +148,7 @@ export default function CheckOutForm() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-2xl font-bold">📤 Check Out Book</h2>
+      <h2 className="text-2xl font-bold uppercase">Check Out Book</h2>
 
       <div className="relative">
         <input

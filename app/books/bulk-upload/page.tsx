@@ -80,8 +80,8 @@ export default function BulkUploadPage() {
   return (
      <main className="min-h-screen pt-28 px-4 pb-10 bg-primary-grey">
       <div className="max-w-xl mx-auto bg-secondary-white p-6 md:p-8 rounded-2xl shadow-2xl border border-primary-dark-grey">
-        <h1 className="text-3xl font-bold text-center mb-6 text-heading-text-black">
-          📘 Bulk Upload Books (.xlsx)
+        <h1 className="text-3xl uppercase font-heading font-bold text-center mb-6 text-heading-text-black">
+          Bulk Upload Books (.xlsx)
         </h1>
 
         <input
