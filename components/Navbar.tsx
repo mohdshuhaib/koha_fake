@@ -77,7 +77,7 @@ export default function Navbar() {
 
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="text-xl font-heading uppercase text-icon-green flex items-center gap-2">
+        <Link href="/" className="text-xl font-heading uppercase text-secondary-white flex items-center gap-2">
           <span>PMSA Library</span>
         </Link>
 
