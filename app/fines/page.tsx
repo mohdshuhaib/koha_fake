@@ -52,6 +52,9 @@ export default function FinesPage() {
   }, [isLoggedIn])
 
   const markAsPaid = async (id: number) => {
+    const confirmed = window.confirm('Are you sure you want to mark this fine as paid?')
+    if (!confirmed) return
+    
     const { error } = await supabase
       .from('borrow_records')
       .update({ fine_paid: true })
