@@ -24,6 +24,7 @@ export default function HistoryPage() {
   const [topBooks, setTopBooks] = useState<Ranked[]>([])
   const [topBatches, setTopBatches] = useState<Ranked[]>([])
   const [page, setPage] = useState(1)
+  const [searchQuery, setSearchQuery] = useState('') // ✨ ADD THIS: State for the search query
   const pageSize = 10
 
   useEffect(() => {
@@ -32,6 +33,11 @@ export default function HistoryPage() {
     fetchTopBooks()
     fetchTopBatches()
   }, [])
+
+  // ✨ ADD THIS: Effect to reset page when search query changes
+  useEffect(() => {
+    setPage(1)
+  }, [searchQuery])
 
   const fetchData = async () => {
     const { data, error } = await supabase
@@ -164,6 +170,11 @@ export default function HistoryPage() {
     return 'Borrowed'
   }
 
+  // ✨ ADD THIS: Filter records based on the search query
+  const filteredRecords = records.filter((record) =>
+    record.members?.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-primary-grey pt-24 px-4">
       <div
@@ -208,6 +219,18 @@ export default function HistoryPage() {
         </div>
 
         <div className=" bg-secondary-white border border-primary-dark-grey rounded-xl overflow-x-auto p-4 shadow-lg">
+
+          {/* ✨ ADD THIS: Search input field */}
+          <div className="mb-4">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by member name..."
+              className="w-full md:w-1/3 p-2 border border-primary-dark-grey rounded-md bg-primary-grey text-text-grey focus:outline-none focus:ring-2 focus:ring-button-yellow"
+            />
+          </div>
+
           <table className="min-w-full text-sm">
             <thead className="text-white uppercase border-b border-primary-dark-grey bg-secondary-light-black sticky top-0">
               <tr>
@@ -221,7 +244,8 @@ export default function HistoryPage() {
               </tr>
             </thead>
             <tbody>
-              {records.slice((page - 1) * pageSize, page * pageSize).map((r) => (
+              {/* 🔄 UPDATE THIS: Use 'filteredRecords' instead of 'records' */}
+              {filteredRecords.slice((page - 1) * pageSize, page * pageSize).map((r) => (
                 <tr key={r.id} className="border-t border-primary-dark-grey hover:bg-primary-dark-grey transition text-text-grey">
                   <td className="p-3">{r.members?.name}</td>
                   <td className="p-3 font-malayalam">{r.books?.title}</td>
@@ -258,7 +282,8 @@ export default function HistoryPage() {
           </button>
           <span className="px-4 text-heading-text-black">Page {page}</span>
           <button
-            disabled={page * pageSize >= records.length}
+            // 🔄 UPDATE THIS: Base pagination on the filtered list length
+            disabled={page * pageSize >= filteredRecords.length}
             onClick={() => setPage((p) => p + 1)}
             className="px-4 py-1 rounded bg-button-yellow border text-button-text-black border-primary-dark-grey hover:bg-primary-dark-grey disabled:opacity-50"
           >
