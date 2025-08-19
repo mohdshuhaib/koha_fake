@@ -41,6 +41,12 @@ export default function MemberPage() {
 
       <div className="space-y-5 uppercase font-heading">
         <Link
+          href="/members/patrons-status"
+          className="block w-full bg-secondary-white rounded-xl p-6 shadow-lg hover:shadow-secondary-light-black"
+        >
+          View All Patron Status
+        </Link>
+        <Link
           href="/members/addpatron"
           className="block w-full bg-secondary-white rounded-xl p-6 shadow-lg hover:shadow-secondary-light-black"
         >
