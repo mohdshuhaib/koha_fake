@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import dayjs from 'dayjs'
 import Loading from '@/app/loading'
+import { supabase } from '@/lib/supabase'
 
 // Define types for better code clarity
 type Member = {
@@ -25,11 +25,13 @@ type Record = {
   }
 }
 
+// MODIFIED: Updated details to hold separate lists
 type MemberDetails = {
   name: string
   booksRead: number
   pendingFines: number
-  history: Record[]
+  returned: Record[]
+  notReturned: Record[]
 }
 
 export default function PatronStatusPage() {
@@ -81,14 +83,26 @@ export default function PatronStatusPage() {
       return
     }
 
-    const booksRead = records?.filter((r) => r.return_date !== null).length || 0
+    // MODIFIED: Filter records into two lists
+    const returned: Record[] = [];
+    const notReturned: Record[] = [];
+
+    records?.forEach(record => {
+        if (record.return_date) {
+            returned.push(record);
+        } else {
+            notReturned.push(record);
+        }
+    });
+
     const pendingFines = records?.reduce((acc, r) => acc + (r.fine_paid ? 0 : r.fine || 0), 0) || 0
 
     setMemberDetails({
       name: member.name,
-      booksRead,
+      booksRead: returned.length,
       pendingFines,
-      history: records || [],
+      returned,
+      notReturned,
     })
 
     setDetailsLoading(false)
@@ -212,31 +226,47 @@ export default function PatronStatusPage() {
                     <p className="text-3xl font-bold text-red-600">₹{memberDetails.pendingFines}</p>
                   </div>
                 </div>
-                {/* History */}
-                <div>
-                  <h3 className="text-xl font-bold mb-3 text-heading-text-black">📚 Borrowing History</h3>
-                  <ul className="space-y-4 text-sm">
-                    {memberDetails.history.length === 0 ? (
-                      <li className="text-text-grey">No borrowing history found.</li>
-                    ) : (
-                      memberDetails.history.map((record, index) => (
-                        <li key={index} className="border-b border-primary-dark-grey pb-3 last:border-b-0 space-y-1">
-                          <p className='text-text-grey'><strong className='text-heading-text-black font-malayalam'>📘 Book:</strong> {record.books?.title || 'Unknown'}</p>
-                          <p className='text-text-grey'><strong className='text-heading-text-black'>📅 Borrowed:</strong> {dayjs(record.borrow_date).format('DD MMM YYYY')}</p>
-                          <p className='text-text-grey'><strong className='text-heading-text-black'>✅ Returned:</strong> {record.return_date ? dayjs(record.return_date).format('DD MMM YYYY') : 'Not Returned'}</p>
-                          {record.fine > 0 && (
-                            <p className={record.fine_paid ? 'text-green-600' : 'text-red-600'}>
-                              💰 Fine: ₹{record.fine} {record.fine_paid ? '(Paid)' : '(Unpaid)'}
-                            </p>
-                          )}
-                        </li>
-                      ))
-                    )}
-                  </ul>
+
+                {/* MODIFIED: History section with two lists */}
+                <div className="space-y-4">
+                    {/* Not Returned Books */}
+                    <div>
+                        <h3 className="text-xl font-bold mb-3 text-red-600">📕 Not Returned</h3>
+                        <ul className="space-y-4 text-sm">
+                            {memberDetails.notReturned.length === 0 ? (
+                                <li className="text-text-grey">No books currently borrowed.</li>
+                            ) : (
+                                memberDetails.notReturned.map((record, index) => (
+                                    <li key={`not-returned-${index}`} className="border-b border-primary-dark-grey pb-3 last:border-b-0 space-y-1">
+                                        <p className='text-text-grey'><strong className='text-heading-text-black'>Book:</strong> {record.books?.title || 'Unknown'}</p>
+                                        <p className='text-text-grey'><strong className='text-heading-text-black'>Borrowed:</strong> {dayjs(record.borrow_date).format('DD MMM YYYY')}</p>
+                                        <p className='text-text-grey'><strong className='text-heading-text-black'>Due:</strong> {dayjs(record.due_date).format('DD MMM YYYY')}</p>
+                                        {record.fine > 0 && <p className={record.fine_paid ? 'text-green-600' : 'text-red-600'}>💰 Fine: ₹{record.fine} {record.fine_paid ? '(Paid)' : '(Unpaid)'}</p>}
+                                    </li>
+                                ))
+                            )}
+                        </ul>
+                    </div>
+                    {/* Returned Books */}
+                    <div>
+                        <h3 className="text-xl font-bold mb-3 text-green-600">✅ Returned</h3>
+                        <ul className="space-y-4 text-sm">
+                            {memberDetails.returned.length === 0 ? (
+                                <li className="text-text-grey">No books returned yet.</li>
+                            ) : (
+                                memberDetails.returned.map((record, index) => (
+                                    <li key={`returned-${index}`} className="border-b border-primary-dark-grey pb-3 last:border-b-0 space-y-1">
+                                        <p className='text-text-grey'><strong className='text-heading-text-black'>Book:</strong> {record.books?.title || 'Unknown'}</p>
+                                        <p className='text-text-grey'><strong className='text-heading-text-black'>Returned:</strong> {dayjs(record.return_date).format('DD MMM YYYY')}</p>
+                                    </li>
+                                ))
+                            )}
+                        </ul>
+                    </div>
                 </div>
               </div>
             ) : (
-                <div className="p-8 text-center text-red-500">Could not load member details.</div>
+              <div className="p-8 text-center text-red-500">Could not load member details.</div>
             )}
           </div>
         </div>
