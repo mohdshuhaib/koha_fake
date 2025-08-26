@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Loading from '../loading'
+import dayjs from 'dayjs'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -19,6 +20,9 @@ export default function DashboardPage() {
     pendingFines: 0,
   })
   const [history, setHistory] = useState<any[]>([])
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [allDueBooks, setAllDueBooks] = useState<any[]>([])
+  const [modalLoading, setModalLoading] = useState(false)
 
   useEffect(() => {
     const checkAuthAndFetchStats = async () => {
@@ -42,7 +46,7 @@ export default function DashboardPage() {
         { count: members },
         { count: borrowed },
         { data: fines },
-        { data: dueToday },
+        { data: dueTomorrow },
         { count: malBooks },
         { count: engBooks },
         { count: urdBooks },
@@ -85,12 +89,37 @@ export default function DashboardPage() {
         pendingFines: pendingFinesTotal || 0,
       })
 
-      setHistory(dueToday || [])
+      setHistory(dueTomorrow || [])
       setLoading(false)
     }
 
     checkAuthAndFetchStats()
   }, [router])
+
+  const fetchAllDueBooks = async () => {
+    setIsModalOpen(true)
+    setModalLoading(true)
+
+    const { data, error } = await supabase
+      .from('borrow_records')
+      .select(`
+        id,
+        due_date,
+        book:book_id ( title ),
+        member:member_id ( name )
+      `)
+      .is('return_date', null)
+      .order('due_date', { ascending: true }) // Show most overdue first
+
+    if (data) {
+      setAllDueBooks(data)
+    }
+    if (error) {
+      console.error("Failed to fetch all due books:", error)
+      setAllDueBooks([])
+    }
+    setModalLoading(false)
+  }
 
   const languageBreakdown = [
     { label: 'Malayalam', count: stats.malBooks, color: 'bg-yellow-400' },
@@ -102,78 +131,125 @@ export default function DashboardPage() {
   if (loading) return <Loading />
 
   return (
-    <main className="pt-32 min-h-screen bg-primary-grey px-4 pb-10">
-      <div className="max-w-6xl mx-auto space-y-10">
-        <h1 className="text-3xl uppercase font-heading font-bold text-heading-text-black">
-          Library Dashboard
-        </h1>
+    <>
+      <main className="pt-32 min-h-screen bg-primary-grey px-4 pb-10">
+        <div className="max-w-6xl mx-auto space-y-10">
+          <h1 className="text-3xl uppercase font-heading font-bold text-heading-text-black">
+            Library Dashboard
+          </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-secondary-white rounded-xl p-6 shadow-lg">
-            <p className="text-sm text-heading-text-black mb-2 uppercase font-heading">Total Books</p>
-            <p className="text-3xl font-bold text-heading-text-black mb-4">{stats.totalBooks}</p>
-            <div className="space-y-2">
-              {languageBreakdown.map(({ label, count, color }) => {
-                const percent = stats.totalBooks ? (count / stats.totalBooks) * 100 : 0
-                return (
-                  <div key={label}>
-                    <div className="flex justify-between uppercase text-sm text-heading-text-black">
-                      <span>{label}</span>
-                      <span>{count}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-secondary-white rounded-xl p-6 shadow-lg">
+              <p className="text-sm text-heading-text-black mb-2 uppercase font-heading">Total Books</p>
+              <p className="text-3xl font-bold text-heading-text-black mb-4">{stats.totalBooks}</p>
+              <div className="space-y-2">
+                {languageBreakdown.map(({ label, count, color }) => {
+                  const percent = stats.totalBooks ? (count / stats.totalBooks) * 100 : 0
+                  return (
+                    <div key={label}>
+                      <div className="flex justify-between uppercase text-sm text-heading-text-black">
+                        <span>{label}</span>
+                        <span>{count}</span>
+                      </div>
+                      <div className="w-full bg-primary-dark-grey h-2 rounded">
+                        <div className={`${color} h-2 rounded`} style={{ width: `${percent}%` }} />
+                      </div>
                     </div>
-                    <div className="w-full bg-primary-dark-grey h-2 rounded">
-                      <div className={`${color} h-2 rounded`} style={{ width: `${percent}%` }} />
-                    </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="grid uppercase font-heading grid-cols-1 sm:grid-cols-3 gap-4">
+              <StatCard label="Members" value={stats.totalMembers} />
+              <StatCard label="Borrowed Now" value={stats.borrowedNow} />
+              <StatCard label="Pending Fines" value={`₹${stats.pendingFines}`} />
             </div>
           </div>
 
-          <div className="grid uppercase font-heading grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatCard label="Members" value={stats.totalMembers} />
-            <StatCard label="Borrowed Now" value={stats.borrowedNow} />
-            <StatCard label="Pending Fines" value={`₹${stats.pendingFines}`} />
-          </div>
-        </div>
-
-        <div className="bg-secondary-white p-6 rounded-xl shadow-lg">
-          <h2 className="text-xl font-semibold mb-4 uppercase">Books Due for Return Today</h2>
-          {history.length === 0 ? (
-            <p className="text-black">No books due for return today</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm border border-primary-dark-grey">
-                <thead className="text-white border-b uppercase border-primary-dark-grey bg-secondary-light-black">
-                  <tr>
-                    <th className="p-3 text-left">Barcode</th>
-                    <th className="p-3 text-left">Book</th>
-                    <th className="p-3 text-left">Member</th>
-                    <th className="p-3 text-left">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map((r) => (
-                    <tr key={r.id} className="border-t border-primary-dark-grey hover:bg-primary-dark-grey font-malayalam">
-                      <td className="p-3">{r.book?.barcode || '—'}</td>
-                      <td className="p-3">{r.book?.title || 'Unknown Book'}</td>
-                      <td className="p-3">{r.member?.name || 'Unknown Member'}</td>
-                      <td className="p-3">
-                        {r.return_date ? (
-                          <span className="text-green-600">Checked In</span>
-                        ) : (
-                          <span className="text-red-600">Last Day</span>
-                        )}
-                      </td>
+          <div className="bg-secondary-white p-6 rounded-xl shadow-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold mb-4 uppercase">Books Due Tomorrow</h2>
+              <button
+                onClick={fetchAllDueBooks}
+                className="bg-button-yellow text-button-text-black font-bold px-4 py-2 rounded-lg text-sm hover:bg-yellow-500 transition"
+              >
+                View All Outstanding
+              </button>
+            </div>
+            {history.length === 0 ? (
+              <p className="text-black">No books due for return tomorrow.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm border border-primary-dark-grey">
+                  <thead className="text-white border-b uppercase border-primary-dark-grey bg-secondary-light-black">
+                    <tr>
+                      <th className="p-3 text-left">Barcode</th>
+                      <th className="p-3 text-left">Book</th>
+                      <th className="p-3 text-left">Member</th>
+                      <th className="p-3 text-left">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {history.map((r) => (
+                      <tr key={r.id} className="border-t border-primary-dark-grey hover:bg-primary-dark-grey font-malayalam">
+                        <td className="p-3">{r.book?.barcode || '—'}</td>
+                        <td className="p-3">{r.book?.title || 'Unknown Book'}</td>
+                        <td className="p-3">{r.member?.name || 'Unknown Member'}</td>
+                        <td className="p-3">
+                          {r.return_date ? (
+                            <span className="text-green-600">Checked In</span>
+                          ) : (
+                            <span className="text-red-600">Last Day</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </main>
+      </main >
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
+          <div className="bg-secondary-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+            <div className="p-4 border-b border-primary-dark-grey flex justify-between items-center">
+              <h2 className="text-xl font-bold text-heading-text-black">All Outstanding Books</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-2xl font-bold text-text-grey hover:text-red-500">&times;</button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              {modalLoading ? (
+                <p>Loading...</p>
+              ) : (
+                <table className="min-w-full text-sm">
+                  <thead className="text-white uppercase bg-secondary-light-black">
+                    <tr>
+                      <th className="p-3 text-left">Book</th>
+                      <th className="p-3 text-left">Member</th>
+                      <th className="p-3 text-left">Due Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allDueBooks.map(r => (
+                      <tr key={r.id} className="border-t border-primary-dark-grey hover:bg-primary-dark-grey">
+                        <td className="p-3 font-malayalam">{r.book?.title}</td>
+                        <td className="p-3">{r.member?.name}</td>
+                        <td className={`p-3 font-semibold ${dayjs().isAfter(dayjs(r.due_date), 'day') ? 'text-red-600' : 'text-text-grey'}`}>
+                          {dayjs(r.due_date).format('DD MMM YYYY')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {allDueBooks.length === 0 && !modalLoading && <p>No outstanding books found.</p>}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 

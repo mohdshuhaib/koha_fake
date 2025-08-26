@@ -59,8 +59,8 @@ export default function Navbar() {
         ...(role === 'librarian'
           ? [
             { href: '/check', label: 'Check In / Out' },
-            { href: '/books', label: 'Add Book' },
-            { href: '/members', label: 'Add Patron' },
+            { href: '/books', label: 'Books' },
+            { href: '/members', label: 'Patrons' },
             { href: '/fines', label: 'Fines' },
             { href: '/history', label: 'Stats' },
             { href: '/backup', label: 'Backup' },
