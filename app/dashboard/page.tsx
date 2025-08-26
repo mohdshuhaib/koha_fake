@@ -174,7 +174,7 @@ export default function DashboardPage() {
                 onClick={fetchAllDueBooks}
                 className="bg-button-yellow text-button-text-black font-bold px-4 py-2 rounded-lg text-sm hover:bg-yellow-500 transition"
               >
-                View All Outstanding
+                View All Return Books
               </button>
             </div>
             {history.length === 0 ? (
@@ -216,7 +216,7 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
           <div className="bg-secondary-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
             <div className="p-4 border-b border-primary-dark-grey flex justify-between items-center">
-              <h2 className="text-xl font-bold text-heading-text-black">All Outstanding Books</h2>
+              <h2 className="text-xl font-bold text-heading-text-black">All Return Books</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-2xl font-bold text-text-grey hover:text-red-500">&times;</button>
             </div>
             <div className="p-6 overflow-y-auto">
