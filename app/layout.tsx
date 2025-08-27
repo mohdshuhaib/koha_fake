@@ -3,6 +3,7 @@ import '@/app/globals.css'
 import Navbar from '@/components/Navbar'
 import { muller2, muller, anekMal } from "./fonts";
 import { ReactNode } from 'react'
+import FeedbackWidget from '@/components/FeedbackWidget';
 
 export const metadata = {
   title: 'PMSA Library',
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className='font-body'>
         <Navbar />
           {children}
+          <FeedbackWidget />
       </body>
     </html>
   )
