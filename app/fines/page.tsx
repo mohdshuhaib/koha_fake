@@ -6,6 +6,10 @@ import { supabase } from '@/lib/supabase'
 import Loading from '../loading'
 import dayjs from 'dayjs'
 
+// ✨ 1. Import PDF generation libraries
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+
 export default function FinesPage() {
   const [loading, setLoading] = useState(true)
   const [fines, setFines] = useState<any[]>([])
@@ -13,12 +17,10 @@ export default function FinesPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [selectedBatch, setSelectedBatch] = useState('All')
 
-  // ✨ State for the payment modal
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [currentFine, setCurrentFine] = useState<any | null>(null)
   const [paymentAmount, setPaymentAmount] = useState('')
 
-  // ✨ State for the history modal
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
   const [paymentHistory, setPaymentHistory] = useState<any[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
@@ -63,7 +65,7 @@ export default function FinesPage() {
   const openPaymentModal = (fineRecord: any) => {
     setCurrentFine(fineRecord)
     const remaining = (fineRecord.fine || 0) - (fineRecord.paid_amount || 0)
-    setPaymentAmount(remaining.toString()) // Pre-fill with remaining amount
+    setPaymentAmount(remaining.toString())
     setIsPaymentModalOpen(true)
   }
 
@@ -77,7 +79,6 @@ export default function FinesPage() {
       return
     }
 
-    // 1. Log the transaction in fine_payments
     const { error: logError } = await supabase
       .from('fine_payments')
       .insert({ borrow_record_id: currentFine.id, amount_paid: amountToPay })
@@ -87,7 +88,6 @@ export default function FinesPage() {
       return
     }
 
-    // 2. Update the borrow_records table
     const newPaidAmount = (currentFine.paid_amount || 0) + amountToPay
     const isFullyPaid = newPaidAmount >= currentFine.fine
 
@@ -103,7 +103,7 @@ export default function FinesPage() {
       alert('❌ Failed to update fine record.')
     } else {
       alert('✅ Payment successful!')
-      fetchFines() // Re-fetch all fines to update the list
+      fetchFines()
     }
     setIsPaymentModalOpen(false)
     setPaymentAmount('')
@@ -116,14 +116,14 @@ export default function FinesPage() {
 
     const { error } = await supabase
       .from('borrow_records')
-      .update({ fine_paid: true }) // Mark as paid without collecting money
+      .update({ fine_paid: true })
       .eq('id', fineRecord.id)
 
     if (error) {
       alert('❌ Failed to write off fine.')
     } else {
       alert('✅ Fine successfully written off.')
-      fetchFines() // Re-fetch to update the list
+      fetchFines()
     }
   }
 
@@ -137,6 +137,43 @@ export default function FinesPage() {
 
       if (data) setPaymentHistory(data)
       setHistoryLoading(false)
+  }
+
+  // ✨ 2. Add the PDF generation function
+  const handlePrint = () => {
+    const doc = new jsPDF()
+    const tableColumns = ["Member", "Total Fine", "Paid", "Remaining"]
+    const tableRows: any[] = []
+
+    filteredFines.forEach(fine => {
+      const remaining = (fine.fine || 0) - (fine.paid_amount || 0)
+      const fineData = [
+        fine.member.name,
+        `Rs. ${fine.fine}`,
+        `Rs. ${fine.paid_amount}`,
+        `Rs. ${remaining}`,
+      ]
+      tableRows.push(fineData)
+    })
+
+    autoTable(doc, {
+      head: [tableColumns],
+      body: tableRows,
+      startY: 20,
+      didDrawPage: function (data) {
+        // Header
+        doc.setFontSize(20)
+        doc.text(`Unpaid Fines Report: ${selectedBatch}`, data.settings.margin.left, 15)
+
+        // Footer
+        const pageCount = doc.getNumberOfPages()
+        doc.setFontSize(10)
+        doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10)
+        doc.text(`Generated on: ${dayjs().format('DD MMM YYYY')}`, doc.internal.pageSize.width - data.settings.margin.right, doc.internal.pageSize.height - 10, { align: 'right' })
+      },
+    })
+
+    doc.save(`fines_report_${selectedBatch}_${dayjs().format('YYYY-MM-DD')}.pdf`)
   }
 
   const uniqueBatches = ['All', ...Array.from(new Set(fines.map(f => f.member?.batch).filter(Boolean)))].sort()
@@ -167,8 +204,18 @@ export default function FinesPage() {
                     </button>
                   ))}
                 </div>
-                <div className="mt-4 text-lg font-bold text-heading-text-black">
-                  Total Remaining for {selectedBatch}: <span className="text-red-600">₹{totalFineForBatch}</span>
+                {/* ✨ 3. Add the Print button here */}
+                <div className="mt-4 flex justify-between items-center">
+                  <div className="text-lg font-bold text-heading-text-black">
+                    Total Remaining for {selectedBatch}: <span className="text-red-600">₹{totalFineForBatch}</span>
+                  </div>
+                  <button
+                    onClick={handlePrint}
+                    disabled={filteredFines.length === 0}
+                    className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Print Report
+                  </button>
                 </div>
               </div>
 
