@@ -13,7 +13,6 @@
     "classnames": "^2.5.1",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
-    "framer-motion": "^12.18.1",
     "jspdf": "^3.0.2",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.522.0",

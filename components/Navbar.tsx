@@ -2,19 +2,27 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import clsx from 'classnames'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, ChevronDown } from 'lucide-react'
+import clsx from 'classnames'
+
+// Defines the structure for a navigation item
+interface NavItemType {
+  href?: string
+  label: string
+  children?: NavItemType[] // For dropdowns
+  role?: 'member' | 'librarian'
+}
 
 export default function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [role, setRole] = useState<'member' | 'librarian' | null>(null)
-  const [menuOpen, setMenuOpen] = useState(false)
-        // #3c041a
-        // #fffdd1
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+  // --- Authentication Logic (Unchanged) ---
   useEffect(() => {
     const getSessionAndRole = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -31,148 +39,177 @@ export default function Navbar() {
     }
 
     getSessionAndRole()
-
-    const { data: listener } = supabase.auth.onAuthStateChange(() => {
-      getSessionAndRole()
-    })
-
-    return () => {
-      listener?.subscription.unsubscribe()
-    }
+    const { data: listener } = supabase.auth.onAuthStateChange(getSessionAndRole)
+    return () => listener?.subscription.unsubscribe()
   }, [])
 
+  // --- Logout Handler (Unchanged) ---
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push('/')
   }
 
-  const navItems = [
+  // --- Declarative Navigation Structure (with correct /periodicals link) ---
+  const navItems: NavItemType[] = [
     { href: '/', label: 'Home' },
     { href: '/catalog', label: 'Catalog' },
     { href: '/patrons', label: 'Members' },
-    ...(isLoggedIn
-      ? [
-        {
-          href: role === 'librarian' ? '/dashboard' : '/member/dashboard-mem',
-          label: 'Dashboard',
-        },
-        ...(role === 'librarian'
-          ? [
-            { href: '/check', label: 'Check In / Out' },
-            { href: '/books', label: 'Books' },
-            { href: '/members', label: 'Patrons' },
-            { href: '/fines', label: 'Fines' },
-            { href: '/history', label: 'Stats' },
-            { href: '/backup', label: 'Backup' },
-          ]
-          : []),
-      ]
-      : []),
-  ]
+    // Logged-in only links
+    ...(isLoggedIn ? [
+      {
+        href: role === 'librarian' ? '/dashboard' : '/member/dashboard-mem',
+        label: 'Dashboard'
+      },
+    ] : []),
+    // Librarian-only links
+    ...(role === 'librarian' ? [
+      { href: '/check', label: 'Check In / Out' },
+      {
+        label: 'Management',
+        children: [
+          { href: '/books', label: 'Books' },
+          { href: '/members', label: 'Patrons' },
+          { href: '/fines', label: 'Fines' },
+          { href: '/periodicals', label: 'Periodicals' }, // Corrected link
+        ],
+      },
+      { href: '/backup', label: 'Backup' },
+      { href: '/history', label: 'Stats' },
+    ] : [])
+  ];
 
   return (
-    <nav
-      className="fixed top-0 z-50 w-full backdrop-blur-md bg-dark-green border-b border-light-green shadow-md"
-    >
-
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="text-xl font-heading uppercase text-secondary-white flex items-center gap-2">
-          <span>PMSA Library</span>
-        </Link>
-
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center font-heading uppercase gap-6">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={clsx(
-                'text-sm font-medium transition text-secondary-white',
-                pathname === item.href ? 'bg-icon-green border px-4 py-2 rounded-full border-none' : 'text-secondary-white'
-              )}
-
-            >
-              {item.label}
+    <>
+      <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-dark-green backdrop-blur-lg">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            {/* Logo */}
+            <Link href="/" className="text-xl font-bold uppercase tracking-wider text-white">
+              PMSA Library
             </Link>
-          ))}
 
-          {role === 'librarian' && (
-            isLoggedIn ? (
-              <button
-                onClick={handleLogout}
-                className="text-sm font-medium px-4 py-1.5 rounded-full bg-red-600 text-white hover:bg-red-700 transition"
-              >
-                Logout
-              </button>
-            ) : (
-              <Link
-                href="/login"
-                className="text-sm font-medium px-4 py-1.5 rounded-full bg-sidetext-sidekick-dark text-black hover:bg-[#000000] transition"
-              >
-                Login
-              </Link>
-            )
-          )}
-        </div>
-
-        {/* Mobile Menu Toggle */}
-        <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden">
-          {menuOpen ? (
-            <X className="w-6 h-6 text-white" />
-          ) : (
-            <Menu className="w-6 h-6 text-white" />
-          )}
-        </button>
-      </div>
-
-      {/* Mobile Menu Animation */}
-
-        {menuOpen && (
-          <div
-            className="md:hidden px-4 pb-4 pt-2 bg-white/10 backdrop-blur-md border-t border-white/20"
-          >
-            <div className="space-y-2">
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-4">
               {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMenuOpen(false)}
-                  className={clsx(
-                    'block text-sm font-medium px-4 py-2 rounded-md transition',
-                    pathname === item.href
-                      ? 'bg-white/20 text-sidekick-dark'
-                      : 'text-white hover:bg-white/10'
-                  )}
-                >
-                  {item.label}
-                </Link>
+                <NavItem key={item.label} item={item} pathname={pathname} />
               ))}
+              <AuthButton isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
+            </div>
 
-              {role === 'librarian' && (
-                isLoggedIn ? (
-                  <button
-                    onClick={() => {
-                      handleLogout()
-                      setMenuOpen(false)
-                    }}
-                    className="w-full text-sm font-medium px-4 py-2 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
-                  >
-                    Logout
-                  </button>
-                ) : (
-                  <Link
-                    href="/login"
-                    onClick={() => setMenuOpen(false)}
-                    className="block w-full text-center text-sm font-medium px-4 py-2 rounded-full bg-sidetext-sidekick-dark text-black hover:bg-sidetext-sidekick-dark-dark transition"
-                  >
-                    Login
-                  </Link>
-                )
-              )}
+            {/* Mobile Menu Toggle */}
+            <div className="md:hidden">
+              <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-white">
+                {/* Simple conditional rendering for icons */}
+                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
             </div>
           </div>
-        )}
-    </nav>
+        </div>
+      </nav>
+
+      {/* Mobile Menu */}
+      {/* Framer Motion replaced with conditional rendering and Tailwind animation */}
+      {isMenuOpen && (
+        <div
+          className="fixed inset-x-0 top-16 z-40 h-screen bg-gray-900/95 p-4 backdrop-blur-lg md:hidden animate-slide-down"
+        >
+          <div className="flex flex-col space-y-4">
+            {navItems.map((item) => (
+              <NavItem key={item.label} item={item} pathname={pathname} isMobile onLinkClick={() => setIsMenuOpen(false)} />
+            ))}
+            <div className="border-t border-gray-700 pt-4">
+              <AuthButton isLoggedIn={isLoggedIn} handleLogout={handleLogout} isMobile />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
+}
+
+// --- Sub-component for Navigation Items (handles links and dropdowns) ---
+function NavItem({ item, pathname, isMobile = false, onLinkClick }: { item: NavItemType; pathname: string; isMobile?: boolean; onLinkClick?: () => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const isActive = item.href ? pathname === item.href : false;
+
+  // If it's a dropdown
+  if (item.children) {
+    return (
+      <div className="relative" onMouseEnter={() => !isMobile && setIsOpen(true)} onMouseLeave={() => !isMobile && setIsOpen(false)}>
+        <button onClick={() => isMobile && setIsOpen(!isOpen)} className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-gray-100 hover:bg-green-900 hover:text-white">
+          {item.label}
+          <ChevronDown size={16} className={clsx("transition-transform", { "rotate-180": isOpen })} />
+        </button>
+        {/* Framer Motion replaced with conditional rendering and Tailwind animation */}
+        {isOpen && (
+          <div
+            className={clsx(
+              "flex flex-col space-y-1 animate-fade-in", // Applied animation
+              !isMobile && "absolute left-0 top-full z-10 w-48 rounded-md bg-light-green p-2 shadow-lg"
+            )}
+          >
+            {item.children.map(child => (
+              <Link
+                key={child.href}
+                href={child.href!}
+                onClick={onLinkClick}
+                className={clsx(
+                  "block rounded-md px-3 py-2 text-sm font-medium",
+                  pathname === child.href
+                    ? "bg-green-900 text-white"
+                    : "text-gray-100 hover:bg-green-900 hover:text-white"
+                )}
+              >
+                {child.label}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // If it's a regular link
+  return (
+    <Link
+      href={item.href!}
+      onClick={onLinkClick}
+      className={clsx(
+        "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+        isActive ? "bg-light-green text-white" : "text-gray-100 hover:bg-green-900 hover:text-white"
+      )}
+    >
+      {item.label}
+    </Link>
+  )
+}
+
+// --- Sub-component for Login/Logout Button (Unchanged) ---
+function AuthButton({ isLoggedIn, handleLogout, isMobile = false }: { isLoggedIn: boolean; handleLogout: () => void; isMobile?: boolean }) {
+  if (isLoggedIn) {
+    return (
+      <button
+        onClick={handleLogout}
+        className={clsx(
+          "rounded-md px-4 py-2 text-sm font-medium transition-colors",
+          "bg-red-600 text-white hover:bg-red-700",
+          { "w-full text-center": isMobile }
+        )}
+      >
+        Logout
+      </button>
+    );
+  }
+  return (
+    <Link
+      href="/login"
+      className={clsx(
+        "rounded-md px-4 py-2 text-sm font-medium transition-colors",
+        "bg-green-900 text-white hover:bg-green-950",
+        { "w-full text-center block": isMobile }
+      )}
+    >
+      Login
+    </Link>
+  );
 }
