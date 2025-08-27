@@ -1,9 +1,7 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '../lib/supabase' // Corrected import path
 import { Menu, X, ChevronDown } from 'lucide-react'
 import clsx from 'classnames'
 
@@ -11,18 +9,16 @@ import clsx from 'classnames'
 interface NavItemType {
   href?: string
   label: string
-  children?: NavItemType[] // For dropdowns
-  role?: 'member' | 'librarian'
+  children?: NavItemType[]
 }
 
 export default function Navbar() {
-  const pathname = usePathname()
-  const router = useRouter()
+  // Replaced Next.js hooks with standard browser window properties
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [role, setRole] = useState<'member' | 'librarian' | null>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
-  // --- Authentication Logic (Unchanged) ---
   useEffect(() => {
     const getSessionAndRole = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -39,29 +35,33 @@ export default function Navbar() {
     }
 
     getSessionAndRole()
-    const { data: listener } = supabase.auth.onAuthStateChange(getSessionAndRole)
-    return () => listener?.subscription.unsubscribe()
+
+    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+      getSessionAndRole()
+    })
+
+    return () => {
+      listener?.subscription.unsubscribe()
+    }
   }, [])
 
-  // --- Logout Handler (Unchanged) ---
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    router.push('/')
+    // Replaced router.push with standard window navigation
+    window.location.href = '/'
+    setIsMenuOpen(false)
   }
 
-  // --- Declarative Navigation Structure (with correct /periodicals link) ---
   const navItems: NavItemType[] = [
     { href: '/', label: 'Home' },
     { href: '/catalog', label: 'Catalog' },
     { href: '/patrons', label: 'Members' },
-    // Logged-in only links
     ...(isLoggedIn ? [
       {
         href: role === 'librarian' ? '/dashboard' : '/member/dashboard-mem',
         label: 'Dashboard'
       },
     ] : []),
-    // Librarian-only links
     ...(role === 'librarian' ? [
       { href: '/check', label: 'Check In / Out' },
       {
@@ -70,7 +70,7 @@ export default function Navbar() {
           { href: '/books', label: 'Books' },
           { href: '/members', label: 'Patrons' },
           { href: '/fines', label: 'Fines' },
-          { href: '/periodicals', label: 'Periodicals' }, // Corrected link
+          { href: '/periodicals', label: 'Periodicals' },
         ],
       },
       { href: '/backup', label: 'Backup' },
@@ -83,12 +83,10 @@ export default function Navbar() {
       <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-dark-green backdrop-blur-lg">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
-            {/* Logo */}
-            <Link href="/" className="text-xl font-bold uppercase tracking-wider text-white">
+            <a href="/" className="text-xl font-bold uppercase tracking-wider text-white">
               PMSA Library
-            </Link>
+            </a>
 
-            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-4">
               {navItems.map((item) => (
                 <NavItem key={item.label} item={item} pathname={pathname} />
@@ -96,10 +94,8 @@ export default function Navbar() {
               <AuthButton isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
             </div>
 
-            {/* Mobile Menu Toggle */}
             <div className="md:hidden">
               <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-white">
-                {/* Simple conditional rendering for icons */}
                 {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
             </div>
@@ -107,12 +103,8 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile Menu */}
-      {/* Framer Motion replaced with conditional rendering and Tailwind animation */}
       {isMenuOpen && (
-        <div
-          className="fixed inset-x-0 top-16 z-40 h-screen bg-gray-900/95 p-4 backdrop-blur-lg md:hidden animate-slide-down"
-        >
+        <div className="fixed inset-x-0 top-16 z-40 h-screen bg-gray-900/95 p-4 backdrop-blur-lg md:hidden">
           <div className="flex flex-col space-y-4">
             {navItems.map((item) => (
               <NavItem key={item.label} item={item} pathname={pathname} isMobile onLinkClick={() => setIsMenuOpen(false)} />
@@ -127,12 +119,10 @@ export default function Navbar() {
   )
 }
 
-// --- Sub-component for Navigation Items (handles links and dropdowns) ---
 function NavItem({ item, pathname, isMobile = false, onLinkClick }: { item: NavItemType; pathname: string; isMobile?: boolean; onLinkClick?: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const isActive = item.href ? pathname === item.href : false;
 
-  // If it's a dropdown
   if (item.children) {
     return (
       <div className="relative" onMouseEnter={() => !isMobile && setIsOpen(true)} onMouseLeave={() => !isMobile && setIsOpen(false)}>
@@ -140,16 +130,15 @@ function NavItem({ item, pathname, isMobile = false, onLinkClick }: { item: NavI
           {item.label}
           <ChevronDown size={16} className={clsx("transition-transform", { "rotate-180": isOpen })} />
         </button>
-        {/* Framer Motion replaced with conditional rendering and Tailwind animation */}
         {isOpen && (
           <div
             className={clsx(
-              "flex flex-col space-y-1 animate-fade-in", // Applied animation
+              "flex flex-col space-y-1",
               !isMobile && "absolute left-0 top-full z-10 w-48 rounded-md bg-light-green p-2 shadow-lg"
             )}
           >
             {item.children.map(child => (
-              <Link
+              <a
                 key={child.href}
                 href={child.href!}
                 onClick={onLinkClick}
@@ -161,7 +150,7 @@ function NavItem({ item, pathname, isMobile = false, onLinkClick }: { item: NavI
                 )}
               >
                 {child.label}
-              </Link>
+              </a>
             ))}
           </div>
         )}
@@ -169,9 +158,8 @@ function NavItem({ item, pathname, isMobile = false, onLinkClick }: { item: NavI
     );
   }
 
-  // If it's a regular link
   return (
-    <Link
+    <a
       href={item.href!}
       onClick={onLinkClick}
       className={clsx(
@@ -180,11 +168,10 @@ function NavItem({ item, pathname, isMobile = false, onLinkClick }: { item: NavI
       )}
     >
       {item.label}
-    </Link>
+    </a>
   )
 }
 
-// --- Sub-component for Login/Logout Button (Unchanged) ---
 function AuthButton({ isLoggedIn, handleLogout, isMobile = false }: { isLoggedIn: boolean; handleLogout: () => void; isMobile?: boolean }) {
   if (isLoggedIn) {
     return (
@@ -201,7 +188,7 @@ function AuthButton({ isLoggedIn, handleLogout, isMobile = false }: { isLoggedIn
     );
   }
   return (
-    <Link
+    <a
       href="/login"
       className={clsx(
         "rounded-md px-4 py-2 text-sm font-medium transition-colors",
@@ -210,6 +197,6 @@ function AuthButton({ isLoggedIn, handleLogout, isMobile = false }: { isLoggedIn
       )}
     >
       Login
-    </Link>
+    </a>
   );
 }
