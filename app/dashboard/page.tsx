@@ -5,115 +5,77 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Loading from '../loading'
 import dayjs from 'dayjs'
+import {
+  BookCopy,
+  Users,
+  ArrowRightLeft,
+  IndianRupee,
+  X,
+  Languages,
+  BookText,
+  AlertTriangle
+} from 'lucide-react'
+import React from 'react'
+import clsx from 'classnames'
 
+// --- Data Fetching and Logic (Unchanged) ---
 export default function DashboardPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
-    totalBooks: 0,
-    malBooks: 0,
-    engBooks: 0,
-    urdBooks: 0,
-    arbBooks: 0,
-    totalMembers: 0,
-    borrowedNow: 0,
-    pendingFines: 0,
+    totalBooks: 0, malBooks: 0, engBooks: 0, urdBooks: 0, arbBooks: 0,
+    totalMembers: 0, borrowedNow: 0, pendingFines: 0,
   })
-  const [history, setHistory] = useState<any[]>([])
+  const [dueTomorrow, setDueTomorrow] = useState<any[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [allDueBooks, setAllDueBooks] = useState<any[]>([])
   const [modalLoading, setModalLoading] = useState(false)
 
   useEffect(() => {
     const checkAuthAndFetchStats = async () => {
-      const { data: sessionData } = await supabase.auth.getSession()
-      if (!sessionData.session) {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
         router.replace('/login')
         return
       }
 
-      // Define today's start and end in UTC
-      const tomorrowStart = new Date()
-      tomorrowStart.setUTCDate(tomorrowStart.getUTCDate() + 1)
-      tomorrowStart.setUTCHours(0, 0, 0, 0)
-
-      const tomorrowEnd = new Date()
-      tomorrowEnd.setUTCDate(tomorrowEnd.getUTCDate() + 1)
-      tomorrowEnd.setUTCHours(23, 59, 59, 999)
+      const tomorrowStart = dayjs().add(1, 'day').startOf('day').toISOString()
+      const tomorrowEnd = dayjs().add(1, 'day').endOf('day').toISOString()
 
       const [
-        { count: books },
-        { count: members },
-        { count: borrowed },
-        { data: fines },
-        { data: dueTomorrow },
-        { count: malBooks },
-        { count: engBooks },
-        { count: urdBooks },
-        { count: arbBooks },
+        { count: books }, { count: members }, { count: borrowed },
+        { data: finesData }, { data: dueTomorrowData }, { count: malBooks },
+        { count: engBooks }, { count: urdBooks }, { count: arbBooks },
       ] = await Promise.all([
         supabase.from('books').select('*', { count: 'exact', head: true }),
         supabase.from('members').select('*', { count: 'exact', head: true }),
         supabase.from('borrow_records').select('*', { count: 'exact', head: true }).is('return_date', null),
         supabase.from('borrow_records').select('fine').eq('fine_paid', false).gt('fine', 0),
-        supabase
-          .from('borrow_records')
-          .select(`
-            id,
-            return_date,
-            created_at,
-            due_date,
-            book:book_id ( title, barcode ),
-            member:member_id ( name )
-          `)
-          .is('return_date', null)
-          .gte('due_date', tomorrowStart.toISOString())
-          .lt('due_date', tomorrowEnd.toISOString()),
-
+        supabase.from('borrow_records').select(`id, book:book_id(title, barcode), member:member_id(name)`).is('return_date', null).gte('due_date', tomorrowStart).lt('due_date', tomorrowEnd),
         supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'MAL'),
         supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'ENG'),
         supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'URD'),
         supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'ARB'),
       ])
 
-      const pendingFinesTotal = fines?.reduce((sum, r) => sum + (r.fine || 0), 0)
+      const pendingFinesTotal = finesData?.reduce((sum, r) => sum + (r.fine || 0), 0) || 0
 
       setStats({
-        totalBooks: books || 0,
-        malBooks: malBooks || 0,
-        engBooks: engBooks || 0,
-        urdBooks: urdBooks || 0,
-        arbBooks: arbBooks || 0,
-        totalMembers: members || 0,
-        borrowedNow: borrowed || 0,
-        pendingFines: pendingFinesTotal || 0,
+        totalBooks: books || 0, malBooks: malBooks || 0, engBooks: engBooks || 0,
+        urdBooks: urdBooks || 0, arbBooks: arbBooks || 0, totalMembers: members || 0,
+        borrowedNow: borrowed || 0, pendingFines: pendingFinesTotal,
       })
-
-      setHistory(dueTomorrow || [])
+      setDueTomorrow(dueTomorrowData || [])
       setLoading(false)
     }
-
     checkAuthAndFetchStats()
   }, [router])
 
   const fetchAllDueBooks = async () => {
     setIsModalOpen(true)
     setModalLoading(true)
-
-    const { data, error } = await supabase
-      .from('borrow_records')
-      .select(`
-        id,
-        due_date,
-        book:book_id ( title ),
-        member:member_id ( name )
-      `)
-      .is('return_date', null)
-      .order('due_date', { ascending: true }) // Show most overdue first
-
-    if (data) {
-      setAllDueBooks(data)
-    }
+    const { data, error } = await supabase.from('borrow_records').select(`id, due_date, book:book_id(title), member:member_id(name)`).is('return_date', null).order('due_date', { ascending: true })
+    if (data) setAllDueBooks(data)
     if (error) {
       console.error("Failed to fetch all due books:", error)
       setAllDueBooks([])
@@ -123,36 +85,49 @@ export default function DashboardPage() {
 
   const languageBreakdown = [
     { label: 'Malayalam', count: stats.malBooks, color: 'bg-yellow-400' },
-    { label: 'English', count: stats.engBooks, color: 'bg-blue-500' },
-    { label: 'Urdu', count: stats.urdBooks, color: 'bg-red-500' },
-    { label: 'Arabic', count: stats.arbBooks, color: 'bg-green-500' },
+    { label: 'English', count: stats.engBooks, color: 'bg-blue-400' },
+    { label: 'Urdu', count: stats.urdBooks, color: 'bg-red-400' },
+    { label: 'Arabic', count: stats.arbBooks, color: 'bg-green-400' },
   ]
 
-  if (loading) return <Loading />
+  if (loading) return <div className="p-16"><Loading /></div>
 
+  // --- Redesigned JSX ---
   return (
     <>
-      <main className="pt-32 min-h-screen bg-primary-grey px-4 pb-10">
-        <div className="max-w-6xl mx-auto space-y-10">
-          <h1 className="text-3xl uppercase font-heading font-bold text-heading-text-black">
+      <main className="min-h-screen bg-primary-grey pt-24 px-4 pb-10">
+        <div className="max-w-7xl mx-auto space-y-8">
+          <h1 className="text-3xl md:text-4xl uppercase font-heading font-bold text-heading-text-black tracking-wider">
             Library Dashboard
           </h1>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-secondary-white rounded-xl p-6 shadow-lg">
-              <p className="text-sm text-heading-text-black mb-2 uppercase font-heading">Total Books</p>
-              <p className="text-3xl font-bold text-heading-text-black mb-4">{stats.totalBooks}</p>
-              <div className="space-y-2">
+          {/* --- Top Grid with Modern Stat Cards --- */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard label="Total Books" value={stats.totalBooks} icon={<BookCopy className="text-blue-500" />} />
+            <StatCard label="Total Members" value={stats.totalMembers} icon={<Users className="text-purple-500" />} />
+            <StatCard label="Borrowed Now" value={stats.borrowedNow} icon={<ArrowRightLeft className="text-orange-500" />} />
+            <StatCard label="Pending Fines" value={`₹${stats.pendingFines}`} icon={<IndianRupee className="text-red-500" />} />
+          </div>
+
+          {/* --- Main Content Grid --- */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Language Breakdown Card */}
+            <div className="lg:col-span-2 bg-secondary-white rounded-xl p-6 shadow-lg border border-primary-dark-grey">
+              <div className='flex items-center gap-3 mb-4'>
+                <Languages className='text-icon-green' />
+                <h2 className="text-xl font-bold font-heading text-heading-text-black">Book Collection by Language</h2>
+              </div>
+              <div className="space-y-3">
                 {languageBreakdown.map(({ label, count, color }) => {
-                  const percent = stats.totalBooks ? (count / stats.totalBooks) * 100 : 0
+                  const percent = stats.totalBooks > 0 ? (count / stats.totalBooks) * 100 : 0
                   return (
                     <div key={label}>
-                      <div className="flex justify-between uppercase text-sm text-heading-text-black">
+                      <div className="flex justify-between text-sm font-semibold text-text-grey mb-1">
                         <span>{label}</span>
-                        <span>{count}</span>
+                        <span>{count} / {stats.totalBooks}</span>
                       </div>
-                      <div className="w-full bg-primary-dark-grey h-2 rounded">
-                        <div className={`${color} h-2 rounded`} style={{ width: `${percent}%` }} />
+                      <div className="w-full bg-primary-dark-grey h-2.5 rounded-full">
+                        <div className={`${color} h-2.5 rounded-full`} style={{ width: `${percent}%` }} />
                       </div>
                     </div>
                   )
@@ -160,104 +135,103 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="grid uppercase font-heading grid-cols-1 sm:grid-cols-3 gap-4">
-              <StatCard label="Members" value={stats.totalMembers} />
-              <StatCard label="Borrowed Now" value={stats.borrowedNow} />
-              <StatCard label="Pending Fines" value={`₹${stats.pendingFines}`} />
-            </div>
-          </div>
-
-          <div className="bg-secondary-white p-6 rounded-xl shadow-lg">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold mb-4 uppercase">Books Due Tomorrow</h2>
-              <button
-                onClick={fetchAllDueBooks}
-                className="bg-button-yellow text-button-text-black font-bold px-4 py-2 rounded-lg text-sm hover:bg-yellow-500 transition"
-              >
-                View All Return Books
+            {/* Books Due Tomorrow Card */}
+            <div className="bg-secondary-white rounded-xl p-6 shadow-lg border border-primary-dark-grey">
+              <div className='flex items-center gap-3 mb-4'>
+                <BookText className='text-icon-green' />
+                <h2 className="text-xl font-bold font-heading text-heading-text-black">Due Tomorrow</h2>
+              </div>
+              {dueTomorrow.length > 0 ? (
+                <ul className="space-y-3">
+                  {dueTomorrow.map(r => (
+                    <li key={r.id} className="text-sm p-3 bg-primary-grey rounded-md border border-primary-dark-grey">
+                      <p className="font-bold text-heading-text-black">{r.book?.title || 'Unknown Book'}</p>
+                      <p className="text-text-grey">by {r.member?.name || 'Unknown Member'}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-text-grey text-center py-8">No books are due for return tomorrow.</p>
+              )}
+              <button onClick={fetchAllDueBooks} className="w-full mt-4 bg-button-yellow text-button-text-black font-bold px-4 py-2 rounded-lg text-sm hover:bg-yellow-500 transition">
+                View All Unreturned Books
               </button>
             </div>
-            {history.length === 0 ? (
-              <p className="text-black">No books due for return tomorrow.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm border border-primary-dark-grey">
-                  <thead className="text-white border-b uppercase border-primary-dark-grey bg-secondary-light-black">
-                    <tr>
-                      <th className="p-3 text-left">Barcode</th>
-                      <th className="p-3 text-left">Book</th>
-                      <th className="p-3 text-left">Member</th>
-                      <th className="p-3 text-left">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {history.map((r) => (
-                      <tr key={r.id} className="border-t border-primary-dark-grey hover:bg-primary-dark-grey font-malayalam">
-                        <td className="p-3">{r.book?.barcode || '—'}</td>
-                        <td className="p-3">{r.book?.title || 'Unknown Book'}</td>
-                        <td className="p-3">{r.member?.name || 'Unknown Member'}</td>
-                        <td className="p-3">
-                          {r.return_date ? (
-                            <span className="text-green-600">Checked In</span>
-                          ) : (
-                            <span className="text-red-600">Last Day</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
         </div>
-      </main >
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
-          <div className="bg-secondary-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
-            <div className="p-4 border-b border-primary-dark-grey flex justify-between items-center">
-              <h2 className="text-xl font-bold text-heading-text-black">All Return Books</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-2xl font-bold text-text-grey hover:text-red-500">&times;</button>
-            </div>
-            <div className="p-6 overflow-y-auto">
-              {modalLoading ? (
-                <p>Loading...</p>
-              ) : (
-                <table className="min-w-full text-sm">
-                  <thead className="text-white uppercase bg-secondary-light-black">
-                    <tr>
-                      <th className="p-3 text-left">Book</th>
-                      <th className="p-3 text-left">Member</th>
-                      <th className="p-3 text-left">Due Date</th>
+      </main>
+
+      {/* --- Redesigned Modal --- */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="All Unreturned Books">
+        {modalLoading ? (
+          <div className="p-8"><Loading /></div>
+        ) : allDueBooks.length === 0 ? (
+          <p className="p-8 text-text-grey text-center">No outstanding books found. Great job!</p>
+        ) : (
+          <div className="overflow-y-auto max-h-[70vh]">
+            <table className="min-w-full text-sm">
+              <thead className="sticky top-0 bg-secondary-light-black text-white">
+                <tr>
+                  <th className="p-3 text-left font-semibold uppercase tracking-wider">Book</th>
+                  <th className="p-3 text-left font-semibold uppercase tracking-wider">Member</th>
+                  <th className="p-3 text-left font-semibold uppercase tracking-wider">Due Date</th>
+                </tr>
+              </thead>
+              <tbody className="bg-secondary-white">
+                {allDueBooks.map(r => {
+                  const isOverdue = dayjs().isAfter(dayjs(r.due_date), 'day')
+                  return (
+                    <tr key={r.id} className="border-t border-primary-dark-grey">
+                      <td className="p-3 text-heading-text-black font-semibold">{r.book?.title}</td>
+                      <td className="p-3 text-text-grey">{r.member?.name}</td>
+                      <td className={clsx("p-3 font-semibold flex items-center gap-2", isOverdue ? 'text-red-600' : 'text-text-grey')}>
+                        {isOverdue && <AlertTriangle size={14} />}
+                        {dayjs(r.due_date).format('DD MMM YYYY')}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {allDueBooks.map(r => (
-                      <tr key={r.id} className="border-t border-primary-dark-grey hover:bg-primary-dark-grey">
-                        <td className="p-3 font-malayalam">{r.book?.title}</td>
-                        <td className="p-3">{r.member?.name}</td>
-                        <td className={`p-3 font-semibold ${dayjs().isAfter(dayjs(r.due_date), 'day') ? 'text-red-600' : 'text-text-grey'}`}>
-                          {dayjs(r.due_date).format('DD MMM YYYY')}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-              {allDueBooks.length === 0 && !modalLoading && <p>No outstanding books found.</p>}
-            </div>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </>
   )
 }
 
-function StatCard({ label, value }: { label: string; value: number | string }) {
+// --- Modern StatCard Component ---
+function StatCard({ label, value, icon }: { label: string; value: number | string; icon: React.ReactNode }) {
   return (
-    <div className="bg-secondary-white rounded-xl p-6 text-center shadow-lg">
-      <p className="text-sm text-heading-text-black mb-1 font-medium">{label}</p>
-      <p className="text-2xl font-bold text-heading-text-black">{value}</p>
+    <div className="bg-secondary-white rounded-xl p-5 shadow-lg flex items-center gap-4 border border-primary-dark-grey transition hover:shadow-xl hover:-translate-y-1">
+      <div className="bg-primary-grey p-3 rounded-full">
+        {icon}
+      </div>
+      <div>
+        <p className="text-sm text-text-grey font-semibold">{label}</p>
+        <p className="text-2xl font-bold text-heading-text-black">{value}</p>
+      </div>
+    </div>
+  )
+}
+
+// --- Reusable Modal Component ---
+function Modal({ isOpen, onClose, title, children }: { isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+      <div className="bg-secondary-white rounded-xl shadow-2xl max-w-3xl w-full flex flex-col border border-primary-dark-grey">
+        <div className="p-4 border-b border-primary-dark-grey flex justify-between items-center">
+          <h2 className="text-xl font-bold font-heading text-heading-text-black">{title}</h2>
+          <button onClick={onClose} className="p-1 rounded-full text-text-grey hover:bg-primary-dark-grey hover:text-red-500 transition">
+            <X size={20} />
+          </button>
+        </div>
+        <div>
+          {children}
+        </div>
+      </div>
     </div>
   )
 }
