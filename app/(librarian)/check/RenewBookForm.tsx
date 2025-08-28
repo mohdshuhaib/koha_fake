@@ -3,16 +3,22 @@
 import { useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import dayjs from 'dayjs'
+import { Barcode, CheckCircle2, AlertCircle } from 'lucide-react'
+import clsx from 'classnames'
 
 export default function RenewBookForm() {
   const [bookBarcode, setBookBarcode] = useState('')
   const [message, setMessage] = useState('')
+  const [isError, setIsError] = useState(false)
   const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // --- LOGIC FUNCTIONS (with updated messaging) ---
   const handleRenew = async () => {
+    if (!bookBarcode) return
     setLoading(true)
     setMessage('')
+    setIsError(false)
 
     // Fetch book by barcode
     const { data: book, error: bookError } = await supabase
@@ -22,18 +28,20 @@ export default function RenewBookForm() {
       .single()
 
     if (bookError || !book) {
-      setMessage('❌ Book not found.')
+      setMessage('Book not found.')
+      setIsError(true)
       resetForm()
       return
     }
 
     if (book.status !== 'borrowed') {
-      setMessage('⚠️ Book is not currently borrowed.')
+      setMessage('This book is not currently checked out.')
+      setIsError(true)
       resetForm()
       return
     }
 
-    // Fetch current borrow record
+    // Fetch the most recent, active borrow record for the book
     const { data: borrowRecord, error: recordError } = await supabase
       .from('borrow_records')
       .select('id, due_date, member_id')
@@ -44,21 +52,23 @@ export default function RenewBookForm() {
       .single()
 
     if (recordError || !borrowRecord) {
-      setMessage('❌ No active borrow record found.')
+      setMessage('No active borrow record found for this book.')
+      setIsError(true)
       resetForm()
       return
     }
 
-    // ✅ Check if overdue
+    // Check if the book is overdue
     const today = dayjs().startOf('day')
     const dueDate = dayjs(borrowRecord.due_date)
     if (today.isAfter(dueDate)) {
-      setMessage('⚠️ Book is overdue. Please check in before borrowing again.')
+      setMessage('Book is overdue. It must be checked in before it can be renewed.')
+      setIsError(true)
       resetForm()
       return
     }
 
-    // Fetch member info to determine renewal period
+    // Fetch member to determine renewal period
     const { data: member, error: memberError } = await supabase
       .from('members')
       .select('name, category')
@@ -66,28 +76,28 @@ export default function RenewBookForm() {
       .single()
 
     if (memberError || !member) {
-      setMessage('❌ Member not found.')
+      setMessage('Could not find the member associated with this loan.')
+      setIsError(true)
       resetForm()
       return
     }
 
     const renewalDays = member.category === 'teacher' || member.category === 'class' ? 30 : 15
-
-    // Calculate new due date
     const newDueDate = dayjs(borrowRecord.due_date).add(renewalDays, 'day').format('YYYY-MM-DD')
 
-    // Update borrow record with new due date
+    // Update borrow record with the new due date
     const { error: updateError } = await supabase
       .from('borrow_records')
       .update({ due_date: newDueDate })
       .eq('id', borrowRecord.id)
 
     if (updateError) {
-      setMessage('❌ Failed to renew book.')
+      setMessage('Failed to renew the book. Please try again.')
+      setIsError(true)
     } else {
-      setMessage(`✅ "${book.title}" renewed for ${member.name}. New due date: ${dayjs(newDueDate).format('DD MMM YYYY')}`)
+      setMessage(`"${book.title}" renewed for ${member.name}. New due date: ${dayjs(newDueDate).format('DD MMM YYYY')}`)
+      setIsError(false)
     }
-
     resetForm()
   }
 
@@ -104,30 +114,43 @@ export default function RenewBookForm() {
     }
   }
 
+  // --- REDESIGNED JSX ---
   return (
-    <div className="space-y-5 mt-8">
-      <h2 className="text-2xl font-bold uppercase">Renew Book</h2>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold font-heading text-heading-text-black uppercase">Renew a Borrowed Book</h2>
 
-      <input
-        ref={inputRef}
-        type="text"
-        className="w-full px-4 py-3 rounded-lg border border-primary-dark-grey bg-secondary-white text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey"
-        placeholder="Scan book barcode"
-        value={bookBarcode}
-        onChange={(e) => setBookBarcode(e.target.value)}
-        onKeyDown={handleKeyDown}
-      />
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+          <Barcode className="h-5 w-5 text-text-grey" />
+        </div>
+        <input
+          ref={inputRef}
+          type="text"
+          className="w-full p-3 pl-12 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green transition"
+          placeholder="Scan book barcode to renew"
+          value={bookBarcode}
+          onChange={(e) => setBookBarcode(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={loading}
+        />
+      </div>
 
       <button
         onClick={handleRenew}
-        disabled={loading}
-        className="bg-button-yellow text-button-text-black px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark-grey transition duration-300"
+        disabled={loading || !bookBarcode}
+        className="w-full sm:w-auto bg-button-yellow text-button-text-black px-8 py-3 rounded-lg font-bold hover:bg-yellow-500 transition disabled:opacity-60"
       >
         {loading ? 'Renewing...' : 'Renew Book'}
       </button>
 
       {message && (
-        <p className="text-sm font-medium text-text-grey pt-1 font-malayalam">{message}</p>
+        <div className={clsx(
+          "flex items-center gap-3 p-3 rounded-lg text-sm",
+          isError ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+        )}>
+          {isError ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}
+          <span className="font-medium">{message}</span>
+        </div>
       )}
     </div>
   )

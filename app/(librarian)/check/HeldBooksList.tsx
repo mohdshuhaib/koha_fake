@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { Book, User, Clock, CheckCircle2 } from 'lucide-react'
 
+// Type definition for clarity
 type HeldRecord = {
   id: string
   hold_date: string
@@ -22,32 +24,22 @@ export default function HeldBooksList() {
   const [records, setRecords] = useState<HeldRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
+  const [releasingId, setReleasingId] = useState<string | null>(null)
 
+  // --- LOGIC FUNCTIONS (with improved messaging) ---
   const fetchHeldBooks = async () => {
     setLoading(true)
     const { data, error } = await supabase
       .from('hold_records')
-      .select(`
-    id,
-    hold_date,
-    released,
-    book:books(id, title, barcode),
-    member:members(id, name, barcode)
-  `)
+      .select(`id, hold_date, book:books(id, title, barcode), member:members(id, name, barcode)`)
       .eq('released', false)
+      .order('hold_date', { ascending: true })
 
     if (error) {
       console.error(error)
+      setMessage('Failed to load held books.')
     } else {
-      const normalized = (data ?? []).map((r: any) => ({
-        id: r.id,
-        hold_date: r.hold_date,
-        book: r.book,
-        member: r.member,
-      }))
-
-      setRecords(normalized)
-
+      setRecords((data as any) ?? [])
     }
     setLoading(false)
   }
@@ -57,61 +49,72 @@ export default function HeldBooksList() {
   }, [])
 
   const releaseBook = async (record: HeldRecord) => {
-    setMessage('Releasing...')
+    setReleasingId(record.id) // Show loading state on specific button
+    setMessage('')
 
-    const { error: bookError } = await supabase
-      .from('books')
-      .update({ status: 'available' })
-      .eq('id', record.book.id)
+    // Use a transaction to ensure both operations succeed or fail together
+    const { error } = await supabase.rpc('release_held_book', {
+      p_hold_id: record.id,
+      p_book_id: record.book.id
+    })
 
-    const { error: holdError } = await supabase
-      .from('hold_records')
-      .update({ released: true })
-      .eq('id', record.id)
-
-    if (bookError || holdError) {
-      setMessage('❌ Failed to release book')
+    if (error) {
+      setMessage(`Failed to release "${record.book.title}". Please try again.`)
+      console.error(error)
     } else {
-      setMessage(`✅ Released "${record.book.title}"`)
-      fetchHeldBooks()
+      // Optimistically remove the record from the UI before re-fetching
+      setRecords(prevRecords => prevRecords.filter(r => r.id !== record.id));
     }
 
-    setTimeout(() => setMessage(''), 2000)
+    setReleasingId(null)
   }
 
+  // --- REDESIGNED JSX ---
   return (
     <div className="space-y-4">
       {loading ? (
-        <p className="text-text-grey">Loading held books...</p>
+        <p className="text-text-grey text-center py-8">Loading held books...</p>
       ) : records.length === 0 ? (
-        <p className="text-text-grey">No books currently held.</p>
+        <div className="text-center py-10 px-4">
+          <CheckCircle2 className="mx-auto h-12 w-12 text-green-500" />
+          <h3 className="mt-2 text-lg font-medium text-heading-text-black">All Clear!</h3>
+          <p className="mt-1 text-sm text-text-grey">There are no books currently on hold.</p>
+        </div>
       ) : (
         records.map((r) => (
           <div
             key={r.id}
-            className="bg-secondary-white backdrop-blur-sm border border-primary-dark-grey p-4 rounded-xl shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 transition"
+            className="bg-primary-grey border border-primary-dark-grey p-4 rounded-lg flex flex-col md:flex-row justify-between md:items-center gap-4 transition-all"
           >
-            <div className="space-y-1 text-sm sm:text-base font-malayalam">
-              <p className="font-semibold text-heading-text-black">{r.book.title}</p>
-              <p className="text-text-grey">
-                <span>{r.book.barcode}</span> &nbsp;&nbsp;|&nbsp;&nbsp;
-                <span>{r.member.name}</span> ({r.member.barcode})
-              </p>
-              <p className="text-text-grey">
-                Held on: <span>{new Date(r.hold_date).toLocaleString()}</span>
-              </p>
+            <div className="space-y-2 text-sm flex-grow">
+              <div className="flex items-center gap-2 font-bold text-lg text-heading-text-black">
+                <Book size={16} className="text-dark-green flex-shrink-0" />
+                <span>{r.book.title}</span>
+              </div>
+              <div className="flex items-center gap-2 text-text-grey">
+                <User size={14} className="flex-shrink-0" />
+                <span>
+                  Held for: <strong className="text-heading-text-black">{r.member.name}</strong> ({r.member.barcode})
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-text-grey">
+                <Clock size={14} className="flex-shrink-0" />
+                <span>
+                  Held on: {new Date(r.hold_date).toLocaleDateString()}
+                </span>
+              </div>
             </div>
             <button
               onClick={() => releaseBook(r)}
-              className="px-4 py-2 text-sm rounded-lg bg-green-600 hover:bg-green-700 text-white transition"
-              disabled={loading}
+              disabled={!!releasingId}
+              className="w-full md:w-auto px-4 py-2 text-sm rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold transition disabled:opacity-70 disabled:cursor-wait flex-shrink-0"
             >
-              ✅ Mark Available
+              {releasingId === r.id ? 'Releasing...' : 'Mark Available'}
             </button>
           </div>
         ))
       )}
-      {message && <p className="text-sm text-white/70">{message}</p>}
+      {message && <p className="text-sm text-red-600 font-medium text-center">{message}</p>}
     </div>
   )
 }

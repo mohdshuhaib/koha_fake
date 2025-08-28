@@ -3,98 +3,109 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import HoldForm from './HoldForm'
-import HeldBooksList from './HeldBooksList'
+import Loading from '@/app/loading'
 import CheckOutForm from './CheckOutForm'
 import CheckInForm from './CheckInForm'
-import Loading from '@/app/loading'
 import RenewBookForm from './RenewBookForm'
+import HoldSection from './HoldSection' // A new component to manage the Hold tabs
+import { ArrowUpRight, LogIn, Repeat, Library } from 'lucide-react'
+import clsx from 'classnames'
+
+type Tab = 'checkout' | 'checkin' | 'renew' | 'hold'
 
 export default function CheckPage() {
   const [loading, setLoading] = useState(true)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [showSidebar, setShowSidebar] = useState(false)
-  const [tab, setTab] = useState<'hold' | 'held'>('hold')
-
+  const [activeTab, setActiveTab] = useState<Tab>('checkout')
   const router = useRouter()
 
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-
       if (!session) {
-        router.push('/login') // Redirect if not logged in
+        router.push('/login')
       } else {
         setIsLoggedIn(true)
       }
-
       setLoading(false)
     }
-
     checkAuth()
   }, [router])
 
-  if (loading) {
-    return (
-      <Loading />
-    )
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'checkout': return <CheckOutForm />
+      case 'checkin': return <CheckInForm />
+      case 'renew': return <RenewBookForm />
+      case 'hold': return <HoldSection />
+      default: return null
+    }
   }
 
+  if (loading) return <Loading />
   if (!isLoggedIn) return null
 
   return (
-    <main className="relative pt-28 min-h-screen bg-primary-grey px-4 pb-10 overflow-x-hidden">
-      {/* Stylish Sidebar Toggle Button (TOP RIGHT) */}
-      <button
-        onClick={() => setShowSidebar(true)}
-        className="fixed top-1/2 right-0 -translate-y-1/2 z-50 bg-secondary-white text-heading-text-black px-2 py-4 rounded-r-xl border border-primary-dark-grey shadow-lg hover:bg-primary-dark-grey transition transform hover:scale-105 origin-center rotate-180 writing-vertical"
-      >
-        <span className="rotate-180 tracking-wide uppercase font-semibold">Hold Books</span>
-      </button>
-
-      {/* Right Sidebar Panel */}
-      <div
-        className={`fixed top-0 right-0 h-full w-[22rem] max-w-full bg-secondary-white border-l border-primary-dark-grey shadow-2xl transition-transform duration-300 z-[70] ${showSidebar ? 'translate-x-0' : 'translate-x-full'
-          }`}
-      >
-        <div className="flex justify-between items-center px-4 py-4 border-b border-primary-dark-grey">
-          <h2 className="text-xl font-bold text-heading-text-black uppercase">Hold Book</h2>
-          <button onClick={() => setShowSidebar(false)} className="text-red-600 hover:text-red-700 text-xl font-extrabold">
-            ✕
-          </button>
+    <main className="min-h-screen bg-primary-grey pt-24 px-4 pb-10">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl md:text-4xl font-heading font-bold text-heading-text-black uppercase tracking-wider">
+            Circulation Desk
+          </h1>
+          <p className="text-text-grey mt-1">Manage all borrowing, returning, and renewal tasks.</p>
         </div>
 
-        <div className="p-4 space-y-4">
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setTab('hold')}
-              className={`px-4 py-2 rounded-lg font-medium text-sm text-heading-text-black ${tab === 'hold' ? 'bg-button-yellow' : 'bg-primary-dark-grey'
-                } transition`}
-            >
-              Hold Book
-            </button>
-            <button
-              onClick={() => setTab('held')}
-              className={`px-4 py-2 rounded-lg font-medium text-sm ${tab === 'held' ? 'bg-button-yellow' : 'bg-primary-dark-grey'
-                } transition`}
-            >
-              Held Books
-            </button>
-          </div>
-
-          <div className="max-h-[calc(100vh-180px)] overflow-y-auto pr-1 custom-scroll">
-            {tab === 'hold' ? <HoldForm /> : <HeldBooksList />}
-          </div>
+        {/* --- Tab Navigation --- */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <TabButton
+            label="Check Out"
+            icon={<ArrowUpRight size={18} />}
+            isActive={activeTab === 'checkout'}
+            onClick={() => setActiveTab('checkout')}
+          />
+          <TabButton
+            label="Check In"
+            icon={<LogIn size={18} />}
+            isActive={activeTab === 'checkin'}
+            onClick={() => setActiveTab('checkin')}
+          />
+          <TabButton
+            label="Renew Book"
+            icon={<Repeat size={18} />}
+            isActive={activeTab === 'renew'}
+            onClick={() => setActiveTab('renew')}
+          />
+          <TabButton
+            label="Hold Books"
+            icon={<Library size={18} />}
+            isActive={activeTab === 'hold'}
+            onClick={() => setActiveTab('hold')}
+          />
         </div>
-      </div>
 
-      {/* Main Check In / Check Out Section */}
-      <div className="max-w-4xl mx-auto space-y-10">
-        <h1 className="text-3xl font-bold text-center text-heading-text-black uppercase">Check In / Check Out</h1>
-        <CheckOutForm />
-        <RenewBookForm/>
-        <CheckInForm />
+        {/* --- Tab Content --- */}
+        <div className="bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-xl p-6 md:p-8 min-h-[50vh]">
+          {renderContent()}
+        </div>
       </div>
     </main>
+  )
+}
+
+// Reusable Tab Button Component
+function TabButton({ label, icon, isActive, onClick }: { label: string, icon: React.ReactNode, isActive: boolean, onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={clsx(
+        "flex items-center justify-center gap-2 p-4 rounded-lg font-bold text-sm uppercase tracking-wide transition-all duration-200",
+        isActive
+          ? 'bg-dark-green text-white shadow-lg'
+          : 'bg-secondary-white text-text-grey hover:bg-primary-dark-grey hover:text-heading-text-black border border-primary-dark-grey'
+      )}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
   )
 }
