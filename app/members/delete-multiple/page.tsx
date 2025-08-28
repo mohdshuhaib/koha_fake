@@ -3,68 +3,195 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { deleteAuthUserByEmail } from '@/app/actions/deleteMember'
+import Link from 'next/link'
+import {
+  ArrowLeft, Search, Trash2, AlertTriangle, CheckCircle2, XCircle, User
+} from 'lucide-react'
+import clsx from 'classnames'
+import Loading from '@/app/loading'
+
+type MemberInfo = {
+  id: string;
+  name: string;
+  barcode: string;
+}
 
 export default function DeleteMultipleMembers() {
   const [barcodes, setBarcodes] = useState('')
-  const [message, setMessage] = useState('')
+  const [feedback, setFeedback] = useState<{ type: 'error' | 'success' | 'warning', message: string } | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const handleBulkDelete = async () => {
-    const barcodeList = barcodes.split(',').map((b) => b.trim()).filter(Boolean)
+  // State for the two-step process
+  const [step, setStep] = useState<'find' | 'confirm'>('find')
+  const [membersToDelete, setMembersToDelete] = useState<MemberInfo[]>([])
+  const [notFoundBarcodes, setNotFoundBarcodes] = useState<string[]>([])
 
-    if (!barcodeList.length) return setMessage('Enter valid barcodes.')
+  const handleFindMembers = async (e: React.FormEvent) => {
+    e.preventDefault()
+    // Allow commas or new lines as separators
+    const barcodeList = barcodes.split(/[\n,]+/).map((b) => b.trim()).filter(Boolean)
 
-    // 1. Get all member IDs
-    const { data: members } = await supabase
-      .from('members')
-      .select('id, barcode')
-      .in('barcode', barcodeList)
-
-    if (!members?.length) return setMessage('No matching members found.')
-
-    const memberIds = members.map((m) => m.id)
-    setLoading(true)
-
-    // 2. Delete borrow records
-    await supabase.from('borrow_records').delete().in('member_id', memberIds)
-    await supabase.from('hold_records').delete().in('member_id', memberIds)
-    // 3. Delete members
-    await supabase.from('members').delete().in('id', memberIds)
-
-    // 4. Delete auth users
-    for (const m of members) {
-      await deleteAuthUserByEmail(`${m.barcode.toLowerCase()}@member.pmsa`)
+    if (barcodeList.length === 0) {
+      setFeedback({ type: 'error', message: 'Please enter at least one barcode.' })
+      return
     }
 
-    setMessage(`${members.length} members and related records deleted.`)
-    setBarcodes('')
+    setLoading(true)
+    setFeedback(null)
+
+    const { data, error } = await supabase
+      .from('members')
+      .select('id, name, barcode')
+      .in('barcode', barcodeList)
+
+    if (error) {
+      setFeedback({ type: 'error', message: `An error occurred: ${error.message}` })
+      setLoading(false)
+      return
+    }
+
+    const foundBarcodes = new Set(data.map(m => m.barcode));
+    const notFound = barcodeList.filter(b => !foundBarcodes.has(b));
+
+    setMembersToDelete(data as MemberInfo[])
+    setNotFoundBarcodes(notFound)
+
+    if (data.length > 0) {
+      setStep('confirm')
+    } else {
+      setFeedback({ type: 'error', message: 'No patrons were found matching the provided barcodes.' })
+    }
+    setLoading(false)
   }
 
+  const handleBulkDelete = async () => {
+    if (membersToDelete.length === 0) return
+    setLoading(true)
+    setFeedback(null)
+
+    const memberIds = membersToDelete.map(m => m.id)
+
+    // 1. Delete members from the database (cascade will handle records)
+    const { error: dbError } = await supabase.from('members').delete().in('id', memberIds)
+
+    if (dbError) {
+      setFeedback({ type: 'error', message: `Deletion failed: ${dbError.message}` })
+      setLoading(false)
+      return
+    }
+
+    // 2. Delete auth users one by one
+    let authFailures = 0;
+    for (const member of membersToDelete) {
+      const deleted = await deleteAuthUserByEmail(`${member.barcode.toLowerCase()}@member.pmsa`)
+      if (!deleted) {
+        authFailures++;
+      }
+    }
+
+    let successMessage = `Successfully deleted ${membersToDelete.length} patron(s) from the database.`
+    if (authFailures > 0) {
+        setFeedback({ type: 'warning', message: `${successMessage} However, ${authFailures} login account(s) could not be found or deleted.`})
+    } else {
+        setFeedback({ type: 'success', message: `${successMessage} All associated login accounts were also removed.`})
+    }
+
+    resetState()
+    setLoading(false)
+  }
+
+  const resetState = () => {
+    setBarcodes('')
+    setMembersToDelete([])
+    setNotFoundBarcodes([])
+    setStep('find')
+  }
+
+  // --- REDESIGNED JSX ---
   return (
-    <main className="min-h-screen pt-28 px-4 pb-10 bg-primary-grey">
-      <div className="max-w-lg mx-auto bg-secondary-white p-6 md:p-8 rounded-2xl shadow-2xl border border-primary-dark-grey space-y-6">
-        <h1 className="text-3xl uppercase font-bold text-center text-heading-text-black">
-          Delete Multiple Members
-        </h1>
+    <main className="min-h-screen pt-24 px-4 pb-10 bg-primary-grey">
+      <div className="max-w-3xl mx-auto">
+        <Link href="/members" className="flex items-center gap-2 text-text-grey font-semibold hover:text-heading-text-black transition mb-4">
+          <ArrowLeft size={18} />
+          Back to Patron Management
+        </Link>
+        <div className="bg-secondary-white p-6 md:p-8 rounded-2xl shadow-xl border border-primary-dark-grey">
+          <h1 className="text-2xl font-bold mb-2 text-heading-text-black uppercase font-heading tracking-wider">
+            Delete Multiple Patrons
+          </h1>
+          <p className="text-text-grey mb-6 text-sm">Permanently remove multiple patrons, their logins, and all borrowing history.</p>
 
-        <div className="space-y-4">
-          <textarea
-            value={barcodes}
-            onChange={(e) => setBarcodes(e.target.value)}
-            placeholder="Enter barcodes separated by commas (e.g. U445,U446,U447)"
-            className="w-full h-36 p-3 bg-secondary-white border border-red-600 rounded-lg text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-red-700 transition resize-none"
-          />
+          {feedback && (
+            <div className={clsx("flex items-start gap-3 p-3 rounded-lg text-sm mb-4",
+                feedback.type === 'error' && 'bg-red-100 text-red-800',
+                feedback.type === 'success' && 'bg-green-100 text-green-800',
+                feedback.type === 'warning' && 'bg-yellow-100 text-yellow-800'
+            )}>
+              <AlertTriangle size={20} className="flex-shrink-0 mt-0.5"/>
+              <span className="font-medium">{feedback.message}</span>
+            </div>
+          )}
 
-          <button
-            onClick={handleBulkDelete}
-            disabled={loading}
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:opacity-50"
-          >
-            {loading ? 'Deleting...' : 'Delete Members'}
-          </button>
+          {step === 'find' ? (
+            // --- Step 1: Find Patrons Form ---
+            <form onSubmit={handleFindMembers} className="space-y-4">
+              <label htmlFor="barcodes" className="block text-sm font-semibold text-text-grey">Enter each barcode on a new line or separated by commas.</label>
+              <textarea
+                id="barcodes"
+                value={barcodes}
+                onChange={(e) => setBarcodes(e.target.value)}
+                placeholder="e.g.&#10;U445,&#10;U446,&#10;U447"
+                className="w-full h-40 p-3 bg-primary-grey font-mono border border-primary-dark-grey rounded-lg text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green transition resize-y"
+              />
+              <button type="submit" disabled={loading || !barcodes} className="w-full flex items-center justify-center gap-2 bg-dark-green text-white px-8 py-3 rounded-lg font-bold hover:bg-icon-green transition disabled:opacity-60">
+                <Search size={18} />
+                {loading ? 'Searching...' : 'Find Patrons to Delete'}
+              </button>
+            </form>
+          ) : (
+            // --- Step 2: Confirmation View ---
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-center">
+                <AlertTriangle className="mx-auto h-10 w-10 text-red-500" />
+                <h2 className="mt-2 text-lg font-bold text-red-800">Review & Confirm Deletion</h2>
+                <p className="text-sm text-red-700 mt-1">You are about to permanently delete <strong className="font-extrabold">{membersToDelete.length} patron(s)</strong>. This action cannot be undone.</p>
+              </div>
 
-          {message && (
-            <p className="text-sm text-text-grey mt-2">{message}</p>
+              {notFoundBarcodes.length > 0 && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <XCircle size={18} className="text-yellow-700 mt-0.5" />
+                    <div>
+                      <h3 className="text-sm font-bold text-yellow-800">Some barcodes were not found:</h3>
+                      <p className="text-xs font-mono text-yellow-700 mt-1">{notFoundBarcodes.join(', ')}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2 max-h-64 overflow-y-auto border border-primary-dark-grey rounded-lg p-2 bg-primary-grey">
+                <h3 className="font-bold text-heading-text-black px-2">Patrons to be deleted:</h3>
+                {membersToDelete.map(member => (
+                  <div key={member.id} className="p-2 rounded flex items-center gap-3">
+                    <User size={16} className="text-text-grey flex-shrink-0" />
+                    <div>
+                       <p className="font-semibold text-sm text-heading-text-black">{member.name}</p>
+                       <p className="text-xs text-text-grey">Barcode: {member.barcode}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <button onClick={resetState} disabled={loading} className="w-full bg-secondary-white border border-primary-dark-grey text-text-grey px-8 py-3 rounded-lg font-bold hover:bg-primary-dark-grey transition">
+                  Cancel
+                </button>
+                <button onClick={handleBulkDelete} disabled={loading} className="w-full flex items-center justify-center gap-2 bg-red-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-red-700 transition">
+                  <Trash2 size={18} />
+                  {loading ? 'Deleting...' : `Delete ${membersToDelete.length} Patron(s)`}
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

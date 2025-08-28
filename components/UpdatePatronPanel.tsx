@@ -2,50 +2,74 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import {
+  X, Search, Barcode, CheckCircle2, AlertTriangle, Save
+} from 'lucide-react'
+import clsx from 'classnames'
 
-// Define the type for Patron data
-interface PatronData {
-  name: string
-  batch: string
-  category: string
-  barcode: string
+// The component's props are updated for clarity but function the same
+interface Props {
+  showPanel: boolean;
+  setShowPanel: (val: boolean) => void;
 }
 
-export default function UpdatePatronPanel({ showPanel, setShowPanel }: { showPanel: boolean; setShowPanel: (val: boolean) => void }) {
+// Type for the Patron data
+interface PatronData {
+  id: string;
+  name: string;
+  batch: string;
+  category: string;
+  barcode: string;
+}
+
+export default function UpdatePatronPanel({ showPanel, setShowPanel }: Props) {
   const [barcodeInput, setBarcodeInput] = useState('')
   const [patron, setPatron] = useState<PatronData | null>(null)
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
+  const [feedback, setFeedback] = useState<{ type: 'error' | 'success', message: string } | null>(null)
   const barcodeRef = useRef<HTMLInputElement>(null)
 
+  // Focus the input when the modal opens
   useEffect(() => {
     if (showPanel) {
       setTimeout(() => barcodeRef.current?.focus(), 100)
-    } else {
-      resetForm()
     }
   }, [showPanel])
 
-  const fetchPatron = async () => {
-    setLoading(true)
-    setMessage('')
+  const resetForm = () => {
+    setBarcodeInput('')
     setPatron(null)
+    setFeedback(null)
+    setLoading(false)
+  }
+
+  const handleClose = () => {
+    resetForm()
+    setShowPanel(false)
+  }
+
+  const handleFindPatron = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!barcodeInput) return;
+
+    setLoading(true)
+    setFeedback(null)
+    setPatron(null)
+
     const { data, error } = await supabase.from('members').select('*').eq('barcode', barcodeInput).single()
 
     if (error || !data) {
-      setMessage('❌ Patron not found')
-      setLoading(false)
-      return
+      setFeedback({ type: 'error', message: 'No patron found with that barcode.' })
+    } else {
+      setPatron(data as PatronData)
     }
-
-    setPatron(data)
     setLoading(false)
   }
 
   const handleUpdate = async () => {
     if (!patron) return
     setLoading(true)
-    setMessage('')
+    setFeedback(null)
 
     const { error } = await supabase
       .from('members')
@@ -54,109 +78,94 @@ export default function UpdatePatronPanel({ showPanel, setShowPanel }: { showPan
         batch: patron.batch,
         category: patron.category,
       })
-      .eq('barcode', patron.barcode)
+      .eq('id', patron.id)
 
     if (error) {
-      setMessage('❌ Failed to update patron')
+      setFeedback({ type: 'error', message: `Failed to update patron: ${error.message}` })
     } else {
-      setMessage('✅ Patron updated successfully')
+      setFeedback({ type: 'success', message: 'Patron updated successfully!' })
     }
-
-    // Reset form after a short delay to show the message
-    setTimeout(() => {
-        resetForm();
-        barcodeRef.current?.focus();
-    }, 2000);
-
     setLoading(false)
   }
 
-  const resetForm = () => {
-    setBarcodeInput('')
-    setPatron(null)
-    setMessage('')
-    setLoading(false)
-  }
+  if (!showPanel) return null
 
+  // --- REDESIGNED JSX ---
   return (
-    <div
-      className={`fixed top-0 right-0 h-full w-[22rem] max-w-full bg-secondary-white border-l border-primary-dark-grey shadow-2xl transition-transform duration-300 z-[70] ${
-        showPanel ? 'translate-x-0' : 'translate-x-full'
-      }`}
-    >
-      <div className="flex justify-between items-center px-4 py-4 border-b border-primary-dark-grey">
-        <h2 className="text-xl font-bold text-heading-text-black font-heading">✏️ Update Patron</h2>
-        <button onClick={() => setShowPanel(false)} className="text-red-600 hover:text-red-700 font-extrabold transition text-xl">
-          ✕
-        </button>
-      </div>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+      <div className="bg-secondary-white rounded-xl shadow-2xl max-w-lg w-full border border-primary-dark-grey">
+        <div className="p-4 border-b border-primary-dark-grey flex justify-between items-center">
+          <h2 className="text-lg font-bold font-heading">Update Patron Details</h2>
+          <button onClick={handleClose} className="p-1 rounded-full text-text-grey hover:bg-primary-dark-grey hover:text-red-500 transition">
+            <X size={20} />
+          </button>
+        </div>
 
-      <div className="p-4 space-y-4">
-        {!patron && (
-          <>
-            <input
-              ref={barcodeRef}
-              type="text"
-              placeholder="👤 Enter patron barcode"
-              className="w-full px-4 py-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey"
-              value={barcodeInput}
-              onChange={(e) => setBarcodeInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && fetchPatron()}
-            />
-            <button
-              onClick={fetchPatron}
-              className="bg-button-yellow hover:bg-primary-dark-grey text-button-text-black font-medium px-6 py-2 rounded-lg shadow-md transition disabled:opacity-50"
-              disabled={loading || !barcodeInput}
-            >
-              {loading ? '🔍 Searching...' : '🔍 Fetch Patron'}
-            </button>
-            {message && <p className="text-sm text-text-grey pt-1">{message}</p>}
-          </>
-        )}
+        <div className="p-6">
+          {feedback && (
+            <div className={clsx("flex items-start gap-3 p-3 rounded-lg text-sm mb-4", feedback.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800')}>
+              {feedback.type === 'error' ? <AlertTriangle size={20} className="flex-shrink-0 mt-0.5"/> : <CheckCircle2 size={20} className="flex-shrink-0 mt-0.5"/>}
+              <span className="font-medium">{feedback.message}</span>
+            </div>
+          )}
 
-        {patron && (
-          <div className="space-y-4">
-            <p className='text-sm font-medium'>Name</p>
-            <input
-              type="text"
-              value={patron.name}
-              onChange={(e) => setPatron({ ...patron, name: e.target.value })}
-              placeholder="👤 Name"
-              className="w-full px-4 py-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none"
-            />
-            <p className='text-sm font-medium'>Batch</p>
-            <input
-              type="text"
-              value={patron.batch}
-              onChange={(e) => setPatron({ ...patron, batch: e.target.value })}
-              placeholder="🎓 Batch"
-              className="w-full px-4 py-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none"
-            />
-            <p className='text-sm font-medium'>Category</p>
-            <input
-              type="text"
-              value={patron.category}
-              readOnly
-              placeholder="🏷️ Category"
-              className="w-full px-4 py-3 bg-primary-dark-grey border border-primary-dark-grey text-text-grey rounded-lg cursor-not-allowed"
-            />
-            <p className='text-sm font-medium'>Barcode</p>
-            <input
-              type="text"
-              value={patron.barcode}
-              readOnly
-              className="w-full px-4 py-3 bg-primary-dark-grey bordader border-primary-dark-grey text-text-grey rounded-lg cursor-not-allowed"
-            />
-            <button
-              onClick={handleUpdate}
-              className="bg-button-yellow hover:bg-primary-dark-grey text-button-text-black font-medium px-6 py-2 rounded-lg shadow-md transition"
-              disabled={loading}
-            >
-              {loading ? '⏳ Updating...' : '💾 Update Patron'}
-            </button>
-            {message && <p className="text-sm text-text-grey pt-1">{message}</p>}
-          </div>
-        )}
+          {!patron ? (
+            // --- Step 1: Find Patron Form ---
+            <form onSubmit={handleFindPatron} className="space-y-4">
+              <label htmlFor="barcode-search" className="block text-sm font-semibold text-text-grey">Enter a barcode to find and edit a patron.</label>
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4"><Barcode className="h-5 w-5 text-text-grey" /></div>
+                <input
+                  ref={barcodeRef}
+                  id="barcode-search"
+                  type="text"
+                  placeholder="Scan or type barcode"
+                  value={barcodeInput}
+                  onChange={(e) => setBarcodeInput(e.target.value)}
+                  className="w-full p-3 pl-12 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green"
+                />
+              </div>
+              <button type="submit" disabled={loading || !barcodeInput} className="w-full flex items-center justify-center gap-2 bg-dark-green text-white px-8 py-3 rounded-lg font-bold hover:bg-icon-green transition disabled:opacity-60">
+                <Search size={18} />
+                {loading ? 'Searching...' : 'Find Patron'}
+              </button>
+            </form>
+          ) : (
+            // --- Step 2: Edit Form ---
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="text-sm font-semibold text-text-grey">Name</label>
+                  <input type="text" value={patron.name} onChange={(e) => setPatron({ ...patron, name: e.target.value })} className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-primary-grey" />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-text-grey">Batch</label>
+                  <input type="text" value={patron.batch} onChange={(e) => setPatron({ ...patron, batch: e.target.value })} className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-primary-grey" />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-text-grey">Category</label>
+                  <select value={patron.category} onChange={(e) => setPatron({ ...patron, category: e.target.value })} className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-primary-grey">
+                    <option value="student">student</option>
+                    <option value="teacher">teacher</option>
+                    <option value="class">class</option>
+                    <option value="outside">outsider</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-sm font-semibold text-text-grey">Barcode</label>
+                  <input type="text" value={patron.barcode} readOnly className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-gray-200 text-gray-500 cursor-not-allowed" />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button onClick={resetForm} className="px-5 py-2 text-sm font-semibold bg-secondary-white border border-primary-dark-grey rounded-lg hover:bg-primary-dark-grey">Find Another</button>
+                <button onClick={handleUpdate} disabled={loading} className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-dark-green rounded-lg hover:bg-icon-green disabled:opacity-70">
+                  <Save size={16} />
+                  {loading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

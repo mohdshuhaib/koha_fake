@@ -1,11 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, ReactNode } from 'react'
 import dayjs from 'dayjs'
 import Loading from '@/app/loading'
 import { supabase } from '@/lib/supabase'
+import { Search, X, BookOpen, IndianRupee, ChevronLeft, ChevronRight, Eye, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
+import clsx from 'classnames';
 
-// Define types for better code clarity
+// --- Type Definitions ---
 type Member = {
   id: number
   name: string
@@ -22,10 +25,9 @@ type Record = {
   fine_paid: boolean
   books: {
     title: string
-  }
+  } | null // Can be null if book is deleted
 }
 
-// MODIFIED: Updated details to hold separate lists
 type MemberDetails = {
   name: string
   booksRead: number
@@ -34,65 +36,41 @@ type MemberDetails = {
   notReturned: Record[]
 }
 
+// --- Main Page Component ---
 export default function PatronStatusPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState(1)
-  const pageSize = 15 // Members per page
+  const pageSize = 15
 
-  // State for the details modal
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
   const [memberDetails, setMemberDetails] = useState<MemberDetails | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
 
-  // Fetch all members on initial load
+  // --- Data Fetching Logic (Unchanged) ---
   useEffect(() => {
     const fetchMembers = async () => {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('members')
-        .select('id, name, barcode, batch, category')
-        .order('name', { ascending: true })
-
-      if (error) {
-        console.error('Error fetching members:', error)
-      } else if (data) {
-        setMembers(data)
-      }
+      const { data } = await supabase.from('members').select('*').order('name', { ascending: true })
+      if (data) setMembers(data)
       setLoading(false)
     }
     fetchMembers()
   }, [])
 
-  // Function to fetch details for a specific member
   const handleViewDetails = async (member: Member) => {
     setSelectedMember(member)
     setDetailsLoading(true)
     setMemberDetails(null)
 
-    const { data: records, error } = await supabase
-      .from('borrow_records')
-      .select('*, books(title)')
-      .eq('member_id', member.id)
-      .order('borrow_date', { ascending: false })
+    const { data: records } = await supabase.from('borrow_records').select('*, books(title)').eq('member_id', member.id).order('borrow_date', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching records:', error)
-      setDetailsLoading(false)
-      return
-    }
-
-    // MODIFIED: Filter records into two lists
     const returned: Record[] = [];
     const notReturned: Record[] = [];
-
     records?.forEach(record => {
-        if (record.return_date) {
-            returned.push(record);
-        } else {
-            notReturned.push(record);
-        }
+        if (record.return_date) returned.push(record);
+        else notReturned.push(record);
     });
 
     const pendingFines = records?.reduce((acc, r) => acc + (r.fine_paid ? 0 : r.fine || 0), 0) || 0
@@ -104,7 +82,6 @@ export default function PatronStatusPage() {
       returned,
       notReturned,
     })
-
     setDetailsLoading(false)
   }
 
@@ -113,164 +90,148 @@ export default function PatronStatusPage() {
     setMemberDetails(null)
   }
 
-  // Filter members based on search query (name or barcode)
   const filteredMembers = members.filter(
     (member) =>
       member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.barcode.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  // Apply pagination
   const paginatedMembers = filteredMembers.slice((page - 1) * pageSize, page * pageSize)
+  const totalPages = Math.ceil(filteredMembers.length / pageSize)
 
   if (loading) return <Loading />
 
+  // --- REDESIGNED JSX ---
   return (
-    <div className="pt-32 min-h-screen bg-primary-grey px-4 pb-10">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-heading-text-black uppercase font-heading">
-          Patron Status
-        </h1>
-
-        {/* Search Bar */}
-        <div className="mb-4">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value)
-              setPage(1) // Reset to first page on search
-            }}
-            placeholder="Search by name or barcode..."
-            className="w-full md:w-1/2 p-3 border border-primary-dark-grey rounded-md bg-secondary-white text-text-grey focus:outline-none focus:ring-2 focus:ring-button-yellow"
-          />
-        </div>
-
-        {/* Members Table */}
-        <div className="bg-secondary-white border border-primary-dark-grey rounded-xl overflow-x-auto shadow-lg">
-          <table className="min-w-full text-sm">
-            <thead className="text-white uppercase bg-secondary-light-black">
-              <tr>
-                <th className="text-left p-3">Name</th>
-                <th className="text-left p-3">Barcode</th>
-                <th className="text-left p-3">Batch/Category</th>
-                <th className="text-center p-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedMembers.map((member) => (
-                <tr key={member.id} className="border-t border-primary-dark-grey hover:bg-primary-dark-grey transition text-text-grey">
-                  <td className="p-3 font-semibold">{member.name}</td>
-                  <td className="p-3">{member.barcode}</td>
-                  <td className="p-3">{member.batch || member.category}</td>
-                  <td className="p-3 text-center">
-                    <button
-                      onClick={() => handleViewDetails(member)}
-                      className="bg-button-yellow text-button-text-black font-bold px-4 py-1 rounded-md hover:bg-yellow-500 transition"
-                    >
-                      View Details
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {filteredMembers.length === 0 && (
-             <p className="text-center p-4 text-text-grey">No members found.</p>
-          )}
-        </div>
-
-        {/* Pagination Controls */}
-        <div className="flex justify-between items-center mt-6">
-          <button
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="px-4 py-1 rounded bg-button-yellow border text-button-text-black border-primary-dark-grey hover:bg-primary-dark-grey disabled:opacity-50"
-          >
-            ← Prev
-          </button>
-          <span className="px-4 text-heading-text-black">
-            Page {page} of {Math.ceil(filteredMembers.length / pageSize)}
-          </span>
-          <button
-            disabled={page * pageSize >= filteredMembers.length}
-            onClick={() => setPage((p) => p + 1)}
-            className="px-4 py-1 rounded bg-button-yellow border text-button-text-black border-primary-dark-grey hover:bg-primary-dark-grey disabled:opacity-50"
-          >
-            Next →
-          </button>
-        </div>
-      </div>
-
-      {/* Member Details Modal */}
-      {selectedMember && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
-          <div className="bg-secondary-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-secondary-white p-4 border-b border-primary-dark-grey flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-heading-text-black">{selectedMember.name}'s Details</h2>
-              <button onClick={closeModal} className="text-2xl font-bold text-text-grey hover:text-red-500">&times;</button>
+    <>
+      <div className="min-h-screen bg-primary-grey pt-24 px-4 pb-10">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between md:items-center mb-8 gap-4">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-heading font-bold text-heading-text-black uppercase tracking-wider">
+                Patron Status
+              </h1>
+              <p className="text-text-grey mt-1">Search for patrons to view their borrowing history and fine status.</p>
             </div>
+             <Link href="/members" className="flex items-center gap-2 text-sm font-semibold text-dark-green hover:text-icon-green transition">
+                <ArrowLeft size={16} /> Back to Patron Management
+            </Link>
+          </div>
 
-            {detailsLoading ? (
-              <div className="p-8 text-center">Loading details...</div>
-            ) : memberDetails ? (
-              <div className="p-6 space-y-6">
-                {/* Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-primary-grey p-4 rounded-lg">
-                    <p className="font-medium text-heading-text-black">📖 Books Read</p>
-                    <p className="text-3xl font-bold text-heading-text-black">{memberDetails.booksRead}</p>
-                  </div>
-                  <div className="bg-primary-grey p-4 rounded-lg">
-                    <p className="font-medium text-heading-text-black">💸 Pending Fines</p>
-                    <p className="text-3xl font-bold text-red-600">₹{memberDetails.pendingFines}</p>
-                  </div>
-                </div>
+          <div className="relative mb-6">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4"><Search className="h-5 w-5 text-text-grey" /></div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+              placeholder="Search by name or barcode..."
+              className="w-full md:w-1/2 p-3 pl-12 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green"
+            />
+          </div>
 
-                {/* MODIFIED: History section with two lists */}
-                <div className="space-y-4">
-                    {/* Not Returned Books */}
-                    <div>
-                        <h3 className="text-xl font-bold mb-3 text-red-600">📕 Not Returned</h3>
-                        <ul className="space-y-4 text-sm">
-                            {memberDetails.notReturned.length === 0 ? (
-                                <li className="text-text-grey">No books currently borrowed.</li>
-                            ) : (
-                                memberDetails.notReturned.map((record, index) => (
-                                    <li key={`not-returned-${index}`} className="border-b border-primary-dark-grey pb-3 last:border-b-0 space-y-1">
-                                        <p className='text-text-grey'><strong className='text-heading-text-black'>Book:</strong> {record.books?.title || 'Unknown'}</p>
-                                        <p className='text-text-grey'><strong className='text-heading-text-black'>Borrowed:</strong> {dayjs(record.borrow_date).format('DD MMM YYYY')}</p>
-                                        <p className='text-text-grey'><strong className='text-heading-text-black'>Due:</strong> {dayjs(record.due_date).format('DD MMM YYYY')}</p>
-                                        {record.fine > 0 && <p className={record.fine_paid ? 'text-green-600' : 'text-red-600'}>💰 Fine: ₹{record.fine} {record.fine_paid ? '(Paid)' : '(Unpaid)'}</p>}
-                                    </li>
-                                ))
-                            )}
-                        </ul>
-                    </div>
-                    {/* Returned Books */}
-                    <div>
-                        <h3 className="text-xl font-bold mb-3 text-green-600">✅ Returned</h3>
-                        <ul className="space-y-4 text-sm">
-                            {memberDetails.returned.length === 0 ? (
-                                <li className="text-text-grey">No books returned yet.</li>
-                            ) : (
-                                memberDetails.returned.map((record, index) => (
-                                    <li key={`returned-${index}`} className="border-b border-primary-dark-grey pb-3 last:border-b-0 space-y-1">
-                                        <p className='text-text-grey'><strong className='text-heading-text-black'>Book:</strong> {record.books?.title || 'Unknown'}</p>
-                                        <p className='text-text-grey'><strong className='text-heading-text-black'>Returned:</strong> {dayjs(record.return_date).format('DD MMM YYYY')}</p>
-                                    </li>
-                                ))
-                            )}
-                        </ul>
-                    </div>
-                </div>
+          <div className="bg-secondary-white border border-primary-dark-grey rounded-xl shadow-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-secondary-light-black text-white">
+                  <tr>
+                    <th className="text-left p-3 font-semibold uppercase tracking-wider">Name</th>
+                    <th className="text-left p-3 font-semibold uppercase tracking-wider">Barcode</th>
+                    <th className="text-left p-3 font-semibold uppercase tracking-wider">Batch/Category</th>
+                    <th className="text-center p-3 font-semibold uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedMembers.map((member) => (
+                    <tr key={member.id} className="border-b border-primary-dark-grey last:border-b-0 hover:bg-primary-grey transition">
+                      <td className="p-3 font-semibold text-heading-text-black">{member.name}</td>
+                      <td className="p-3 text-text-grey">{member.barcode}</td>
+                      <td className="p-3 text-text-grey">{member.batch || member.category}</td>
+                      <td className="p-3 text-center">
+                        <button onClick={() => handleViewDetails(member)} className="flex items-center justify-center gap-2 w-full bg-button-yellow text-button-text-black font-bold px-4 py-1.5 rounded-md hover:bg-yellow-500 transition">
+                          <Eye size={14} /> View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredMembers.length === 0 && <p className="text-center p-6 text-text-grey">No members found.</p>}
+            </div>
+            {totalPages > 1 && (
+              <div className="flex justify-between items-center p-4 border-t border-primary-dark-grey">
+                <button disabled={page === 1} onClick={() => setPage((p) => p - 1)} className="p-2 rounded-md bg-button-yellow text-button-text-black hover:bg-yellow-500 disabled:opacity-60 transition"><ChevronLeft size={20} /></button>
+                <span className="text-text-grey font-semibold">Page {page} of {totalPages}</span>
+                <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="p-2 rounded-md bg-button-yellow text-button-text-black hover:bg-yellow-500 disabled:opacity-60 transition"><ChevronRight size={20} /></button>
               </div>
-            ) : (
-              <div className="p-8 text-center text-red-500">Could not load member details.</div>
             )}
           </div>
         </div>
-      )}
+      </div>
+
+      <DetailsModal isOpen={!!selectedMember} onClose={closeModal}>
+        {detailsLoading ? <Loading /> : memberDetails ? (
+          <>
+            <div className="p-4 border-b border-primary-dark-grey flex justify-between items-center"><h2 className="text-xl font-bold text-heading-text-black">{memberDetails.name}'s Status</h2><button onClick={closeModal} className="p-1 rounded-full hover:bg-primary-dark-grey"><X size={20}/></button></div>
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <StatCard label="Books Read" value={memberDetails.booksRead} icon={<BookOpen className="text-blue-500" />} />
+                <StatCard label="Pending Fines" value={`₹${memberDetails.pendingFines}`} icon={<IndianRupee className="text-red-500" />} />
+              </div>
+              <div className="space-y-4">
+                <HistoryList title="Not Returned" records={memberDetails.notReturned} isReturnedList={false} />
+                <HistoryList title="Returned History" records={memberDetails.returned} isReturnedList={true} />
+              </div>
+            </div>
+          </>
+        ) : <p className="p-8 text-center text-red-500">Could not load member details.</p>}
+      </DetailsModal>
+    </>
+  )
+}
+
+// --- Helper Components ---
+function DetailsModal({ isOpen, onClose, children }: { isOpen: boolean; onClose: () => void; children: ReactNode }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+      <div className="bg-secondary-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col border border-primary-dark-grey" onClick={e => e.stopPropagation()}>
+        <div className="overflow-y-auto">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+function StatCard({ label, value, icon }: { label: string; value: number | string; icon: ReactNode }) {
+  return (
+    <div className="bg-primary-grey rounded-lg p-4 flex items-center gap-4 border border-primary-dark-grey">
+      <div className="bg-secondary-white p-3 rounded-full">{icon}</div>
+      <div>
+        <p className="text-sm text-text-grey font-semibold">{label}</p>
+        <p className="text-2xl font-bold text-heading-text-black">{value}</p>
+      </div>
+    </div>
+  )
+}
+
+function HistoryList({ title, records, isReturnedList }: { title: string; records: Record[]; isReturnedList: boolean }) {
+  return (
+    <div>
+      <h3 className={clsx("text-lg font-bold mb-3", isReturnedList ? 'text-green-700' : 'text-red-700')}>{title}</h3>
+      <div className="space-y-3 text-sm max-h-60 overflow-y-auto pr-2">
+        {records.length === 0 ? <p className="text-text-grey text-sm p-4 bg-primary-grey rounded-md">No records in this category.</p> : (
+          records.map((record, index) => (
+            <div key={index} className="border-b border-primary-dark-grey pb-3 last:border-b-0">
+              <p className="font-semibold text-heading-text-black">{record.books?.title || 'Unknown Book'}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-grey mt-1">
+                {!isReturnedList && <span><strong>Borrowed:</strong> {dayjs(record.borrow_date).format('DD MMM YYYY')}</span>}
+                {!isReturnedList && <span><strong>Due:</strong> {dayjs(record.due_date).format('DD MMM YYYY')}</span>}
+                {isReturnedList && <span><strong>Returned:</strong> {dayjs(record.return_date).format('DD MMM YYYY')}</span>}
+                {!isReturnedList && record.fine > 0 && <span className={record.fine_paid ? 'text-green-600' : 'text-red-600'}><strong>Fine:</strong> ₹{record.fine} {record.fine_paid ? '(Paid)' : '(Unpaid)'}</span>}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   )
 }
