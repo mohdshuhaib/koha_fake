@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Loading from '@/app/loading'
+import Link from 'next/link'
+import { ArrowLeft, AlertCircle, CheckCircle2, PlusCircle } from 'lucide-react'
+import clsx from 'classnames'
 
 export default function AddBookPage() {
   const router = useRouter()
@@ -18,32 +21,23 @@ export default function AddBookPage() {
   })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [userload, setuserload] = useState(true)
-  const [checkingSession, setCheckingSession] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
+  // --- Authentication Logic (Unchanged) ---
   useEffect(() => {
     const checkAuth = async () => {
+      setLoading(true)
       const { data: { session } } = await supabase.auth.getSession()
-
       if (!session) {
         router.push('/login')
       } else {
         setIsLoggedIn(true)
       }
-
-      setCheckingSession(false)
-      setuserload(false)
+      setLoading(false)
     }
-
     checkAuth()
   }, [router])
-
-  if (userload) {
-    return (
-      <Loading />
-    )
-  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -54,102 +48,105 @@ export default function AddBookPage() {
     e.preventDefault()
     setError('')
     setSuccess('')
+    setLoading(true)
 
     const { error } = await supabase.from('books').insert([formData])
     if (error) {
-      setError(error.message)
+      setError(`Failed to add book: ${error.message}`)
     } else {
-      setSuccess('Book added successfully!')
+      setSuccess(`Successfully added "${formData.title}" to the catalog!`)
       setFormData({
-        title: '',
-        author: '',
-        language: '',
-        shelf_location: '',
-        call_number: '',
-        barcode: '',
-        status: 'available',
+        title: '', author: '', language: '', shelf_location: '',
+        call_number: '', barcode: '', status: 'available',
       })
     }
+    setLoading(false)
   }
 
+  if (loading && !isLoggedIn) return <Loading />
+  if (!isLoggedIn) return null
+
+  // --- REDESIGNED JSX ---
   return (
-    <main className="min-h-screen pt-28 px-4 pb-10 bg-primary-grey">
-      <div className="max-w-xl mx-auto bg-secondary-white p-6 md:p-8 rounded-2xl shadow-2xl border border-primary-dark-grey">
-        <h1 className="text-3xl font-bold text-center mb-6 text-heading-text-black uppercase">Add New Book</h1>
+    <main className="min-h-screen pt-24 px-4 pb-10 bg-primary-grey">
+      <div className="max-w-3xl mx-auto">
+        <Link href="/books" className="flex items-center gap-2 text-text-grey font-semibold hover:text-heading-text-black transition mb-4">
+          <ArrowLeft size={18} />
+          Back to Book Management
+        </Link>
+        <div className="bg-secondary-white p-6 md:p-8 rounded-2xl shadow-xl border border-primary-dark-grey">
+          <h1 className="text-2xl font-bold mb-6 text-heading-text-black uppercase font-heading tracking-wider">
+            Add a New Book
+          </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <p className="text-red-600">{error}</p>}
-          {success && <p className="text-green-600">{success}</p>}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="flex items-center gap-3 p-3 rounded-lg text-sm bg-red-100 text-red-800">
+                <AlertCircle size={20} />
+                <span className="font-medium">{error}</span>
+              </div>
+            )}
+            {success && (
+              <div className="flex items-center gap-3 p-3 rounded-lg text-sm bg-green-100 text-green-800">
+                <CheckCircle2 size={20} />
+                <span className="font-medium">{success}</span>
+              </div>
+            )}
 
-          <input
-            name="title"
-            placeholder="Title"
-            value={formData.title}
-            onChange={handleChange}
-            required
-            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey"
-          />
-          <input
-            name="author"
-            placeholder="Author"
-            value={formData.author}
-            onChange={handleChange}
-            required
-            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey"
-          />
-          <select
-            name="language"
-            value={formData.language}
-            onChange={handleChange}
-            required
-            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey"
-          >
-            <option value="">Select Language</option>
-            <option value="MAL" className='text-text-grey'>MAL</option>
-            <option value="ARB" className='text-text-grey'>ARB</option>
-            <option value="URD" className='text-text-grey'>URD</option>
-          </select>
-          <input
-            name="shelf_location"
-            placeholder="Shelf Location"
-            value={formData.shelf_location}
-            onChange={handleChange}
-            required
-            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey"
-          />
-          <input
-            name="call_number"
-            placeholder="Call Number"
-            value={formData.call_number}
-            onChange={handleChange}
-            required
-            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey"
-          />
-          <input
-            name="barcode"
-            placeholder="Barcode"
-            value={formData.barcode}
-            onChange={handleChange}
-            required
-            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey"
-          />
-          <select
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey"
-          >
-            <option value="available" className='text-text-grey'>Available</option>
-            <option value="issued" className='text-text-grey'>Issued</option>
-          </select>
+            {/* --- Modern Grid Layout for Form Fields --- */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+              <div className="md:col-span-2">
+                <label htmlFor="title" className="block text-sm font-semibold text-text-grey mb-1">Title</label>
+                <input id="title" name="title" value={formData.title} onChange={handleChange} required className="w-full p-3 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green" />
+              </div>
 
-          <button
-            type="submit"
-            className="w-full uppercase bg-button-yellow hover:bg-primary-dark-grey text-button-text-black font-semibold py-2 px-4 rounded-lg transition"
-          >
-            Add Book
-          </button>
-        </form>
+              <div>
+                <label htmlFor="author" className="block text-sm font-semibold text-text-grey mb-1">Author</label>
+                <input id="author" name="author" value={formData.author} onChange={handleChange} required className="w-full p-3 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green" />
+              </div>
+
+              <div>
+                <label htmlFor="language" className="block text-sm font-semibold text-text-grey mb-1">Language</label>
+                <select id="language" name="language" value={formData.language} onChange={handleChange} required className="w-full p-3 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green">
+                  <option value="">Select Language</option>
+                  <option value="ENG">ENG</option>
+                  <option value="MAL">MAL</option>
+                  <option value="ARB">ARB</option>
+                  <option value="URD">URD</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="shelf_location" className="block text-sm font-semibold text-text-grey mb-1">Shelf Location</label>
+                <input id="shelf_location" name="shelf_location" placeholder="e.g., 71, 23" value={formData.shelf_location} onChange={handleChange} required className="w-full p-3 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green" />
+              </div>
+
+              <div>
+                <label htmlFor="call_number" className="block text-sm font-semibold text-text-grey mb-1">Call Number</label>
+                <input id="call_number" name="call_number" placeholder="e.g., 813.2/HNK" value={formData.call_number} onChange={handleChange} required className="w-full p-3 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green" />
+              </div>
+
+              <div className="md:col-span-2">
+                <label htmlFor="barcode" className="block text-sm font-semibold text-text-grey mb-1">Barcode</label>
+                <input id="barcode" name="barcode" value={formData.barcode} onChange={handleChange} required className="w-full p-3 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green" />
+              </div>
+
+               {/* Status is preset, so it can be a hidden field or removed if always 'available' on add */}
+               {/* <input type="hidden" name="status" value={formData.status} /> */}
+            </div>
+
+            <div className="pt-4 flex justify-end">
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex items-center justify-center gap-2 w-full sm:w-auto bg-button-yellow text-button-text-black px-8 py-3 rounded-lg font-bold hover:bg-yellow-500 transition disabled:opacity-60"
+              >
+                <PlusCircle size={20} />
+                {loading ? 'Adding...' : 'Add Book'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </main>
   )
