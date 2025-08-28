@@ -80,7 +80,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-dark-green backdrop-blur-lg">
+      <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-green-900 backdrop-blur-lg">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <a href="/" className="text-xl font-bold uppercase tracking-wider text-white">
@@ -126,7 +126,7 @@ function NavItem({ item, pathname, isMobile = false, onLinkClick }: { item: NavI
   if (item.children) {
     return (
       <div className="relative" onMouseEnter={() => !isMobile && setIsOpen(true)} onMouseLeave={() => !isMobile && setIsOpen(false)}>
-        <button onClick={() => isMobile && setIsOpen(!isOpen)} className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-gray-100 hover:bg-green-900 hover:text-white">
+        <button onClick={() => isMobile && setIsOpen(!isOpen)} className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-gray-100 hover:bg-dark-green hover:text-white">
           {item.label}
           <ChevronDown size={16} className={clsx("transition-transform", { "rotate-180": isOpen })} />
         </button>
@@ -145,8 +145,8 @@ function NavItem({ item, pathname, isMobile = false, onLinkClick }: { item: NavI
                 className={clsx(
                   "block rounded-md px-3 py-2 text-sm font-medium",
                   pathname === child.href
-                    ? "bg-green-900 text-white"
-                    : "text-gray-100 hover:bg-green-900 hover:text-white"
+                    ? "bg-dark-green text-white"
+                    : "text-gray-100 hover:bg-dark-green hover:text-white"
                 )}
               >
                 {child.label}
@@ -164,7 +164,7 @@ function NavItem({ item, pathname, isMobile = false, onLinkClick }: { item: NavI
       onClick={onLinkClick}
       className={clsx(
         "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-        isActive ? "bg-light-green text-white" : "text-gray-100 hover:bg-green-900 hover:text-white"
+        isActive ? "bg-dark-green text-white" : "text-gray-100 hover:bg-dark-green hover:text-white"
       )}
     >
       {item.label}
@@ -192,7 +192,7 @@ function AuthButton({ isLoggedIn, handleLogout, isMobile = false }: { isLoggedIn
       href="/login"
       className={clsx(
         "rounded-md px-4 py-2 text-sm font-medium transition-colors",
-        "bg-green-900 text-white hover:bg-green-950",
+        "bg-dark-green text-white hover:bg-dark-green",
         { "w-full text-center block": isMobile }
       )}
     >

@@ -153,7 +153,7 @@ export default function FeedbackWidget() {
       {/* Floating Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-4 right-4 z-50 bg-button-yellow text-button-text-black w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-transform transform hover:bg-secondary-white hover:scale-110"
+        className="fixed bottom-4 right-4 z-50 bg-dark-green text-button-text-black w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-transform transform hover:bg-button-yellow hover:scale-110"
         aria-label="Toggle feedback widget"
       >
         {isOpen ? <CloseIcon /> : <MessageIcon />}
