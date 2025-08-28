@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Periodical } from '@/app/periodicals/page'
+import { X } from 'lucide-react'
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  periodicalToEdit?: Periodical | null; // ✨ Optional prop for editing
+  periodicalToEdit?: Periodical | null;
 }
 
 export default function AddPeriodicalModal({ isOpen, onClose, onSuccess, periodicalToEdit }: Props) {
@@ -18,7 +19,7 @@ export default function AddPeriodicalModal({ isOpen, onClose, onSuccess, periodi
   const [type, setType] = useState('monthly')
   const [loading, setLoading] = useState(false)
 
-  // ✨ Pre-fill form if in edit mode
+  // Pre-fill form if in edit mode
   useEffect(() => {
     if (periodicalToEdit) {
       setName(periodicalToEdit.name);
@@ -26,7 +27,7 @@ export default function AddPeriodicalModal({ isOpen, onClose, onSuccess, periodi
       setImageUrl(periodicalToEdit.image_url);
       setType(periodicalToEdit.type);
     } else {
-      // Reset form if in "add" mode
+      // Reset form for "add new" mode when modal opens
       setName('');
       setLanguage('');
       setImageUrl('');
@@ -37,31 +38,17 @@ export default function AddPeriodicalModal({ isOpen, onClose, onSuccess, periodi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-
     const periodicalData = { name, language, image_url: imageUrl, type };
 
-    let error;
-
-    if (periodicalToEdit) {
-      // ✨ UPDATE logic
-      const { error: updateError } = await supabase
-        .from('periodicals')
-        .update(periodicalData)
-        .eq('id', periodicalToEdit.id);
-      error = updateError;
-    } else {
-      // ✨ INSERT logic (original)
-      const { error: insertError } = await supabase
-        .from('periodicals')
-        .insert(periodicalData);
-      error = insertError;
-    }
+    const { error } = periodicalToEdit
+      ? await supabase.from('periodicals').update(periodicalData).eq('id', periodicalToEdit.id)
+      : await supabase.from('periodicals').insert(periodicalData);
 
     if (error) {
-      alert(`Failed to ${periodicalToEdit ? 'update' : 'add'} periodical.`);
+      // In a real app, you'd show a toast notification here
       console.error(error);
+      alert(`Failed to ${periodicalToEdit ? 'update' : 'add'} periodical.`);
     } else {
-      alert(`✅ Periodical ${periodicalToEdit ? 'updated' : 'added'} successfully!`);
       onSuccess();
       onClose();
     }
@@ -70,35 +57,42 @@ export default function AddPeriodicalModal({ isOpen, onClose, onSuccess, periodi
 
   if (!isOpen) return null
 
+  // --- REDESIGNED JSX ---
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
-      <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
-        {/* ✨ Dynamic title */}
-        <h2 className="text-2xl font-bold mb-6">{periodicalToEdit ? 'Edit Periodical' : 'Add New Periodical'}</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Name</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className="mt-1 w-full p-2 border rounded-md"/>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+      <div className="bg-secondary-white rounded-xl shadow-2xl max-w-lg w-full border border-primary-dark-grey" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b border-primary-dark-grey flex justify-between items-center">
+          <h2 className="text-lg font-bold font-heading">{periodicalToEdit ? 'Edit Periodical' : 'Add New Periodical'}</h2>
+          <button onClick={onClose} className="p-1 rounded-full text-text-grey hover:bg-primary-dark-grey hover:text-red-500 transition">
+            <X size={20} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label className="text-sm font-semibold text-text-grey">Name</label>
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-primary-grey focus:outline-none focus:ring-2 focus:ring-dark-green" />
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-text-grey">Language</label>
+              <input type="text" value={language} onChange={(e) => setLanguage(e.target.value)} required className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-primary-grey focus:outline-none focus:ring-2 focus:ring-dark-green" />
+            </div>
+             <div>
+              <label className="text-sm font-semibold text-text-grey">Type</label>
+              <select value={type} onChange={(e) => setType(e.target.value)} className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-primary-grey focus:outline-none focus:ring-2 focus:ring-dark-green">
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-sm font-semibold text-text-grey">Image URL</label>
+              <input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} required className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-primary-grey focus:outline-none focus:ring-2 focus:ring-dark-green" />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Language</label>
-            <input type="text" value={language} onChange={(e) => setLanguage(e.target.value)} required className="mt-1 w-full p-2 border rounded-md"/>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Image URL</label>
-            <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="mt-1 w-full p-2 border rounded-md"/>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Type</label>
-            <select value={type} onChange={(e) => setType(e.target.value)} className="mt-1 w-full p-2 border rounded-md bg-white">
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="yearly">Yearly</option>
-            </select>
-          </div>
-          <div className="flex justify-end gap-4 pt-4">
-            <button type="button" onClick={onClose} className="bg-gray-300 px-4 py-2 rounded-lg">Cancel</button>
-            <button type="submit" disabled={loading} className="bg-blue-600 text-white px-4 py-2 rounded-lg disabled:opacity-50">
+          <div className="flex justify-end gap-3 bg-primary-grey p-4 rounded-b-xl">
+            <button type="button" onClick={onClose} className="px-5 py-2 text-sm font-semibold bg-secondary-white border border-primary-dark-grey rounded-lg hover:bg-primary-dark-grey">Cancel</button>
+            <button type="submit" disabled={loading} className="px-5 py-2 text-sm font-semibold text-white bg-dark-green rounded-lg hover:bg-icon-green disabled:opacity-70">
               {loading ? 'Saving...' : (periodicalToEdit ? 'Save Changes' : 'Add Periodical')}
             </button>
           </div>
