@@ -23,6 +23,7 @@ interface BookData {
   shelf_location: string;
   call_number: string;
   barcode: string;
+  status: string;
 }
 
 export default function UpdateBookPanel({ showSidebar, setShowSidebar }: Props) {
@@ -81,6 +82,7 @@ export default function UpdateBookPanel({ showSidebar, setShowSidebar }: Props) 
         author: book.author,
         shelf_location: book.shelf_location,
         call_number: book.call_number,
+        status: book.status,
         // Barcode and language are not updated
       })
       .eq('id', book.id)
@@ -161,7 +163,11 @@ export default function UpdateBookPanel({ showSidebar, setShowSidebar }: Props) 
                   <label className="text-sm font-semibold text-text-grey">Call Number</label>
                   <input type="text" value={book.call_number} onChange={(e) => setBook({ ...book, call_number: e.target.value })} className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-primary-grey" />
                 </div>
-                <div className="md:col-span-2">
+                <div>
+                  <label className="text-sm font-semibold text-text-grey">Status (borrowed/available)</label>
+                  <input type="text" value={book.status} onChange={(e) => setBook({ ...book, status: e.target.value })} className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-primary-grey" />
+                </div>
+                <div>
                   <label className="text-sm font-semibold text-text-grey">Barcode</label>
                   <input type="text" value={book.barcode} readOnly className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-gray-200 text-gray-500 cursor-not-allowed" />
                 </div>
