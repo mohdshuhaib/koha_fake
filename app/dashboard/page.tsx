@@ -18,7 +18,6 @@ import {
 import React from 'react'
 import clsx from 'classnames'
 
-// --- Data Fetching and Logic (Unchanged) ---
 export default function DashboardPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -30,6 +29,9 @@ export default function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [allDueBooks, setAllDueBooks] = useState<any[]>([])
   const [modalLoading, setModalLoading] = useState(false)
+
+  // ✨ State for the modal's batch filter
+  const [selectedBatch, setSelectedBatch] = useState('All')
 
   useEffect(() => {
     const checkAuthAndFetchStats = async () => {
@@ -51,7 +53,8 @@ export default function DashboardPage() {
         supabase.from('members').select('*', { count: 'exact', head: true }),
         supabase.from('borrow_records').select('*', { count: 'exact', head: true }).is('return_date', null),
         supabase.from('borrow_records').select('fine').eq('fine_paid', false).gt('fine', 0),
-        supabase.from('borrow_records').select(`id, book:book_id(title, barcode), member:member_id(name)`).is('return_date', null).gte('due_date', tomorrowStart).lt('due_date', tomorrowEnd),
+        // ✨ Fetch batch in the query for member data
+        supabase.from('borrow_records').select(`id, book:book_id(title, barcode), member:member_id(name, batch)`).is('return_date', null).gte('due_date', tomorrowStart).lt('due_date', tomorrowEnd),
         supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'MAL'),
         supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'ENG'),
         supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'URD'),
@@ -74,7 +77,10 @@ export default function DashboardPage() {
   const fetchAllDueBooks = async () => {
     setIsModalOpen(true)
     setModalLoading(true)
-    const { data, error } = await supabase.from('borrow_records').select(`id, due_date, book:book_id(title), member:member_id(name)`).is('return_date', null).order('due_date', { ascending: true })
+    setSelectedBatch('All'); // ✨ Reset filter when opening modal
+
+    // ✨ Fetch member's batch along with other data
+    const { data, error } = await supabase.from('borrow_records').select(`id, due_date, book:book_id(title), member:member_id(name, batch)`).is('return_date', null).order('due_date', { ascending: true })
     if (data) setAllDueBooks(data)
     if (error) {
       console.error("Failed to fetch all due books:", error)
@@ -82,6 +88,12 @@ export default function DashboardPage() {
     }
     setModalLoading(false)
   }
+
+  // ✨ Derive unique batches and filtered list for the modal
+  const uniqueBatches = ['All', ...Array.from(new Set(allDueBooks.map(book => book.member?.batch).filter(Boolean)))];
+  const filteredDueBooks = selectedBatch === 'All'
+    ? allDueBooks
+    : allDueBooks.filter(book => book.member?.batch === selectedBatch);
 
   const languageBreakdown = [
     { label: 'Malayalam', count: stats.malBooks, color: 'bg-yellow-400' },
@@ -92,7 +104,6 @@ export default function DashboardPage() {
 
   if (loading) return <div className="p-16"><Loading /></div>
 
-  // --- Redesigned JSX ---
   return (
     <>
       <main className="min-h-screen bg-primary-grey pt-24 px-4 pb-10">
@@ -101,7 +112,6 @@ export default function DashboardPage() {
             Library Dashboard
           </h1>
 
-          {/* --- Top Grid with Modern Stat Cards --- */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard label="Total Books" value={stats.totalBooks} icon={<BookCopy className="text-blue-500" />} />
             <StatCard label="Total Members" value={stats.totalMembers} icon={<Users className="text-purple-500" />} />
@@ -109,9 +119,7 @@ export default function DashboardPage() {
             <StatCard label="Pending Fines" value={`₹${stats.pendingFines}`} icon={<IndianRupee className="text-red-500" />} />
           </div>
 
-          {/* --- Main Content Grid --- */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Language Breakdown Card */}
             <div className="lg:col-span-2 bg-secondary-white rounded-xl p-6 shadow-lg border border-primary-dark-grey">
               <div className='flex items-center gap-3 mb-4'>
                 <Languages className='text-icon-green' />
@@ -135,7 +143,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Books Due Tomorrow Card */}
             <div className="bg-secondary-white rounded-xl p-6 shadow-lg border border-primary-dark-grey">
               <div className='flex items-center gap-3 mb-4'>
                 <BookText className='text-icon-green' />
@@ -161,38 +168,56 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* --- Redesigned Modal --- */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="All Unreturned Books">
         {modalLoading ? (
           <div className="p-8"><Loading /></div>
         ) : allDueBooks.length === 0 ? (
           <p className="p-8 text-text-grey text-center">No outstanding books found. Great job!</p>
         ) : (
-          <div className="overflow-y-auto max-h-[70vh]">
-            <table className="min-w-full text-sm">
-              <thead className="sticky top-0 bg-secondary-light-black text-white">
-                <tr>
-                  <th className="p-3 text-left font-semibold uppercase tracking-wider">Book</th>
-                  <th className="p-3 text-left font-semibold uppercase tracking-wider">Member</th>
-                  <th className="p-3 text-left font-semibold uppercase tracking-wider">Due Date</th>
-                </tr>
-              </thead>
-              <tbody className="bg-secondary-white">
-                {allDueBooks.map(r => {
-                  const isOverdue = dayjs().isAfter(dayjs(r.due_date), 'day')
-                  return (
-                    <tr key={r.id} className="border-t border-primary-dark-grey">
-                      <td className="p-3 text-heading-text-black font-semibold">{r.book?.title}</td>
-                      <td className="p-3 text-text-grey">{r.member?.name}</td>
-                      <td className={clsx("p-3 font-semibold flex items-center gap-2", isOverdue ? 'text-red-600' : 'text-text-grey')}>
-                        {isOverdue && <AlertTriangle size={14} />}
-                        {dayjs(r.due_date).format('DD MMM YYYY')}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+          <div className="flex flex-col">
+            {/* ✨ Batch Filter Buttons */}
+            <div className="p-4 border-b border-primary-dark-grey flex flex-wrap gap-2">
+              {uniqueBatches.map(batch => (
+                <button
+                  key={batch}
+                  onClick={() => setSelectedBatch(batch)}
+                  className={clsx(
+                    "px-3 py-1 rounded-full text-xs font-semibold transition",
+                    selectedBatch === batch ? 'bg-blue-600 text-white' : 'bg-primary-grey text-text-grey hover:bg-primary-dark-grey'
+                  )}
+                >
+                  {batch}
+                </button>
+              ))}
+            </div>
+            <div className="overflow-y-auto max-h-[65vh]">
+              <table className="min-w-full text-sm">
+                <thead className="sticky top-0 bg-secondary-light-black text-white">
+                  <tr>
+                    <th className="p-3 text-left font-semibold uppercase tracking-wider">Book</th>
+                    <th className="p-3 text-left font-semibold uppercase tracking-wider">Member</th>
+                    <th className="p-3 text-left font-semibold uppercase tracking-wider">Due Date</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-secondary-white">
+                  {/* ✨ Map over the filtered list */}
+                  {filteredDueBooks.map(r => {
+                    const isOverdue = dayjs().isAfter(dayjs(r.due_date), 'day')
+                    return (
+                      <tr key={r.id} className="border-t border-primary-dark-grey">
+                        <td className="p-3 text-heading-text-black font-semibold">{r.book?.title}</td>
+                        <td className="p-3 text-text-grey">{r.member?.name}</td>
+                        <td className={clsx("p-3 font-semibold flex items-center gap-2", isOverdue ? 'text-red-600' : 'text-text-grey')}>
+                          {isOverdue && <AlertTriangle size={14} />}
+                          {dayjs(r.due_date).format('DD MMM YYYY')}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              {filteredDueBooks.length === 0 && <p className="text-center p-6 text-text-grey">No unreturned books for this batch.</p>}
+            </div>
           </div>
         )}
       </Modal>
@@ -200,7 +225,6 @@ export default function DashboardPage() {
   )
 }
 
-// --- Modern StatCard Component ---
 function StatCard({ label, value, icon }: { label: string; value: number | string; icon: React.ReactNode }) {
   return (
     <div className="bg-secondary-white rounded-xl p-5 shadow-lg flex items-center gap-4 border border-primary-dark-grey transition hover:shadow-xl hover:-translate-y-1">
@@ -215,7 +239,6 @@ function StatCard({ label, value, icon }: { label: string; value: number | strin
   )
 }
 
-// --- Reusable Modal Component ---
 function Modal({ isOpen, onClose, title, children }: { isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
   if (!isOpen) return null
 
