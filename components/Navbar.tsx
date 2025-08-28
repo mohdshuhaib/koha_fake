@@ -134,7 +134,7 @@ function NavItem({ item, pathname, isMobile = false, onLinkClick }: { item: NavI
           <div
             className={clsx(
               "flex flex-col space-y-1",
-              !isMobile && "absolute left-0 top-full z-10 w-48 rounded-md bg-light-green p-2 shadow-lg"
+              !isMobile && "absolute left-0 top-full z-10 w-48 rounded-md bg-green-950 p-2 shadow-lg"
             )}
           >
             {item.children.map(child => (
