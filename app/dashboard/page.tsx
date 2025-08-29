@@ -13,10 +13,12 @@ import {
   X,
   Languages,
   BookText,
-  AlertTriangle
+  AlertTriangle,
+  Download
 } from 'lucide-react'
 import React from 'react'
 import clsx from 'classnames'
+import * as XLSX from 'xlsx'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -29,9 +31,8 @@ export default function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [allDueBooks, setAllDueBooks] = useState<any[]>([])
   const [modalLoading, setModalLoading] = useState(false)
-
-  // ✨ State for the modal's batch filter
   const [selectedBatch, setSelectedBatch] = useState('All')
+  const [downloading, setDownloading] = useState<string | null>(null)
 
   useEffect(() => {
     const checkAuthAndFetchStats = async () => {
@@ -53,7 +54,6 @@ export default function DashboardPage() {
         supabase.from('members').select('*', { count: 'exact', head: true }),
         supabase.from('borrow_records').select('*', { count: 'exact', head: true }).is('return_date', null),
         supabase.from('borrow_records').select('fine').eq('fine_paid', false).gt('fine', 0),
-        // ✨ Fetch batch in the query for member data
         supabase.from('borrow_records').select(`id, book:book_id(title, barcode), member:member_id(name, batch)`).is('return_date', null).gte('due_date', tomorrowStart).lt('due_date', tomorrowEnd),
         supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'MAL'),
         supabase.from('books').select('*', { count: 'exact', head: true }).eq('language', 'ENG'),
@@ -77,9 +77,7 @@ export default function DashboardPage() {
   const fetchAllDueBooks = async () => {
     setIsModalOpen(true)
     setModalLoading(true)
-    setSelectedBatch('All'); // ✨ Reset filter when opening modal
-
-    // ✨ Fetch member's batch along with other data
+    setSelectedBatch('All');
     const { data, error } = await supabase.from('borrow_records').select(`id, due_date, book:book_id(title), member:member_id(name, batch)`).is('return_date', null).order('due_date', { ascending: true })
     if (data) setAllDueBooks(data)
     if (error) {
@@ -89,17 +87,77 @@ export default function DashboardPage() {
     setModalLoading(false)
   }
 
-  // ✨ Derive unique batches and filtered list for the modal
+  // ✨ UPDATED: handleDownload function now includes borrow counts
+  const handleDownload = async (languageCode: string, languageLabel: string) => {
+    setDownloading(languageCode);
+
+    // Step 1: Get all borrow records to calculate counts
+    const { data: recordsData, error: recordsError } = await supabase
+      .from('borrow_records')
+      .select('book_id');
+
+    if (recordsError || !recordsData) {
+      alert(`Could not fetch borrow records for ${languageLabel} books.`);
+      setDownloading(null);
+      return;
+    }
+
+    // Step 2: Create a map of borrow counts for each book_id
+    const borrowCounts = recordsData.reduce((acc: { [key: string]: number }, record) => {
+        if (record.book_id) {
+            acc[record.book_id] = (acc[record.book_id] || 0) + 1;
+        }
+        return acc;
+    }, {});
+
+    const uniqueBookIds = Object.keys(borrowCounts);
+
+    if (uniqueBookIds.length === 0) {
+        alert(`No ${languageLabel} books have ever been borrowed.`);
+        setDownloading(null);
+        return;
+    }
+
+    // Step 3: Get details for the borrowed books of the specified language
+    const { data: booksData, error: booksError } = await supabase
+      .from('books')
+      .select('id, title, author, barcode, call_number, shelf_location') // Select 'id' to map counts
+      .eq('language', languageCode)
+      .in('id', uniqueBookIds);
+
+    if (booksError || !booksData || booksData.length === 0) {
+      alert(`No borrowed books found for the ${languageLabel} language.`);
+      setDownloading(null);
+      return;
+    }
+
+    // Step 4: Combine book details with borrow counts and format for Excel
+    const excelData = booksData.map(book => ({
+        Title: book.title,
+        Author: book.author,
+        Barcode: book.barcode,
+        'Borrow Count': borrowCounts[book.id] || 0, // Add the count
+        'Call Number': book.call_number,
+        'Shelf Location': book.shelf_location,
+    })).sort((a, b) => b['Borrow Count'] - a['Borrow Count']); // Sort by most borrowed
+
+    // Step 5: Create and download the Excel file
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, `${languageLabel} Books`);
+    XLSX.writeFile(workbook, `borrowed-${languageLabel.toLowerCase()}-books.xlsx`);
+
+    setDownloading(null);
+  };
+
   const uniqueBatches = ['All', ...Array.from(new Set(allDueBooks.map(book => book.member?.batch).filter(Boolean)))];
-  const filteredDueBooks = selectedBatch === 'All'
-    ? allDueBooks
-    : allDueBooks.filter(book => book.member?.batch === selectedBatch);
+  const filteredDueBooks = selectedBatch === 'All' ? allDueBooks : allDueBooks.filter(book => book.member?.batch === selectedBatch);
 
   const languageBreakdown = [
-    { label: 'Malayalam', count: stats.malBooks, color: 'bg-yellow-400' },
-    { label: 'English', count: stats.engBooks, color: 'bg-blue-400' },
-    { label: 'Urdu', count: stats.urdBooks, color: 'bg-red-400' },
-    { label: 'Arabic', count: stats.arbBooks, color: 'bg-green-400' },
+    { label: 'Malayalam', code: 'MAL', count: stats.malBooks, color: 'bg-yellow-400' },
+    { label: 'English', code: 'ENG', count: stats.engBooks, color: 'bg-blue-400' },
+    { label: 'Urdu', code: 'URD', count: stats.urdBooks, color: 'bg-red-400' },
+    { label: 'Arabic', code: 'ARB', count: stats.arbBooks, color: 'bg-green-400' },
   ]
 
   if (loading) return <div className="p-16"><Loading /></div>
@@ -126,12 +184,22 @@ export default function DashboardPage() {
                 <h2 className="text-xl font-bold font-heading text-heading-text-black">Book Collection by Language</h2>
               </div>
               <div className="space-y-3">
-                {languageBreakdown.map(({ label, count, color }) => {
+                {languageBreakdown.map(({ label, code, count, color }) => {
                   const percent = stats.totalBooks > 0 ? (count / stats.totalBooks) * 100 : 0
                   return (
                     <div key={label}>
-                      <div className="flex justify-between text-sm font-semibold text-text-grey mb-1">
-                        <span>{label}</span>
+                      <div className="flex justify-between items-center text-sm font-semibold text-text-grey mb-1">
+                        <div className="flex items-center gap-4">
+                            <span>{label}</span>
+                            <button
+                                onClick={() => handleDownload(code, label)}
+                                disabled={downloading === code}
+                                className="text-blue-500 hover:text-blue-700 disabled:opacity-50 disabled:cursor-wait"
+                                title={`Download list of borrowed ${label} books`}
+                            >
+                                <Download size={16} />
+                            </button>
+                        </div>
                         <span>{count} / {stats.totalBooks}</span>
                       </div>
                       <div className="w-full bg-primary-dark-grey h-2.5 rounded-full">
@@ -169,23 +237,11 @@ export default function DashboardPage() {
       </main>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="All Unreturned Books">
-        {modalLoading ? (
-          <div className="p-8"><Loading /></div>
-        ) : allDueBooks.length === 0 ? (
-          <p className="p-8 text-text-grey text-center">No outstanding books found. Great job!</p>
-        ) : (
+        {modalLoading ? <div className="p-8"><Loading /></div> : allDueBooks.length === 0 ? <p className="p-8 text-text-grey text-center">No outstanding books found. Great job!</p> : (
           <div className="flex flex-col">
-            {/* ✨ Batch Filter Buttons */}
             <div className="p-4 border-b border-primary-dark-grey flex flex-wrap gap-2">
               {uniqueBatches.map(batch => (
-                <button
-                  key={batch}
-                  onClick={() => setSelectedBatch(batch)}
-                  className={clsx(
-                    "px-3 py-1 rounded-full text-xs font-semibold transition",
-                    selectedBatch === batch ? 'bg-blue-600 text-white' : 'bg-primary-grey text-text-grey hover:bg-primary-dark-grey'
-                  )}
-                >
+                <button key={batch} onClick={() => setSelectedBatch(batch)} className={clsx("px-3 py-1 rounded-full text-xs font-semibold transition", selectedBatch === batch ? 'bg-blue-600 text-white' : 'bg-primary-grey text-text-grey hover:bg-primary-dark-grey')}>
                   {batch}
                 </button>
               ))}
@@ -200,7 +256,6 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-secondary-white">
-                  {/* ✨ Map over the filtered list */}
                   {filteredDueBooks.map(r => {
                     const isOverdue = dayjs().isAfter(dayjs(r.due_date), 'day')
                     return (
@@ -228,9 +283,7 @@ export default function DashboardPage() {
 function StatCard({ label, value, icon }: { label: string; value: number | string; icon: React.ReactNode }) {
   return (
     <div className="bg-secondary-white rounded-xl p-5 shadow-lg flex items-center gap-4 border border-primary-dark-grey transition hover:shadow-xl hover:-translate-y-1">
-      <div className="bg-primary-grey p-3 rounded-full">
-        {icon}
-      </div>
+      <div className="bg-primary-grey p-3 rounded-full">{icon}</div>
       <div>
         <p className="text-sm text-text-grey font-semibold">{label}</p>
         <p className="text-2xl font-bold text-heading-text-black">{value}</p>
@@ -241,7 +294,6 @@ function StatCard({ label, value, icon }: { label: string; value: number | strin
 
 function Modal({ isOpen, onClose, title, children }: { isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
   if (!isOpen) return null
-
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
       <div className="bg-secondary-white rounded-xl shadow-2xl max-w-3xl w-full flex flex-col border border-primary-dark-grey">
@@ -251,9 +303,7 @@ function Modal({ isOpen, onClose, title, children }: { isOpen: boolean; onClose:
             <X size={20} />
           </button>
         </div>
-        <div>
-          {children}
-        </div>
+        <div>{children}</div>
       </div>
     </div>
   )
