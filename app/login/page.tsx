@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Loading from '@/app/loading'
+import Link from 'next/link'
+import { Mail, Lock, LogIn, AlertCircle, CheckCircle2 } from 'lucide-react'
+import clsx from 'classnames'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -11,157 +14,144 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [checkingSession, setCheckingSession] = useState(true)
-  const [showReset, setShowReset] = useState(false)
+
+  // State to toggle between login and password reset views
+  const [view, setView] = useState<'login' | 'reset'>('login')
+
   const [resetEmail, setResetEmail] = useState('')
-  const [resetMsg, setResetMsg] = useState('')
+  const [resetMsg, setResetMsg] = useState<{type: 'success' | 'error', text: string} | null>(null)
   const [resetLoading, setResetLoading] = useState(false)
 
+  // --- Logic (Unchanged, but organized) ---
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-
       if (session) {
+        // Redirect if a session already exists
         const role = session.user.user_metadata?.role || 'member'
-
-        if (role === 'librarian') {
-          router.replace('/dashboard') // Librarian dashboard
-        } else {
-          router.replace('/member/dashboard-mem') // Redirect member to their dashboard
-        }
+        router.replace(role === 'librarian' ? '/dashboard' : '/member/dashboard-mem')
       } else {
         setCheckingSession(false)
       }
     }
-
     checkSession()
   }, [router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) return setError(error.message)
-    router.push('/dashboard')
+    if (error) {
+      setError(error.message)
+    } else {
+      router.push('/dashboard') // Successful login redirects
+    }
   }
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     setResetLoading(true)
-    setResetMsg('')
+    setResetMsg(null)
     const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
       redirectTo: `${location.origin}/reset-password`,
     })
     if (error) {
-      setResetMsg('❌ ' + error.message)
+      setResetMsg({ type: 'error', text: error.message })
     } else {
-      setResetMsg('📧 Password reset email sent. Check your inbox.')
+      setResetMsg({ type: 'success', text: 'Password reset email sent. Check your inbox.' })
     }
     setResetLoading(false)
   }
 
   if (checkingSession) return <Loading />
 
+  // --- REDESIGNED JSX ---
   return (
     <main className="flex min-h-screen items-center justify-center bg-primary-grey px-4">
-      <form
-        onSubmit={handleLogin}
-        className="w-full max-w-md space-y-6  bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-8"
-      >
-        <div className="text-center">
-          <h1 className="text-3xl font-extrabold text-heading-text-black font-heading">🔐 Librarian Login</h1>
-          <p className="text-sm text-sub-heading-text-grey mt-1">Welcome back! Please sign in.</p>
-        </div>
+      <div className="w-full max-w-md bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-8">
+        {view === 'login' ? (
+          // --- Login View ---
+          <div className="space-y-6">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-heading-text-black font-heading tracking-wider">Librarian Login</h1>
+              <p className="text-sm text-sub-heading-text-grey mt-1">Welcome back! Please sign in.</p>
+            </div>
 
-        {error && (
-          <p
-            className="text-red-600 text-sm bg-red-100/90 px-4 py-2 rounded shadow"
-          >
-            {error}
-          </p>
-        )}
+            {error && (
+              <div className="flex items-center gap-3 p-3 rounded-lg text-sm bg-red-100 text-red-800">
+                <AlertCircle size={20} />
+                <span className="font-medium">{error}</span>
+              </div>
+            )}
 
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-text-grey">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full px-4 py-2 bg-secondary-white text-text-grey border border-primary-dark-grey rounded-md shadow-sm placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition"
-              placeholder="you@domain.com"
-            />
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label htmlFor="email" className="block text-sm font-semibold text-text-grey mb-1">Email</label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><Mail className="h-5 w-5 text-text-grey" /></div>
+                  <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3 pl-10 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green" placeholder="you@domain.com" />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-semibold text-text-grey mb-1">Password</label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><Lock className="h-5 w-5 text-text-grey" /></div>
+                  <input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 pl-10 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green" placeholder="••••••••" />
+                </div>
+                <button type="button" onClick={() => setView('reset')} className="text-sm text-link-text-green hover:underline cursor-pointer mt-2 text-left w-full">
+                  Forgot password?
+                </button>
+              </div>
+
+              <button type="submit" className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-button-yellow text-button-text-black font-bold hover:bg-yellow-500 transition-colors">
+                <LogIn size={18} /> Sign In
+              </button>
+            </form>
           </div>
+        ) : (
+          // --- Password Reset View ---
+          <div className="space-y-6">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-heading-text-black font-heading tracking-wider">Reset Password</h1>
+              <p className="text-sm text-sub-heading-text-grey mt-1">Enter your email to receive a reset link.</p>
+            </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-text-grey">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full px-4 py-2 bg-secondary-white text-text-grey border border-primary-dark-grey rounded-md shadow-sm placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-primary-dark-grey transition "
-              placeholder="••••••••"
-            />
-            <p
-              onClick={() => setShowReset(true)}
-              className="text-sm text-blue-600 hover:underline cursor-pointer mt-2"
-            >
-              Forgot password?
-            </p>
+            {resetMsg && (
+              <div className={clsx("flex items-center gap-3 p-3 rounded-lg text-sm", resetMsg.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800')}>
+                {resetMsg.type === 'error' ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}
+                <span className="font-medium">{resetMsg.text}</span>
+              </div>
+            )}
 
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          className="w-full py-2 rounded-md bg-button-yellow text-button-text-black font-semibold hover:bg-primary-dark-grey transition-colors"
-        >
-          Sign In
-        </button>
-      </form>
-      {showReset && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md space-y-4">
-            <h2 className="text-xl font-bold">🔑 Reset Password</h2>
-            <p className="text-sm text-gray-600">
-              Enter your registered email to receive a password reset link.
-            </p>
-
-            <form onSubmit={handleResetPassword} className="space-y-3">
-              <input
-                type="email"
-                placeholder="you@domain.com"
-                value={resetEmail}
-                onChange={(e) => setResetEmail(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-md"
-              />
-              <button
-                type="submit"
-                className="w-full py-2 bg-button-yellow text-black rounded-md hover:bg-yellow-600 transition"
-                disabled={resetLoading}
-              >
+            <form onSubmit={handleResetPassword} className="space-y-4">
+               <div>
+                <label htmlFor="reset-email" className="block text-sm font-semibold text-text-grey mb-1">Email</label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><Mail className="h-5 w-5 text-text-grey" /></div>
+                  <input id="reset-email" type="email" required value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} className="w-full p-3 pl-10 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green" placeholder="you@domain.com" />
+                </div>
+              </div>
+              <button type="submit" disabled={resetLoading} className="w-full py-3 rounded-lg bg-button-yellow text-button-text-black font-bold hover:bg-yellow-500 transition-colors disabled:opacity-70">
                 {resetLoading ? 'Sending...' : 'Send Reset Link'}
               </button>
             </form>
-
-            {resetMsg && <p className="text-sm mt-2 text-gray-700">{resetMsg}</p>}
-
-            <button
-              onClick={() => setShowReset(false)}
-              className="text-sm text-blue-500 hover:underline mt-2"
-            >
-              Close
+            <button onClick={() => setView('login')} className="text-sm text-link-text-green hover:underline cursor-pointer text-center w-full">
+              Back to Login
             </button>
           </div>
+        )}
+
+        {/* --- Member Login Link --- */}
+        <div className="text-center mt-6 pt-6 border-t border-primary-dark-grey">
+          <p className="text-sm text-text-grey">
+            Are you a member of PMSA Library?{' '}
+            <Link href="/member-login" className="font-semibold text-link-text-green hover:underline">
+              Login here
+            </Link>
+          </p>
         </div>
-      )}
+      </div>
     </main>
   )
 }
