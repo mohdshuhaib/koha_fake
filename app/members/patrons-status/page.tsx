@@ -4,9 +4,10 @@ import { useEffect, useState, ReactNode } from 'react'
 import dayjs from 'dayjs'
 import Loading from '@/app/loading'
 import { supabase } from '@/lib/supabase'
-import { Search, X, BookOpen, IndianRupee, ChevronLeft, ChevronRight, Eye, ArrowLeft } from 'lucide-react'
+import { Search, X, BookOpen, IndianRupee, ChevronLeft, ChevronRight, Eye, ArrowLeft, Download } from 'lucide-react'
 import Link from 'next/link'
 import clsx from 'classnames';
+import * as XLSX from 'xlsx'; // ✨ 1. Import xlsx library
 
 // --- Type Definitions ---
 type Member = {
@@ -17,7 +18,7 @@ type Member = {
   category: string
 }
 
-type Record = {
+type BorrowRecord = {
   borrow_date: string
   due_date: string
   return_date: string | null
@@ -25,15 +26,15 @@ type Record = {
   fine_paid: boolean
   books: {
     title: string
-  } | null // Can be null if book is deleted
+  } | null
 }
 
 type MemberDetails = {
   name: string
   booksRead: number
   pendingFines: number
-  returned: Record[]
-  notReturned: Record[]
+  returned: BorrowRecord[]
+  notReturned: BorrowRecord[]
 }
 
 // --- Main Page Component ---
@@ -47,8 +48,8 @@ export default function PatronStatusPage() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
   const [memberDetails, setMemberDetails] = useState<MemberDetails | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
+  const [downloadingBatch, setDownloadingBatch] = useState<string | null>(null); // ✨ State for download feedback
 
-  // --- Data Fetching Logic (Unchanged) ---
   useEffect(() => {
     const fetchMembers = async () => {
       setLoading(true)
@@ -66,8 +67,8 @@ export default function PatronStatusPage() {
 
     const { data: records } = await supabase.from('borrow_records').select('*, books(title)').eq('member_id', member.id).order('borrow_date', { ascending: false })
 
-    const returned: Record[] = [];
-    const notReturned: Record[] = [];
+    const returned: BorrowRecord[] = [];
+    const notReturned: BorrowRecord[] = [];
     records?.forEach(record => {
         if (record.return_date) returned.push(record);
         else notReturned.push(record);
@@ -85,6 +86,57 @@ export default function PatronStatusPage() {
     setDetailsLoading(false)
   }
 
+  // ✨ 2. Add the Excel download function
+  const handleBatchDownload = async (batch: string) => {
+    setDownloadingBatch(batch);
+    try {
+        // Step 1: Fetch all records that have been returned
+        const { data: returnedRecords, error: recordsError } = await supabase
+            .from('borrow_records')
+            .select('member_id')
+            .not('return_date', 'is', null);
+
+        if (recordsError) throw recordsError;
+
+        // Step 2: Count returns for each member
+        const returnCounts = returnedRecords.reduce((acc, record) => {
+            if (record.member_id) {
+                acc[record.member_id] = (acc[record.member_id] || 0) + 1;
+            }
+            return acc;
+        }, {} as Record<string, number>);
+
+        // Step 3: Filter members of the selected batch who have at least one return
+        const membersInBatchWithReturns = members.filter(member =>
+            member.batch === batch && returnCounts[member.id] > 0
+        );
+
+        if (membersInBatchWithReturns.length === 0) {
+            alert(`No members in batch "${batch}" have returned any books yet.`);
+            return;
+        }
+
+        // Step 4: Prepare data for Excel export
+        const excelData = membersInBatchWithReturns.map(member => ({
+            'Member Name': member.name,
+            'Returned Books Count': returnCounts[member.id],
+            'Barcode': member.barcode,
+        }));
+
+        // Step 5: Generate and download the Excel file
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, `${batch} Report`);
+        XLSX.writeFile(workbook, `returned-books-report-${batch}.xlsx`);
+
+    } catch (error) {
+        console.error('Failed to generate report:', error);
+        alert('An error occurred while generating the report.');
+    } finally {
+        setDownloadingBatch(null);
+    }
+  };
+
   const closeModal = () => {
     setSelectedMember(null)
     setMemberDetails(null)
@@ -96,12 +148,14 @@ export default function PatronStatusPage() {
       member.barcode.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
+  // ✨ Get unique batches for the filter buttons
+  const uniqueBatches = [...Array.from(new Set(members.map(m => m.batch).filter(Boolean)))].sort();
+
   const paginatedMembers = filteredMembers.slice((page - 1) * pageSize, page * pageSize)
   const totalPages = Math.ceil(filteredMembers.length / pageSize)
 
   if (loading) return <Loading />
 
-  // --- REDESIGNED JSX ---
   return (
     <>
       <div className="min-h-screen bg-primary-grey pt-24 px-4 pb-10">
@@ -111,22 +165,42 @@ export default function PatronStatusPage() {
               <h1 className="text-3xl md:text-4xl font-heading font-bold text-heading-text-black uppercase tracking-wider">
                 Patron Status
               </h1>
-              <p className="text-text-grey mt-1">Search for patrons to view their borrowing history and fine status.</p>
+              <p className="text-text-grey mt-1">Search for patrons or download batch-wise reports.</p>
             </div>
              <Link href="/members" className="flex items-center gap-2 text-sm font-semibold text-dark-green hover:text-icon-green transition">
-                <ArrowLeft size={16} /> Back to Patron Management
+               <ArrowLeft size={16} /> Back to Patron Management
             </Link>
           </div>
 
-          <div className="relative mb-6">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4"><Search className="h-5 w-5 text-text-grey" /></div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-              placeholder="Search by name or barcode..."
-              className="w-full md:w-1/2 p-3 pl-12 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green"
-            />
+          <div className="bg-secondary-white border border-primary-dark-grey rounded-xl shadow-lg p-6 mb-6">
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4"><Search className="h-5 w-5 text-text-grey" /></div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                placeholder="Search by name or barcode..."
+                className="w-full md:w-1/2 p-3 pl-12 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green"
+              />
+            </div>
+
+            {/* ✨ 3. Add Batch Download Buttons */}
+            <div className="mt-4 pt-4 border-t border-primary-dark-grey">
+                <h3 className="text-sm font-semibold text-text-grey mb-2">Download Batch Reports:</h3>
+                <div className="flex flex-wrap gap-2">
+                    {uniqueBatches.map(batch => (
+                        <button
+                            key={batch}
+                            onClick={() => handleBatchDownload(batch)}
+                            disabled={downloadingBatch === batch}
+                            className="flex items-center gap-2 text-xs font-bold bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full hover:bg-blue-200 transition disabled:opacity-70 disabled:cursor-wait"
+                        >
+                            <Download size={14} />
+                            {downloadingBatch === batch ? 'Generating...' : batch}
+                        </button>
+                    ))}
+                </div>
+            </div>
           </div>
 
           <div className="bg-secondary-white border border-primary-dark-grey rounded-xl shadow-lg overflow-hidden">
@@ -189,7 +263,7 @@ export default function PatronStatusPage() {
   )
 }
 
-// --- Helper Components ---
+// --- Helper Components (Unchanged) ---
 function DetailsModal({ isOpen, onClose, children }: { isOpen: boolean; onClose: () => void; children: ReactNode }) {
   if (!isOpen) return null;
   return (
@@ -213,7 +287,7 @@ function StatCard({ label, value, icon }: { label: string; value: number | strin
   )
 }
 
-function HistoryList({ title, records, isReturnedList }: { title: string; records: Record[]; isReturnedList: boolean }) {
+function HistoryList({ title, records, isReturnedList }: { title: string; records: BorrowRecord[]; isReturnedList: boolean }) {
   return (
     <div>
       <h3 className={clsx("text-lg font-bold mb-3", isReturnedList ? 'text-green-700' : 'text-red-700')}>{title}</h3>
