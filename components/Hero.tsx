@@ -22,7 +22,7 @@ export default function Hero() {
       {/* A modern content card using your 'dark-green' theme color.
         It's borderless with a large shadow for a floating effect.
       */}
-      <div className="max-w-4xl w-full text-center bg-green-900 rounded-3xl shadow-2xl p-8 md:p-12 space-y-6">
+      <div className="max-w-4xl w-full text-center bg-green-new rounded-3xl shadow-2xl p-8 md:p-12 space-y-6">
 
         {/* Gradient headline remains, as it works beautifully on the dark green */}
         <h1 className="text-4xl md:text-5xl uppercase font-heading bg-gradient-to-b from-white to-gray-300 bg-clip-text text-transparent drop-shadow-lg leading-tight">

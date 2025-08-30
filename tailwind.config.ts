@@ -19,7 +19,8 @@ module.exports = {
         'text-grey': '#5c5d5c',
         'button-text-black': '#000000',
         'sub-heading-text-grey': '#6e716e',
-        'link-text-green': '#016501',
+        'link-text-green': '#6A7F39',
+        'green-new':'#2C6B2F',
       },
       fontFamily: {
         body: "var(--font-muller2)",
