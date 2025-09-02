@@ -16,15 +16,13 @@ export default function Hero() {
   )
 
   return (
-    // Using your theme's 'primary-grey' for the page background
-    <div className="min-h-screen w-full bg-primary-grey flex items-center justify-center p-4">
+    // ✅ FIX: Changed 'items-center' to 'md:items-center' and adjusted padding.
+    // This vertically centers the card only on medium screens and up.
+    // On mobile, it aligns to the top, preventing overflow.
+    <div className="min-h-full w-full bg-primary-grey flex justify-center md:items-center py-24 px-4">
 
-      {/* A modern content card using your 'dark-green' theme color.
-        It's borderless with a large shadow for a floating effect.
-      */}
       <div className="max-w-4xl w-full text-center bg-green-new rounded-3xl shadow-2xl p-8 md:p-12 space-y-6">
 
-        {/* Gradient headline remains, as it works beautifully on the dark green */}
         <h1 className="text-4xl md:text-5xl uppercase font-heading bg-gradient-to-b from-white to-gray-300 bg-clip-text text-transparent drop-shadow-lg leading-tight">
           Welcome to PMSA Library
         </h1>
@@ -37,9 +35,7 @@ export default function Hero() {
           Explore a world of books, manage checkouts, and stay updated — all from a seamless, intuitive interface made for PMSA Wafy College.
         </p>
 
-        {/* Buttons now have higher contrast against the green background */}
         <div className="flex justify-center gap-4 flex-wrap pt-4 uppercase font-heading">
-          {/* Primary Action Button - 'button-yellow' pops perfectly */}
           <Link
             href="/catalog"
             className="px-8 py-3 bg-button-yellow text-button-text-black rounded-full shadow-lg hover:bg-yellow-400 transition-colors duration-300"
@@ -47,7 +43,6 @@ export default function Hero() {
             Browse Catalog
           </Link>
 
-          {/* Secondary Action Button - uses 'light-green' for thematic consistency */}
           <Link
             href="/login"
             className="px-8 py-3 text-secondary-white border border-light-green rounded-full shadow-lg hover:bg-dark-green hover:text-white transition-colors duration-300"
@@ -56,7 +51,6 @@ export default function Hero() {
           </Link>
         </div>
 
-        {/* Grouped links now use thematically appropriate colors */}
         <div className="pt-6 space-y-3">
           <p className="text-sm text-gray-300">
             Are you a member of PMSA Library?{' '}
@@ -71,7 +65,7 @@ export default function Hero() {
           <p className="text-sm text-gray-300 flex items-center justify-center gap-2">
             <Send size={14} /> Join our library{' '}
             <a
-              href="https://t.me/librarypmsa" // Replace with your actual Telegram link
+              href="https://t.me/librarypmsa"
               target="_blank"
               rel="noreferrer"
               className="font-semibold text-light-green hover:underline"
