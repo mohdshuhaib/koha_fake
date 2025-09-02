@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Loading from '@/app/loading'
 import dayjs from 'dayjs'
-import { BookOpen, IndianRupee, LogOut, Book, Clock, Check, AlertTriangle } from 'lucide-react'
+import { BookOpen, IndianRupee, LogOut, Book, Clock, Check, AlertTriangle, Calendar } from 'lucide-react'
 import clsx from 'classnames'
 
 // --- Type Definitions ---
@@ -147,7 +147,7 @@ function HistoryList({ title, records, isBorrowedList }: { title: string; record
           </p>
         ) : (
           records.map((record, index) => {
-            const isOverdue = dayjs().isAfter(dayjs(record.due_date), 'day');
+            const isOverdue = !record.return_date && dayjs().isAfter(dayjs(record.due_date), 'day');
             return (
               <div key={index} className="border-b border-primary-dark-grey pb-3 last:border-b-0">
                 <p className="font-semibold text-heading-text-black flex items-center gap-2">
@@ -157,11 +157,16 @@ function HistoryList({ title, records, isBorrowedList }: { title: string; record
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-grey mt-1 pl-6">
                   {isBorrowedList ? (
                     <>
+                      <span><Calendar size={12} className="inline mr-1" /><strong>Borrowed:</strong> {dayjs(record.borrow_date).format('DD MMM YYYY')}</span>
                       <span><Clock size={12} className="inline mr-1" /><strong>Due:</strong> {dayjs(record.due_date).format('DD MMM YYYY')}</span>
                       {isOverdue && <span className="font-bold text-red-600 flex items-center gap-1"><AlertTriangle size={12}/>Overdue</span>}
                     </>
                   ) : (
-                    <span><Check size={12} className="inline mr-1" /><strong>Returned:</strong> {dayjs(record.return_date).format('DD MMM YYYY')}</span>
+                    <>
+                      {/* ✨ UPDATED: Added borrow date to the returned history */}
+                      <span><Calendar size={12} className="inline mr-1" /><strong>Borrowed:</strong> {dayjs(record.borrow_date).format('DD MMM YYYY')}</span>
+                      <span><Check size={12} className="inline mr-1" /><strong>Returned:</strong> {dayjs(record.return_date).format('DD MMM YYYY')}</span>
+                    </>
                   )}
                   {record.fine > 0 && (
                     <span className={record.fine_paid ? 'text-green-600' : 'text-red-600'}>

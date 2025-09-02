@@ -2,22 +2,13 @@
 
 import { useEffect, useState, ReactNode } from 'react'
 import dayjs from 'dayjs'
-import Loading from '@/app/loading'
-import { supabase } from '@/lib/supabase'
-import { Search, X, BookOpen, IndianRupee, ChevronLeft, ChevronRight, Eye, ArrowLeft, Download } from 'lucide-react'
-import Link from 'next/link'
+import Loading from '../../../app/loading' // Corrected import path
+import { supabase } from '../../../lib/supabase' // Corrected import path
+import { Search, X, BookOpen, IndianRupee, ChevronLeft, ChevronRight, Eye, ArrowLeft, Download, Calendar, Check, Clock } from 'lucide-react'
 import clsx from 'classnames';
-import * as XLSX from 'xlsx'; // ✨ 1. Import xlsx library
+import * as XLSX from 'xlsx';
 
 // --- Type Definitions ---
-type Member = {
-  id: number
-  name: string
-  barcode: string
-  batch: string
-  category: string
-}
-
 type BorrowRecord = {
   borrow_date: string
   due_date: string
@@ -27,6 +18,14 @@ type BorrowRecord = {
   books: {
     title: string
   } | null
+}
+
+type Member = {
+  id: number
+  name: string
+  barcode: string
+  batch: string
+  category: string
 }
 
 type MemberDetails = {
@@ -48,7 +47,7 @@ export default function PatronStatusPage() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
   const [memberDetails, setMemberDetails] = useState<MemberDetails | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
-  const [downloadingBatch, setDownloadingBatch] = useState<string | null>(null); // ✨ State for download feedback
+  const [downloadingBatch, setDownloadingBatch] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -86,11 +85,9 @@ export default function PatronStatusPage() {
     setDetailsLoading(false)
   }
 
-  // ✨ 2. Add the Excel download function
   const handleBatchDownload = async (batch: string) => {
     setDownloadingBatch(batch);
     try {
-        // Step 1: Fetch all records that have been returned
         const { data: returnedRecords, error: recordsError } = await supabase
             .from('borrow_records')
             .select('member_id')
@@ -98,15 +95,13 @@ export default function PatronStatusPage() {
 
         if (recordsError) throw recordsError;
 
-        // Step 2: Count returns for each member
-        const returnCounts = returnedRecords.reduce((acc, record) => {
+        const returnCounts = returnedRecords.reduce((acc: { [key: string]: number }, record) => {
             if (record.member_id) {
                 acc[record.member_id] = (acc[record.member_id] || 0) + 1;
             }
             return acc;
-        }, {} as Record<string, number>);
+        }, {});
 
-        // Step 3: Filter members of the selected batch who have at least one return
         const membersInBatchWithReturns = members.filter(member =>
             member.batch === batch && returnCounts[member.id] > 0
         );
@@ -116,14 +111,12 @@ export default function PatronStatusPage() {
             return;
         }
 
-        // Step 4: Prepare data for Excel export
         const excelData = membersInBatchWithReturns.map(member => ({
             'Member Name': member.name,
             'Returned Books Count': returnCounts[member.id],
             'Barcode': member.barcode,
         }));
 
-        // Step 5: Generate and download the Excel file
         const worksheet = XLSX.utils.json_to_sheet(excelData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, `${batch} Report`);
@@ -148,7 +141,6 @@ export default function PatronStatusPage() {
       member.barcode.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  // ✨ Get unique batches for the filter buttons
   const uniqueBatches = [...Array.from(new Set(members.map(m => m.batch).filter(Boolean)))].sort();
 
   const paginatedMembers = filteredMembers.slice((page - 1) * pageSize, page * pageSize)
@@ -167,9 +159,9 @@ export default function PatronStatusPage() {
               </h1>
               <p className="text-text-grey mt-1">Search for patrons or download batch-wise reports.</p>
             </div>
-             <Link href="/members" className="flex items-center gap-2 text-sm font-semibold text-dark-green hover:text-icon-green transition">
+             <a href="/members" className="flex items-center gap-2 text-sm font-semibold text-dark-green hover:text-icon-green transition">
                <ArrowLeft size={16} /> Back to Patron Management
-            </Link>
+            </a>
           </div>
 
           <div className="bg-secondary-white border border-primary-dark-grey rounded-xl shadow-lg p-6 mb-6">
@@ -184,7 +176,6 @@ export default function PatronStatusPage() {
               />
             </div>
 
-            {/* ✨ 3. Add Batch Download Buttons */}
             <div className="mt-4 pt-4 border-t border-primary-dark-grey">
                 <h3 className="text-sm font-semibold text-text-grey mb-2">Download Batch Reports:</h3>
                 <div className="flex flex-wrap gap-2">
@@ -263,7 +254,7 @@ export default function PatronStatusPage() {
   )
 }
 
-// --- Helper Components (Unchanged) ---
+// --- Helper Components ---
 function DetailsModal({ isOpen, onClose, children }: { isOpen: boolean; onClose: () => void; children: ReactNode }) {
   if (!isOpen) return null;
   return (
@@ -297,9 +288,17 @@ function HistoryList({ title, records, isReturnedList }: { title: string; record
             <div key={index} className="border-b border-primary-dark-grey pb-3 last:border-b-0">
               <p className="font-semibold text-heading-text-black">{record.books?.title || 'Unknown Book'}</p>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-grey mt-1">
-                {!isReturnedList && <span><strong>Borrowed:</strong> {dayjs(record.borrow_date).format('DD MMM YYYY')}</span>}
-                {!isReturnedList && <span><strong>Due:</strong> {dayjs(record.due_date).format('DD MMM YYYY')}</span>}
-                {isReturnedList && <span><strong>Returned:</strong> {dayjs(record.return_date).format('DD MMM YYYY')}</span>}
+                {!isReturnedList ? (
+                    <>
+                        <span><Calendar size={12} className="inline mr-1" /><strong>Borrowed:</strong> {dayjs(record.borrow_date).format('DD MMM YYYY')}</span>
+                        <span><Clock size={12} className="inline mr-1" /><strong>Due:</strong> {dayjs(record.due_date).format('DD MMM YYYY')}</span>
+                    </>
+                ) : (
+                    <>
+                        <span><Calendar size={12} className="inline mr-1" /><strong>Borrowed:</strong> {dayjs(record.borrow_date).format('DD MMM YYYY')}</span>
+                        <span><Check size={12} className="inline mr-1" /><strong>Returned:</strong> {dayjs(record.return_date).format('DD MMM YYYY')}</span>
+                    </>
+                )}
                 {!isReturnedList && record.fine > 0 && <span className={record.fine_paid ? 'text-green-600' : 'text-red-600'}><strong>Fine:</strong> ₹{record.fine} {record.fine_paid ? '(Paid)' : '(Unpaid)'}</span>}
               </div>
             </div>
