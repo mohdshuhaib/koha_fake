@@ -2,9 +2,10 @@
 
 import { useEffect, useState, ReactNode } from 'react'
 import dayjs from 'dayjs'
-import Loading from '../../../app/loading' // Corrected import path
-import { supabase } from '../../../lib/supabase' // Corrected import path
+import Loading from '@/app/loading'
+import { supabase } from '@/lib/supabase'
 import { Search, X, BookOpen, IndianRupee, ChevronLeft, ChevronRight, Eye, ArrowLeft, Download, Calendar, Check, Clock } from 'lucide-react'
+import Link from 'next/link'
 import clsx from 'classnames';
 import * as XLSX from 'xlsx';
 
@@ -21,7 +22,7 @@ type BorrowRecord = {
 }
 
 type Member = {
-  id: number
+  id: string
   name: string
   barcode: string
   batch: string
@@ -53,7 +54,7 @@ export default function PatronStatusPage() {
     const fetchMembers = async () => {
       setLoading(true)
       const { data } = await supabase.from('members').select('*').order('name', { ascending: true })
-      if (data) setMembers(data)
+      if (data) setMembers(data as Member[])
       setLoading(false)
     }
     fetchMembers()
@@ -159,9 +160,9 @@ export default function PatronStatusPage() {
               </h1>
               <p className="text-text-grey mt-1">Search for patrons or download batch-wise reports.</p>
             </div>
-             <a href="/members" className="flex items-center gap-2 text-sm font-semibold text-dark-green hover:text-icon-green transition">
+             <Link href="/members" className="flex items-center gap-2 text-sm font-semibold text-dark-green hover:text-icon-green transition">
                <ArrowLeft size={16} /> Back to Patron Management
-            </a>
+            </Link>
           </div>
 
           <div className="bg-secondary-white border border-primary-dark-grey rounded-xl shadow-lg p-6 mb-6">
@@ -288,18 +289,17 @@ function HistoryList({ title, records, isReturnedList }: { title: string; record
             <div key={index} className="border-b border-primary-dark-grey pb-3 last:border-b-0">
               <p className="font-semibold text-heading-text-black">{record.books?.title || 'Unknown Book'}</p>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-grey mt-1">
-                {!isReturnedList ? (
-                    <>
-                        <span><Calendar size={12} className="inline mr-1" /><strong>Borrowed:</strong> {dayjs(record.borrow_date).format('DD MMM YYYY')}</span>
-                        <span><Clock size={12} className="inline mr-1" /><strong>Due:</strong> {dayjs(record.due_date).format('DD MMM YYYY')}</span>
-                    </>
+                <span><Calendar size={12} className="inline mr-1" /><strong>Borrowed:</strong> {dayjs(record.borrow_date).format('DD MMM YYYY')}</span>
+                {isReturnedList ? (
+                    <span><Check size={12} className="inline mr-1" /><strong>Returned:</strong> {dayjs(record.return_date).format('DD MMM YYYY')}</span>
                 ) : (
-                    <>
-                        <span><Calendar size={12} className="inline mr-1" /><strong>Borrowed:</strong> {dayjs(record.borrow_date).format('DD MMM YYYY')}</span>
-                        <span><Check size={12} className="inline mr-1" /><strong>Returned:</strong> {dayjs(record.return_date).format('DD MMM YYYY')}</span>
-                    </>
+                    <span><Clock size={12} className="inline mr-1" /><strong>Due:</strong> {dayjs(record.due_date).format('DD MMM YYYY')}</span>
                 )}
-                {!isReturnedList && record.fine > 0 && <span className={record.fine_paid ? 'text-green-600' : 'text-red-600'}><strong>Fine:</strong> ₹{record.fine} {record.fine_paid ? '(Paid)' : '(Unpaid)'}</span>}
+                {record.fine > 0 && (
+                  <span className={record.fine_paid ? 'text-green-600' : 'text-red-600'}>
+                    <strong>Fine:</strong> ₹{record.fine} {record.fine_paid ? '(Paid)' : '(Unpaid)'}
+                  </span>
+                )}
               </div>
             </div>
           ))
