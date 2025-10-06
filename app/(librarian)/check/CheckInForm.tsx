@@ -2,11 +2,11 @@
 
 import { useEffect, useState, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
-import dayjs from 'dayjs'
-import { DayPicker } from 'react-day-picker'
+import dayjs from 'dayjs' // Import the new custom component
 import 'react-day-picker/dist/style.css'
 import { Barcode, X, CheckCircle2, AlertCircle, CalendarDays } from 'lucide-react'
 import clsx from 'classnames'
+import { CustomDayPicker } from '@/components/CustomDayPicker'
 
 // --- Main Component ---
 export default function CheckInForm() {
@@ -14,17 +14,11 @@ export default function CheckInForm() {
     const [message, setMessage] = useState('')
     const [isError, setIsError] = useState(false)
     const [loading, setLoading] = useState(false)
-
-    // ✅ FIX: Use a single state for the personal leave modal. If it has data, the modal is open.
     const [activeRecord, setActiveRecord] = useState<any | null>(null)
     const [manualHolidays, setManualHolidays] = useState<Date[]>([])
-
-    // State for the global leave management modal
     const [isGlobalLeaveModalOpen, setIsGlobalLeaveModalOpen] = useState(false)
     const [globalHolidays, setGlobalHolidays] = useState<Date[]>([])
     const [globalHolidaysLoading, setGlobalHolidaysLoading] = useState(false)
-
-    // State for the notification modal
     const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null)
 
     const handleInitialScan = async () => {
@@ -60,7 +54,6 @@ export default function CheckInForm() {
         const globalHolidayCount = savedHolidays?.length || 0
         const effectiveDaysAfterGlobal = totalDaysDiff - globalHolidayCount
 
-        // ✅ FIX: Safely access member data, as it can be an array or object
         const memberData = Array.isArray(record.member) ? record.member[0] : record.member;
         const category = memberData?.category || 'student'
         let allowedDays = 15
@@ -70,7 +63,6 @@ export default function CheckInForm() {
         if (effectiveDaysAfterGlobal > allowedDays) {
             setMessage(`Book "${book.title}" is overdue after considering ${globalHolidayCount} global leave day(s). Please select any additional personal leave days.`)
             setIsError(false)
-            // ✅ FIX: Set the activeRecord to open the modal. This avoids race conditions.
             setActiveRecord({ ...record, member: memberData, book, savedHolidays: savedHolidays || [] })
             setLoading(false)
         } else {
@@ -82,7 +74,7 @@ export default function CheckInForm() {
         setLoading(true)
         setMessage('Processing return...')
         setIsError(false)
-        setActiveRecord(null) // Close personal leave modal if open
+        setActiveRecord(null)
 
         const returnDate = dayjs()
         const borrowDate = dayjs(recordToProcess.borrow_date)
@@ -204,8 +196,8 @@ export default function CheckInForm() {
                 </div>
                 <div className="p-6 space-y-4">
                     <p className="text-sm text-center text-text-grey">{message}</p>
-                    <div className="flex justify-center bg-primary-grey p-2 rounded-lg border border-primary-dark-grey">
-                        <DayPicker mode="multiple" min={1} selected={manualHolidays} onSelect={(days) => setManualHolidays(days || [])} fromDate={activeRecord ? new Date(activeRecord.borrow_date) : new Date()} toDate={new Date()} classNames={{ root: 'text-text-grey w-full', caption_label: 'font-bold font-heading text-heading-text-black', head_cell: 'font-semibold', day_selected: 'bg-button-yellow text-button-text-black font-bold rounded-full', day_today: 'font-bold text-dark-green', }} />
+                    <div className="bg-primary-grey p-2 sm:p-4 rounded-lg border border-primary-dark-grey">
+                        <CustomDayPicker mode="multiple" min={1} selected={manualHolidays} onSelect={(days) => setManualHolidays(days || [])} fromDate={activeRecord ? new Date(activeRecord.borrow_date) : new Date()} toDate={new Date()} />
                     </div>
                     <div className="text-center font-semibold text-text-grey">You have selected {manualHolidays.length} personal leave day(s).</div>
                     <div className="flex justify-end gap-4 pt-2">
@@ -223,8 +215,8 @@ export default function CheckInForm() {
                 <div className="p-6 space-y-4">
                     <p className="text-sm text-center text-text-grey">Select all official college holidays. These will be automatically excluded from all fine calculations.</p>
                     {globalHolidaysLoading ? <div className="text-center p-8">Loading...</div> : (
-                        <div className="flex justify-center bg-primary-grey p-2 rounded-lg border border-primary-dark-grey">
-                            <DayPicker mode="multiple" selected={globalHolidays} onSelect={(days) => setGlobalHolidays(days || [])} classNames={{ root: 'text-text-grey w-full', caption_label: 'font-bold font-heading text-heading-text-black', head_cell: 'font-semibold', day_selected: 'bg-button-yellow text-button-text-black font-bold rounded-full', day_today: 'font-bold text-dark-green', }}/>
+                        <div className="bg-primary-grey p-2 sm:p-4 rounded-lg border border-primary-dark-grey">
+                            <CustomDayPicker mode="multiple" selected={globalHolidays} onSelect={(days) => setGlobalHolidays(days || [])} />
                         </div>
                     )}
                     <div className="flex justify-end gap-4 pt-2">
@@ -247,14 +239,13 @@ function Modal({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => 
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-            <div className="bg-secondary-white rounded-xl shadow-2xl w-full max-w-md border border-primary-dark-grey">
+            <div className="bg-secondary-white rounded-xl shadow-2xl w-full max-w-lg border border-primary-dark-grey">
                 {children}
             </div>
         </div>
     )
 }
 
-// --- Reusable Notification Modal Component ---
 function NotificationModal({ notification, onClose }: { notification: { type: 'success' | 'error', message: string } | null, onClose: () => void }) {
     if (!notification) return null;
     const isError = notification.type === 'error';
