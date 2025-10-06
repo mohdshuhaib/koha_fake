@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Loading from '../loading'
-import { Plus, BookOpen } from 'lucide-react'
+import { Plus, BookOpen, Download } from 'lucide-react'
 import AddPeriodicalModal from '@/components/AddPeriodicalModal'
 import PeriodicalCard from '@/components/PeriodicalCard'
+import * as XLSX from 'xlsx' // Import the Excel library
 
-// Define types for our data for better code quality
+// Type definitions remain the same
 export type Periodical = {
   id: string;
   name: string;
@@ -31,14 +32,14 @@ export default function PeriodicalsPage() {
   const [records, setRecords] = useState<PeriodicalRecord[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingPeriodical, setEditingPeriodical] = useState<Periodical | null>(null)
+  const [isExporting, setIsExporting] = useState(false) // State for export button
 
-  // --- Data Fetching and Grouping Logic (Unchanged) ---
   useEffect(() => { fetchData() }, [])
 
   const fetchData = async () => {
     setLoading(true)
     const { data: pData } = await supabase.from('periodicals').select('*').order('name');
-    const { data: rData } = await supabase.from('periodical_records').select('*');
+    const { data: rData } = await supabase.from('periodical_records').select('*').order('borrow_date', { ascending: false });
     if (pData) setPeriodicals(pData)
     if (rData) setRecords(rData)
     setLoading(false)
@@ -54,6 +55,51 @@ export default function PeriodicalsPage() {
     setEditingPeriodical(null);
   };
 
+  // --- NEW: Function to handle multi-sheet Excel Export ---
+  const handleExportAll = async () => {
+    setIsExporting(true);
+    try {
+        if (periodicals.length === 0 || records.length === 0) {
+            alert("No data available to export.");
+            return;
+        }
+
+        const workbook = XLSX.utils.book_new();
+
+        // Create a sheet for each periodical
+        periodicals.forEach(periodical => {
+            const periodicalRecords = records
+                .filter(r => r.periodical_id === periodical.id)
+                .map(r => ({ // Format data for Excel
+                    'Borrower Name': r.borrower_name,
+                    'Issue/Identifier': r.issue_identifier,
+                    'Borrowed Date': r.borrow_date,
+                    'Return Date': r.return_date ? new Date(r.return_date).toLocaleDateString() : 'Not Returned',
+                }));
+
+            if (periodicalRecords.length > 0) {
+                const worksheet = XLSX.utils.json_to_sheet(periodicalRecords);
+                // Sanitize sheet name (remove invalid characters)
+                const sheetName = periodical.name.replace(/[*?:/\\\[\]]/g, "").substring(0, 31);
+                XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+            }
+        });
+
+        if (workbook.SheetNames.length === 0) {
+            alert("No records found to export.");
+            return;
+        }
+
+        XLSX.writeFile(workbook, 'periodicals_borrowing_history.xlsx');
+
+    } catch (err) {
+        console.error("Export failed:", err);
+        alert("Could not export the data. Please try again.");
+    } finally {
+        setIsExporting(false);
+    }
+  };
+
   const recordsByPeriodicalId = records.reduce((acc, record) => {
     const key = record.periodical_id;
     if (!acc[key]) { acc[key] = []; }
@@ -63,7 +109,6 @@ export default function PeriodicalsPage() {
 
   if (loading) return <Loading />
 
-  // --- REDESIGNED JSX ---
   return (
     <>
       <div className="min-h-screen bg-primary-grey pt-24 px-4 pb-10">
@@ -75,12 +120,22 @@ export default function PeriodicalsPage() {
               </h1>
               <p className="text-text-grey mt-1">Manage magazine and journal subscriptions and their borrowing history.</p>
             </div>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center justify-center gap-2 w-full md:w-auto bg-button-yellow text-button-text-black font-bold px-6 py-3 rounded-lg hover:bg-yellow-500 transition shadow-md"
-            >
-              <Plus size={20} /> Add New Periodical
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+                 <button
+                    onClick={handleExportAll}
+                    disabled={isExporting}
+                    className="flex items-center justify-center gap-2 w-full md:w-auto bg-green-600 text-white font-bold px-6 py-3 rounded-lg hover:bg-green-700 transition shadow-md disabled:opacity-70"
+                >
+                    <Download size={20} />
+                    {isExporting ? 'Exporting...' : 'Export All'}
+                </button>
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center justify-center gap-2 w-full md:w-auto bg-button-yellow text-button-text-black font-bold px-6 py-3 rounded-lg hover:bg-yellow-500 transition shadow-md"
+                >
+                    <Plus size={20} /> Add New Periodical
+                </button>
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -96,10 +151,10 @@ export default function PeriodicalsPage() {
               ))
             ) : (
               <div className="text-center bg-secondary-white p-12 rounded-xl border border-primary-dark-grey">
-                 <BookOpen className="mx-auto h-12 w-12 text-text-grey" />
-                 <h3 className="mt-2 text-lg font-medium text-heading-text-black">No Periodicals Found</h3>
-                 <p className="mt-1 text-sm text-text-grey">Click 'Add New Periodical' to get started.</p>
-               </div>
+                   <BookOpen className="mx-auto h-12 w-12 text-text-grey" />
+                   <h3 className="mt-2 text-lg font-medium text-heading-text-black">No Periodicals Found</h3>
+                   <p className="mt-1 text-sm text-text-grey">Click 'Add New Periodical' to get started.</p>
+              </div>
             )}
           </div>
         </div>

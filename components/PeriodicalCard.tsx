@@ -2,150 +2,160 @@
 
 import { useState, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Periodical, PeriodicalRecord } from '@/app/periodicals/page'
-import { ChevronDown, Edit, Trash2, Plus, Save, X, AlertTriangle } from 'lucide-react'
-import clsx from 'classnames'
 import dayjs from 'dayjs'
+import { Periodical, PeriodicalRecord } from '../app/periodicals/page'
+import { ChevronDown, ChevronUp, Edit, Trash2, AlertTriangle, X } from 'lucide-react'
+import clsx from 'classnames';
 
-export default function PeriodicalCard({ periodical, records, onUpdate, onEdit }: { periodical: Periodical, records: PeriodicalRecord[], onUpdate: () => void, onEdit: () => void }) {
+type Props = {
+  periodical: Periodical;
+  records: PeriodicalRecord[];
+  onUpdate: () => void;
+  onEdit: () => void;
+}
+
+// --- Reusable Confirmation Modal ---
+function ConfirmationModal({ isOpen, onClose, onConfirm, title, message }: { isOpen: boolean, onClose: () => void, onConfirm: () => void, title: string, message: string }) {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+            <div className="bg-secondary-white rounded-xl shadow-2xl max-w-sm w-full border border-primary-dark-grey">
+                <div className="p-6 text-center">
+                    <AlertTriangle className="mx-auto h-12 w-12 text-red-500" />
+                    <h3 className="mt-4 text-xl font-bold font-heading text-heading-text-black">{title}</h3>
+                    <p className="mt-2 text-sm text-text-grey">{message}</p>
+                </div>
+                <div className="flex justify-end gap-3 bg-primary-grey p-4 rounded-b-xl">
+                    <button onClick={onClose} className="px-5 py-2 text-sm font-semibold text-text-grey bg-secondary-white border border-primary-dark-grey rounded-lg hover:bg-primary-dark-grey">Cancel</button>
+                    <button onClick={onConfirm} className="px-5 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700">Confirm Delete</button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+export default function PeriodicalCard({ periodical, records, onUpdate, onEdit }: Props) {
   const [isOpen, setIsOpen] = useState(false)
-  const [isAdding, setIsAdding] = useState(false)
-  const [newRecord, setNewRecord] = useState({ issue_identifier: '', borrower_name: '', borrow_date: dayjs().format('YYYY-MM-DD') })
+  const [borrowerName, setBorrowerName] = useState('')
+  const [issueIdentifier, setIssueIdentifier] = useState('')
+  const [borrowDate, setBorrowDate] = useState(dayjs().format('YYYY-MM-DD'))
+  const [isAddingRecord, setIsAddingRecord] = useState(false) // State to disable add button
 
-  // State for the confirmation modal
-  const [confirmAction, setConfirmAction] = useState<{ type: 'return' | 'delete', data: any, message: string } | null>(null)
+  // State for managing which delete modal is open
+  const [modalState, setModalState] = useState<{ type: 'single' | 'all'; recordId?: string } | null>(null)
 
-  const handleAddBorrower = async (e: React.FormEvent) => {
+  const handleAddRecord = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newRecord.borrow_date || !newRecord.borrower_name) return
+    if (!borrowerName || !issueIdentifier) return
+    setIsAddingRecord(true); // Disable button on submit
 
-    const { error } = await supabase.from('periodical_records').insert({ ...newRecord, periodical_id: periodical.id });
-    if (!error) {
-      setIsAdding(false)
-      setNewRecord({ borrow_date: dayjs().format('YYYY-MM-DD'), issue_identifier: '', borrower_name: '' })
+    const { error } = await supabase.from('periodical_records').insert({
+      periodical_id: periodical.id,
+      borrower_name: borrowerName,
+      issue_identifier: issueIdentifier,
+      borrow_date: borrowDate,
+    })
+    if (error) console.error(error)
+    else {
+      setBorrowerName('')
+      setIssueIdentifier('')
       onUpdate()
-    } else {
-      console.error(error)
     }
-  };
+    setIsAddingRecord(false); // Re-enable button
+  }
 
   const handleReturn = async (recordId: string) => {
     const { error } = await supabase.from('periodical_records').update({ return_date: new Date().toISOString() }).eq('id', recordId)
     if (error) console.error(error)
     else onUpdate()
-    setConfirmAction(null)
+  }
+
+  const handleDeleteRecord = async () => {
+    if (modalState?.type !== 'single' || !modalState.recordId) return;
+    const { error } = await supabase.from('periodical_records').delete().eq('id', modalState.recordId);
+    if (error) console.error(error);
+    else onUpdate();
+    setModalState(null); // Close modal
   };
 
-  const handleDelete = async (periodicalId: string) => {
-    // Supabase cascade delete should handle related records if set up.
-    // Otherwise, you need an RPC function for safe deletion.
-    const { error } = await supabase.from('periodicals').delete().eq('id', periodicalId)
-    if (error) console.error(error)
-    else onUpdate()
-    setConfirmAction(null)
-  }
-
-  const performConfirmAction = () => {
-    if (!confirmAction) return
-    if (confirmAction.type === 'return') handleReturn(confirmAction.data.id)
-    if (confirmAction.type === 'delete') handleDelete(confirmAction.data.id)
-  }
+  const handleDeleteAllRecords = async () => {
+    const { error } = await supabase.from('periodical_records').delete().eq('periodical_id', periodical.id);
+    if (error) console.error(error);
+    else onUpdate();
+    setModalState(null); // Close modal
+  };
 
   return (
     <>
-      <div className="bg-secondary-white border border-primary-dark-grey rounded-xl shadow-md transition-all duration-300">
-        <div className="flex items-center p-4 cursor-pointer hover:bg-primary-grey/50" onClick={() => setIsOpen(!isOpen)}>
-          <img src={periodical.image_url || '/placeholder.png'} alt={periodical.name} className="w-16 h-20 object-cover rounded-md mr-4" />
-          <div className="flex-grow">
-            <h2 className="font-bold text-xl text-heading-text-black">{periodical.name}</h2>
-            <div className="flex items-center gap-4 text-sm text-text-grey mt-1">
-              <span>{periodical.language}</span>
-              <span className="px-2 py-0.5 bg-primary-grey rounded-full capitalize">{periodical.type}</span>
-            </div>
+      <div className="bg-secondary-white border border-primary-dark-grey rounded-xl shadow-lg transition-all duration-300">
+        <div className="flex items-center p-4">
+          <img src={periodical.image_url} alt={periodical.name} className="w-16 h-20 object-cover rounded-md flex-shrink-0" />
+          <div className="ml-4 flex-grow">
+            <h2 className="font-bold text-lg text-heading-text-black">{periodical.name}</h2>
+            <p className="text-sm text-text-grey">{periodical.language} - {periodical.type}</p>
           </div>
-          <div className="flex items-center gap-1">
-            <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="p-2 text-text-grey hover:bg-primary-dark-grey rounded-full transition" title="Edit Periodical"><Edit size={16} /></button>
-            <button onClick={(e) => { e.stopPropagation(); setConfirmAction({type: 'delete', data: periodical, message: `This will permanently delete "${periodical.name}" and all its records.`})}} className="p-2 text-red-500 hover:bg-red-100 rounded-full transition" title="Delete Periodical"><Trash2 size={16} /></button>
-            <ChevronDown size={24} className={clsx("transition-transform text-text-grey", { "rotate-180": isOpen })} />
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button onClick={onEdit} className="p-2 text-text-grey hover:bg-primary-dark-grey rounded-full transition"><Edit size={16} /></button>
+            <button onClick={() => setIsOpen(!isOpen)} className="p-2 text-text-grey hover:bg-primary-dark-grey rounded-full transition">
+              {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </button>
           </div>
         </div>
 
         {isOpen && (
-          <div className="border-t border-primary-dark-grey p-4 space-y-4">
-            <h3 className="font-bold text-heading-text-black">Borrow History</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-primary-grey"><tr className="text-left text-text-grey"><th className="p-2">Issue</th><th className="p-2">Borrower</th><th className="p-2">Date</th><th className="p-2 text-center">Status</th></tr></thead>
-                <tbody>
-                  {records.map((r) => (
-                    <tr key={r.id} className="border-b border-primary-dark-grey last:border-b-0">
-                      <td className="p-2 text-text-grey">{r.issue_identifier}</td>
-                      <td className="p-2 font-semibold text-heading-text-black">{r.borrower_name}</td>
-                      <td className="p-2 text-text-grey">{dayjs(r.borrow_date).format('DD MMM YYYY')}</td>
-                      <td className="p-2 text-center">
-                        {r.return_date
-                          ? <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">Returned</span>
-                          : <button onClick={() => setConfirmAction({type: 'return', data: r, message: `Mark this issue as returned?`})} className="px-3 py-1 text-xs font-semibold bg-blue-500 text-white rounded-full hover:bg-blue-600">Return</button>
-                        }
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {isAdding ? (
-              <form onSubmit={handleAddBorrower} className="bg-primary-grey p-3 rounded-lg space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <input type="date" value={newRecord.borrow_date} onChange={e => setNewRecord({...newRecord, borrow_date: e.target.value})} className="w-full p-2 border border-primary-dark-grey rounded-md" required />
-                  <input type="text" placeholder="Issue No. or Title" value={newRecord.issue_identifier} onChange={e => setNewRecord({...newRecord, issue_identifier: e.target.value})} className="w-full p-2 border border-primary-dark-grey rounded-md" />
-                  <input type="text" placeholder="Borrower's Name" value={newRecord.borrower_name} onChange={e => setNewRecord({...newRecord, borrower_name: e.target.value})} className="w-full p-2 border border-primary-dark-grey rounded-md" required />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <button type="button" onClick={() => setIsAdding(false)} className="p-2 text-text-grey hover:bg-primary-dark-grey rounded-full"><X size={18}/></button>
-                  <button type="submit" className="flex items-center gap-2 px-4 py-1.5 text-xs font-semibold bg-dark-green text-white rounded-lg hover:bg-icon-green"><Save size={14}/> Save Record</button>
-                </div>
-              </form>
-            ) : (
-              <button onClick={() => setIsAdding(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-primary-dark-grey text-heading-text-black rounded-lg hover:bg-gray-300 transition">
-                <Plus size={16} /> Add New Record
+          <div className="border-t border-primary-dark-grey">
+            <form onSubmit={handleAddRecord} className="p-4 grid grid-cols-1 md:grid-cols-4 gap-3 items-end bg-primary-grey">
+              <input type="date" value={borrowDate} onChange={e => setBorrowDate(e.target.value)} required className="w-full p-2 border border-primary-dark-grey rounded-md bg-secondary-white" />
+              <input type="text" value={issueIdentifier} onChange={e => setIssueIdentifier(e.target.value)} placeholder="Issue No / Date" required className="w-full p-2 border border-primary-dark-grey rounded-md bg-secondary-white" />
+              <input type="text" value={borrowerName} onChange={e => setBorrowerName(e.target.value)} placeholder="Borrower Name" required className="w-full p-2 border border-primary-dark-grey rounded-md bg-secondary-white" />
+              <button type="submit" disabled={isAddingRecord} className="w-full bg-dark-green text-white font-semibold p-2 rounded-md hover:bg-icon-green transition disabled:opacity-70">
+                {isAddingRecord ? 'Saving...' : 'Add Record'}
               </button>
-            )}
+            </form>
+
+            <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
+              {records.map(record => (
+                <div key={record.id} className="grid grid-cols-4 gap-2 items-center text-sm p-2 rounded-md hover:bg-primary-grey">
+                  <p className="text-text-grey">{dayjs(record.borrow_date).format('DD MMM YYYY')}</p>
+                  <p className="text-text-grey">{record.issue_identifier}</p>
+                  <p className="font-semibold text-heading-text-black">{record.borrower_name}</p>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => handleReturn(record.id)}
+                      disabled={!!record.return_date}
+                      className={clsx("px-3 py-1 text-xs font-bold rounded-full transition", record.return_date ? 'bg-green-200 text-green-800 cursor-not-allowed' : 'bg-button-yellow text-button-text-black hover:bg-yellow-500')}
+                    >
+                      {record.return_date ? `Returned ${dayjs(record.return_date).format('DD/MM')}` : 'Return'}
+                    </button>
+                     <button onClick={() => setModalState({ type: 'single', recordId: record.id })} className="p-1.5 text-red-500 hover:bg-red-100 rounded-full transition"><Trash2 size={14} /></button>
+                  </div>
+                </div>
+              ))}
+              {records.length > 0 && (
+                <div className="pt-4 mt-4 border-t border-dashed border-primary-dark-grey flex justify-end">
+                    <button onClick={() => setModalState({ type: 'all' })} className="text-xs text-red-600 font-semibold hover:underline">Delete All Records for this Periodical</button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {/* --- Confirmation Modal --- */}
       <ConfirmationModal
-        isOpen={!!confirmAction}
-        onClose={() => setConfirmAction(null)}
-        onConfirm={performConfirmAction}
-        title={`Confirm ${confirmAction?.type === 'delete' ? 'Deletion' : 'Return'}`}
-        message={confirmAction?.message || ''}
-        isDestructive={confirmAction?.type === 'delete'}
+        isOpen={modalState?.type === 'single'}
+        onClose={() => setModalState(null)}
+        onConfirm={handleDeleteRecord}
+        title="Delete Record?"
+        message="Are you sure you want to permanently delete this borrowing record? This action cannot be undone."
+      />
+
+      <ConfirmationModal
+        isOpen={modalState?.type === 'all'}
+        onClose={() => setModalState(null)}
+        onConfirm={handleDeleteAllRecords}
+        title="Delete All Records?"
+        message={`Are you sure you want to delete all ${records.length} records for "${periodical.name}"? This action is irreversible.`}
       />
     </>
-  )
-}
-
-// --- Reusable Confirmation Modal ---
-function ConfirmationModal({ isOpen, onClose, onConfirm, title, message, isDestructive = false }: { isOpen: boolean, onClose: () => void, onConfirm: () => void, title: string, message: string, isDestructive?: boolean }) {
-  if (!isOpen) return null
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-      <div className="bg-secondary-white rounded-xl shadow-2xl max-w-sm w-full border border-primary-dark-grey">
-        <div className="p-6 text-center">
-          <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500" />
-          <h3 className="mt-4 text-xl font-bold font-heading text-heading-text-black">{title}</h3>
-          <p className="mt-2 text-sm text-text-grey">{message}</p>
-        </div>
-        <div className="flex justify-end gap-3 bg-primary-grey p-4 rounded-b-xl">
-          <button onClick={onClose} className="px-5 py-2 text-sm font-semibold bg-secondary-white border border-primary-dark-grey rounded-lg hover:bg-primary-dark-grey">Cancel</button>
-          <button onClick={onConfirm} className={clsx("px-5 py-2 text-sm font-semibold text-white rounded-lg", isDestructive ? 'bg-red-600 hover:bg-red-700' : 'bg-dark-green hover:bg-icon-green')}>
-            Confirm
-          </button>
-        </div>
-      </div>
-    </div>
   )
 }

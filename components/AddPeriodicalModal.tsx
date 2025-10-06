@@ -19,7 +19,6 @@ export default function AddPeriodicalModal({ isOpen, onClose, onSuccess, periodi
   const [type, setType] = useState('monthly')
   const [loading, setLoading] = useState(false)
 
-  // Pre-fill form if in edit mode
   useEffect(() => {
     if (periodicalToEdit) {
       setName(periodicalToEdit.name);
@@ -27,7 +26,6 @@ export default function AddPeriodicalModal({ isOpen, onClose, onSuccess, periodi
       setImageUrl(periodicalToEdit.image_url);
       setType(periodicalToEdit.type);
     } else {
-      // Reset form for "add new" mode when modal opens
       setName('');
       setLanguage('');
       setImageUrl('');
@@ -45,7 +43,6 @@ export default function AddPeriodicalModal({ isOpen, onClose, onSuccess, periodi
       : await supabase.from('periodicals').insert(periodicalData);
 
     if (error) {
-      // In a real app, you'd show a toast notification here
       console.error(error);
       alert(`Failed to ${periodicalToEdit ? 'update' : 'add'} periodical.`);
     } else {
@@ -57,7 +54,6 @@ export default function AddPeriodicalModal({ isOpen, onClose, onSuccess, periodi
 
   if (!isOpen) return null
 
-  // --- REDESIGNED JSX ---
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
       <div className="bg-secondary-white rounded-xl shadow-2xl max-w-lg w-full border border-primary-dark-grey" onClick={e => e.stopPropagation()}>
