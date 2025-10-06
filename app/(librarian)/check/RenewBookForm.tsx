@@ -13,14 +13,13 @@ export default function RenewBookForm() {
   const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // --- LOGIC FUNCTIONS (with updated messaging) ---
   const handleRenew = async () => {
     if (!bookBarcode) return
     setLoading(true)
     setMessage('')
     setIsError(false)
 
-    // Fetch book by barcode
+    // Step 1: Fetch book by barcode
     const { data: book, error: bookError } = await supabase
       .from('books')
       .select('id, title, status')
@@ -28,20 +27,21 @@ export default function RenewBookForm() {
       .single()
 
     if (bookError || !book) {
-      setMessage('Book not found.')
+      setMessage('Book not found. Please check the barcode and try again.')
       setIsError(true)
       resetForm()
       return
     }
 
+    // Step 2: Check if the book is actually borrowed
     if (book.status !== 'borrowed') {
-      setMessage('This book is not currently checked out.')
+      setMessage(`This book ("${book.title}") is not currently checked out.`)
       setIsError(true)
       resetForm()
       return
     }
 
-    // Fetch the most recent, active borrow record for the book
+    // Step 3: Fetch the active borrow record
     const { data: borrowRecord, error: recordError } = await supabase
       .from('borrow_records')
       .select('id, due_date, member_id')
@@ -52,23 +52,35 @@ export default function RenewBookForm() {
       .single()
 
     if (recordError || !borrowRecord) {
-      setMessage('No active borrow record found for this book.')
+      setMessage('An active borrow record could not be found for this book.')
       setIsError(true)
       resetForm()
       return
     }
 
-    // Check if the book is overdue
+    // Step 4: Perform date checks for renewal eligibility
     const today = dayjs().startOf('day')
     const dueDate = dayjs(borrowRecord.due_date)
+    const daysUntilDue = dueDate.diff(today, 'day')
+
+    // Check if overdue
     if (today.isAfter(dueDate)) {
-      setMessage('Book is overdue. It must be checked in before it can be renewed.')
+      setMessage('This book is overdue. It must be checked in before it can be renewed.')
       setIsError(true)
       resetForm()
       return
     }
 
-    // Fetch member to determine renewal period
+    // ✅ NEW: Check if it's too early to renew
+    if (daysUntilDue > 5) {
+        const renewalStartDate = dueDate.subtract(5, 'day').format('DD MMM YYYY');
+        setMessage(`It's too early to renew. This book can be renewed on or after ${renewalStartDate}.`)
+        setIsError(true)
+        resetForm()
+        return
+    }
+
+    // Step 5: If all checks pass, proceed with renewal
     const { data: member, error: memberError } = await supabase
       .from('members')
       .select('name, category')
@@ -85,7 +97,6 @@ export default function RenewBookForm() {
     const renewalDays = member.category === 'teacher' || member.category === 'class' ? 30 : 15
     const newDueDate = dayjs(borrowRecord.due_date).add(renewalDays, 'day').format('YYYY-MM-DD')
 
-    // Update borrow record with the new due date
     const { error: updateError } = await supabase
       .from('borrow_records')
       .update({ due_date: newDueDate })
@@ -114,7 +125,6 @@ export default function RenewBookForm() {
     }
   }
 
-  // --- REDESIGNED JSX ---
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold font-heading text-heading-text-black uppercase">Renew a Borrowed Book</h2>
