@@ -18,6 +18,7 @@ type BorrowRecord = {
   fine_paid: boolean
   books: {
     title: string
+    barcode: string
   } | null
 }
 
@@ -65,7 +66,7 @@ export default function PatronStatusPage() {
     setDetailsLoading(true)
     setMemberDetails(null)
 
-    const { data: records } = await supabase.from('borrow_records').select('*, books(title)').eq('member_id', member.id).order('borrow_date', { ascending: false })
+    const { data: records } = await supabase.from('borrow_records').select('*, books(title, barcode)').eq('member_id', member.id).order('borrow_date', { ascending: false })
 
     const returned: BorrowRecord[] = [];
     const notReturned: BorrowRecord[] = [];
@@ -287,7 +288,7 @@ function HistoryList({ title, records, isReturnedList }: { title: string; record
         {records.length === 0 ? <p className="text-text-grey text-sm p-4 bg-primary-grey rounded-md">No records in this category.</p> : (
           records.map((record, index) => (
             <div key={index} className="border-b border-primary-dark-grey pb-3 last:border-b-0">
-              <p className="font-semibold text-heading-text-black">{record.books?.title || 'Unknown Book'}</p>
+              <p className="font-semibold text-heading-text-black">{record.books?.title || 'Unknown Book'} ({record.books?.barcode || 'Unknown Barcode'})</p>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-grey mt-1">
                 <span><Calendar size={12} className="inline mr-1" /><strong>Borrowed:</strong> {dayjs(record.borrow_date).format('DD MMM YYYY')}</span>
                 {isReturnedList ? (
