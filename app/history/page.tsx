@@ -24,7 +24,7 @@ type Record = {
   due_date: string
   return_date: string | null
   members: { name: string } | null
-  books: { title: string } | null
+  books: { title: string , barcode: string} | null
 }
 
 type Ranked = {
@@ -62,7 +62,7 @@ export default function HistoryPage() {
         due_date,
         return_date,
         members ( name ),
-        books ( title )
+        books ( title , barcode)
       `)
       .order('borrow_date', { ascending: false })
 
@@ -201,6 +201,7 @@ export default function HistoryPage() {
                   <tr>
                     <th className="text-left p-3 font-semibold uppercase tracking-wider">Member</th>
                     <th className="text-left p-3 font-semibold uppercase tracking-wider">Book</th>
+                    <th className="text-left p-3 font-semibold uppercase tracking-wider">Barcode</th>
                     <th className="text-left p-3 font-semibold uppercase tracking-wider">Borrowed</th>
                     <th className="text-left p-3 font-semibold uppercase tracking-wider">Due</th>
                     <th className="text-left p-3 font-semibold uppercase tracking-wider">Status</th>
@@ -212,6 +213,7 @@ export default function HistoryPage() {
                     <tr key={r.id} className="border-b border-primary-dark-grey last:border-b-0 hover:bg-primary-grey transition">
                       <td className="p-3 text-heading-text-black font-semibold">{r.members?.name || 'N/A'}</td>
                       <td className="p-3 text-text-grey">{r.books?.title || 'N/A'}</td>
+                      <td className="p-3 text-text-grey">{r.books?.barcode || 'N/A'}</td>
                       <td className="p-3 text-text-grey">{dayjs(r.borrow_date).format('DD MMM YYYY')}</td>
                       <td className="p-3 text-text-grey">{dayjs(r.due_date).format('DD MMM YYYY')}</td>
                       <td className="p-3"><StatusBadge status={getStatus(r)} /></td>

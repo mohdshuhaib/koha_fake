@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Book, User, Clock, CheckCircle2 } from 'lucide-react'
 
-// Type definition for clarity
 type HeldRecord = {
   id: string
   hold_date: string
@@ -26,12 +25,11 @@ export default function HeldBooksList() {
   const [message, setMessage] = useState('')
   const [releasingId, setReleasingId] = useState<string | null>(null)
 
-  // --- LOGIC FUNCTIONS (with improved messaging) ---
   const fetchHeldBooks = async () => {
     setLoading(true)
     const { data, error } = await supabase
       .from('hold_records')
-      .select(`id, hold_date, book:books(id, title, barcode), member:members(id, name, barcode)`)
+      .select(`id, hold_date, book:books!inner(id, title, barcode), member:members!inner(id, name, barcode)`)
       .eq('released', false)
       .order('hold_date', { ascending: true })
 
@@ -49,10 +47,10 @@ export default function HeldBooksList() {
   }, [])
 
   const releaseBook = async (record: HeldRecord) => {
-    setReleasingId(record.id) // Show loading state on specific button
+    setReleasingId(record.id)
     setMessage('')
 
-    // Use a transaction to ensure both operations succeed or fail together
+    // This will now work because you created the function in the database
     const { error } = await supabase.rpc('release_held_book', {
       p_hold_id: record.id,
       p_book_id: record.book.id
@@ -62,14 +60,11 @@ export default function HeldBooksList() {
       setMessage(`Failed to release "${record.book.title}". Please try again.`)
       console.error(error)
     } else {
-      // Optimistically remove the record from the UI before re-fetching
       setRecords(prevRecords => prevRecords.filter(r => r.id !== record.id));
     }
-
     setReleasingId(null)
   }
 
-  // --- REDESIGNED JSX ---
   return (
     <div className="space-y-4">
       {loading ? (
@@ -82,10 +77,7 @@ export default function HeldBooksList() {
         </div>
       ) : (
         records.map((r) => (
-          <div
-            key={r.id}
-            className="bg-primary-grey border border-primary-dark-grey p-4 rounded-lg flex flex-col md:flex-row justify-between md:items-center gap-4 transition-all"
-          >
+          <div key={r.id} className="bg-primary-grey border border-primary-dark-grey p-4 rounded-lg flex flex-col md:flex-row justify-between md:items-center gap-4 transition-all">
             <div className="space-y-2 text-sm flex-grow">
               <div className="flex items-center gap-2 font-bold text-lg text-heading-text-black">
                 <Book size={16} className="text-dark-green flex-shrink-0" />
@@ -93,22 +85,14 @@ export default function HeldBooksList() {
               </div>
               <div className="flex items-center gap-2 text-text-grey">
                 <User size={14} className="flex-shrink-0" />
-                <span>
-                  Held for: <strong className="text-heading-text-black">{r.member.name}</strong> ({r.member.barcode})
-                </span>
+                <span>Held for: <strong className="text-heading-text-black">{r.member.name}</strong> ({r.member.barcode})</span>
               </div>
               <div className="flex items-center gap-2 text-text-grey">
                 <Clock size={14} className="flex-shrink-0" />
-                <span>
-                  Held on: {new Date(r.hold_date).toLocaleDateString()}
-                </span>
+                <span>Held on: {new Date(r.hold_date).toLocaleDateString()}</span>
               </div>
             </div>
-            <button
-              onClick={() => releaseBook(r)}
-              disabled={!!releasingId}
-              className="w-full md:w-auto px-4 py-2 text-sm rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold transition disabled:opacity-70 disabled:cursor-wait flex-shrink-0"
-            >
+            <button onClick={() => releaseBook(r)} disabled={!!releasingId} className="w-full md:w-auto px-4 py-2 text-sm rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold transition disabled:opacity-70 disabled:cursor-wait flex-shrink-0">
               {releasingId === r.id ? 'Releasing...' : 'Mark Available'}
             </button>
           </div>

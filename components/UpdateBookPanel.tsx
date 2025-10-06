@@ -8,13 +8,13 @@ import {
 } from 'lucide-react'
 import clsx from 'classnames'
 
-// The component's props remain the same to ensure compatibility
+// The component's props remain the same
 interface Props {
   showSidebar: boolean;
   setShowSidebar: (val: boolean) => void;
 }
 
-// Type for the book data
+// ✅ UPDATED: Added 'pages' to the BookData interface
 interface BookData {
   id: string;
   title: string;
@@ -24,6 +24,7 @@ interface BookData {
   call_number: string;
   barcode: string;
   status: string;
+  pages: number | null; // Can be a number or null
 }
 
 export default function UpdateBookPanel({ showSidebar, setShowSidebar }: Props) {
@@ -33,7 +34,6 @@ export default function UpdateBookPanel({ showSidebar, setShowSidebar }: Props) 
   const [feedback, setFeedback] = useState<{ type: 'error' | 'success', message: string } | null>(null)
   const barcodeRef = useRef<HTMLInputElement>(null)
 
-  // Focus the input when the modal opens
   useEffect(() => {
     if (showSidebar) {
       setTimeout(() => barcodeRef.current?.focus(), 100)
@@ -75,6 +75,7 @@ export default function UpdateBookPanel({ showSidebar, setShowSidebar }: Props) 
     setLoading(true)
     setFeedback(null)
 
+    // ✅ UPDATED: Include 'pages' in the data to be updated
     const { error } = await supabase
       .from('books')
       .update({
@@ -83,7 +84,7 @@ export default function UpdateBookPanel({ showSidebar, setShowSidebar }: Props) 
         shelf_location: book.shelf_location,
         call_number: book.call_number,
         status: book.status,
-        // Barcode and language are not updated
+        pages: book.pages, // Add the pages field here
       })
       .eq('id', book.id)
 
@@ -91,15 +92,12 @@ export default function UpdateBookPanel({ showSidebar, setShowSidebar }: Props) 
       setFeedback({ type: 'error', message: `Failed to update book: ${error.message}` })
     } else {
       setFeedback({ type: 'success', message: 'Book updated successfully!' })
-      // Keep the form open for further edits or close it.
-      // For now, we'll keep it open and show the success message.
     }
     setLoading(false)
   }
 
   if (!showSidebar) return null
 
-  // --- REDESIGNED JSX ---
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
       <div className="bg-secondary-white rounded-xl shadow-2xl max-w-lg w-full border border-primary-dark-grey">
@@ -119,7 +117,6 @@ export default function UpdateBookPanel({ showSidebar, setShowSidebar }: Props) 
           )}
 
           {!book ? (
-            // --- Step 1: Find Book Form ---
             <form onSubmit={handleFindBook} className="space-y-4">
               <label htmlFor="barcode-search" className="block text-sm font-semibold text-text-grey">Enter a barcode to find and edit a book.</label>
               <div className="relative">
@@ -140,7 +137,6 @@ export default function UpdateBookPanel({ showSidebar, setShowSidebar }: Props) 
               </button>
             </form>
           ) : (
-            // --- Step 2: Edit Form ---
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
@@ -163,14 +159,29 @@ export default function UpdateBookPanel({ showSidebar, setShowSidebar }: Props) 
                   <label className="text-sm font-semibold text-text-grey">Call Number</label>
                   <input type="text" value={book.call_number} onChange={(e) => setBook({ ...book, call_number: e.target.value })} className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-primary-grey" />
                 </div>
+
+                {/* ✅ NEW: Pages Input Field */}
                 <div>
-                  <label className="text-sm font-semibold text-text-grey">Status (borrowed/available)</label>
-                  <input type="text" value={book.status} onChange={(e) => setBook({ ...book, status: e.target.value })} className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-primary-grey" />
+                  <label className="text-sm font-semibold text-text-grey">Pages</label>
+                  <input
+                    type="number"
+                    value={book.pages || ''}
+                    onChange={(e) => setBook({ ...book, pages: e.target.value ? parseInt(e.target.value, 10) : null })}
+                    className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-primary-grey"
+                  />
                 </div>
+
                 <div>
-                  <label className="text-sm font-semibold text-text-grey">Barcode</label>
-                  <input type="text" value={book.barcode} readOnly className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-gray-200 text-gray-500 cursor-not-allowed" />
+                  <label className="text-sm font-semibold text-text-grey">Status</label>
+                  <select value={book.status} onChange={(e) => setBook({ ...book, status: e.target.value })} className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-primary-grey appearance-none">
+                    <option value="available">available</option>
+                    <option value="borrowed">borrowed</option>
+                    <option value="held">held</option>
+                    <option value="lost">lost</option>
+                    <option value="lost">maintenance</option>
+                  </select>
                 </div>
+
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button onClick={resetForm} className="px-5 py-2 text-sm font-semibold bg-secondary-white border border-primary-dark-grey rounded-lg hover:bg-primary-dark-grey">Find Another</button>

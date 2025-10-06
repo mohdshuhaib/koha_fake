@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Loading from '@/app/loading'
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import clsx from 'classnames'
+import * as XLSX from 'xlsx' // Import the Excel library
 
-// Data type remains the same
+// --- Type Definitions ---
 type Book = {
   id: number
   barcode: string
@@ -15,6 +16,7 @@ type Book = {
   language: string
   call_number: string
   shelf_location: string
+  pages: number | null // Added pages field
   status: 'available' | 'borrowed' | 'held'
   borrow_records?: {
     return_date: string | null
@@ -39,8 +41,8 @@ export default function CatalogPage() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [totalBooks, setTotalBooks] = useState(0)
+  const [isExporting, setIsExporting] = useState(false) // State for export button
 
-  // Data fetching logic is unchanged
   useEffect(() => {
     const fetchBooks = async () => {
       setLoading(true)
@@ -81,18 +83,72 @@ export default function CatalogPage() {
     setPage(1)
   }
 
+  // --- NEW: Function to handle Excel Export ---
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+        // Fetch ALL books, not just the paginated ones
+        const { data: allBooks, error } = await supabase
+            .from('books')
+            .select('title, author, barcode, language, call_number, shelf_location, pages')
+            .order('language')
+            .order('title');
+
+        if (error || !allBooks) {
+            throw new Error("Failed to fetch books for export.");
+        }
+
+        // Group books by language
+        const booksByLanguage = allBooks.reduce((acc, book) => {
+            const lang = book.language || 'Unknown';
+            if (!acc[lang]) {
+                acc[lang] = [];
+            }
+            // Exclude the language field from the row data itself
+            const { language, ...bookData } = book;
+            acc[lang].push(bookData);
+            return acc;
+        }, {} as Record<string, Omit<typeof allBooks[0], 'language'>[]>);
+
+        // Create a new workbook
+        const workbook = XLSX.utils.book_new();
+
+        // Create a sheet for each language
+        for (const language in booksByLanguage) {
+            const worksheet = XLSX.utils.json_to_sheet(booksByLanguage[language]);
+            XLSX.utils.book_append_sheet(workbook, worksheet, language);
+        }
+
+        // Trigger the download
+        XLSX.writeFile(workbook, 'library_catalog_by_language.xlsx');
+
+    } catch (err) {
+        console.error("Export failed:", err);
+        alert("Could not export the catalog. Please try again.");
+    } finally {
+        setIsExporting(false);
+    }
+  };
+
   const totalPages = Math.ceil(totalBooks / PAGE_SIZE)
 
   return (
-    // Restored original light theme background
     <div className="min-h-screen bg-primary-grey pt-24 px-4 font-body">
-      {/* Restored main content card with modern padding */}
       <div className="max-w-7xl mx-auto bg-secondary-white border border-primary-dark-grey rounded-2xl shadow-2xl p-6 md:p-10">
-        <h1 className="text-3xl md:text-4xl font-bold mb-8 text-heading-text-black font-heading uppercase text-center tracking-wider">
-          Book Catalog
-        </h1>
+        <div className="flex flex-col md:flex-row justify-between md:items-center mb-8 gap-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-heading-text-black font-heading uppercase text-center md:text-left tracking-wider">
+                Book Catalog
+            </h1>
+            <button
+                onClick={handleExport}
+                disabled={isExporting}
+                className="flex items-center justify-center gap-2 w-full md:w-auto px-4 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 transition disabled:opacity-70 disabled:cursor-wait"
+            >
+                <Download size={16} />
+                {isExporting ? 'Exporting...' : 'Export Catalog'}
+            </button>
+        </div>
 
-        {/* Redesigned search bar for the light theme */}
         <div className="relative mb-8">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
             <Search className="h-5 w-5 text-text-grey" />
@@ -115,20 +171,20 @@ export default function CatalogPage() {
             <div className="overflow-x-auto">
               <div className="border border-primary-dark-grey rounded-lg shadow-inner">
                 <table className="min-w-full text-sm text-left">
-                  {/* Table header style from original for high contrast */}
                   <thead className="bg-secondary-light-black text-white">
                     <tr>
                       <th className="px-4 py-3 font-semibold uppercase tracking-wider">Barcode</th>
                       <th className="px-4 py-3 font-semibold uppercase tracking-wider">Title</th>
                       <th className="px-4 py-3 font-semibold uppercase tracking-wider">Author</th>
                       <th className="px-4 py-3 font-semibold uppercase tracking-wider">Language</th>
+                      <th className="px-4 py-3 font-semibold uppercase tracking-wider">Pages</th>
                       <th className="px-4 py-3 font-semibold uppercase tracking-wider">Call Number</th>
                       <th className="px-4 py-3 font-semibold uppercase tracking-wider">Shelf</th>
                       <th className="px-4 py-3 font-semibold uppercase tracking-wider">Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {books.map((book, index) => {
+                    {books.map((book) => {
                       const activeBorrow = book.borrow_records?.find((br) => br.return_date === null)
                       const borrowedBy = activeBorrow?.members?.name
                       const activeHold = book.hold_records?.find((hr) => !hr.released)
@@ -140,6 +196,7 @@ export default function CatalogPage() {
                           <td className="px-4 py-3 align-middle font-malayalam font-semibold text-heading-text-black">{book.title}</td>
                           <td className="px-4 py-3 align-middle font-malayalam text-text-grey">{book.author}</td>
                           <td className="px-4 py-3 align-middle text-text-grey">{book.language}</td>
+                          <td className="px-4 py-3 align-middle text-text-grey font-semibold">{book.pages ?? '-'}</td>
                           <td className="px-4 py-3 align-middle text-text-grey">{book.call_number}</td>
                           <td className="px-4 py-3 align-middle text-text-grey">{book.shelf_location}</td>
                           <td className="px-4 py-3 align-middle">
@@ -153,7 +210,6 @@ export default function CatalogPage() {
               </div>
             </div>
 
-            {/* Pagination Controls - styled for light theme */}
             <div className="mt-6 flex items-center justify-between">
               <button
                 onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
@@ -180,7 +236,6 @@ export default function CatalogPage() {
   )
 }
 
-// --- Helper component for status badges, now styled for a LIGHT background ---
 function StatusBadge({ status, heldBy, borrowedBy }: { status: string; heldBy?: string; borrowedBy?: string }) {
   const baseClasses = "px-2.5 py-1 rounded-full text-xs font-bold"
 
