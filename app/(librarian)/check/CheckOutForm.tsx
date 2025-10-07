@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 import dayjs from 'dayjs'
 import { User, Book, CheckCircle2, AlertCircle, X } from 'lucide-react'
 import clsx from 'classnames'
-import { supabase } from '@/lib/supabase'
 
 type HeldInfo = {
     bookId: string;
@@ -56,6 +56,38 @@ export default function CheckOutForm() {
         setMessage('')
         setIsError(false)
 
+        // --- Step 1: Validate Member ---
+        const { data: member, error: memberError } = await supabase.from('members').select('id, name, category').eq('barcode', memberBarcode).single()
+        if (memberError || !member) {
+            setMessage('Member not found. Please check the name or barcode.')
+            setIsError(true)
+            resetForm(true)
+            return
+        }
+
+        // --- ✅ NEW: Step 2: Check for Unpaid Fines ---
+        const { count: unpaidFines, error: fineError } = await supabase
+            .from('borrow_records')
+            .select('*', { count: 'exact', head: true })
+            .eq('member_id', member.id)
+            .eq('fine_paid', false)
+            .gt('fine', 0)
+
+        if (fineError) {
+            setMessage('Could not verify member\'s fine status. Please try again.')
+            setIsError(true)
+            resetForm(true)
+            return
+        }
+
+        if (unpaidFines && unpaidFines > 0) {
+            setMessage(`"${member.name}" has an outstanding fine and cannot borrow new books until it is paid.`)
+            setIsError(true)
+            resetForm(true) // Reset everything
+            return
+        }
+
+        // --- Step 3: Validate Book ---
         const { data: book, error: bookError } = await supabase.from('books').select('id, title, status').eq('barcode', bookBarcode).or('status.eq.available,status.eq.held').single()
         if (bookError || !book) {
             setMessage('Book is not available for checkout or barcode is incorrect.')
@@ -64,6 +96,7 @@ export default function CheckOutForm() {
             return
         }
 
+        // --- Step 4: Handle Held Books ---
         if (book.status === 'held') {
             const { data: holdRecord } = await supabase.from('hold_records').select('id, member:members!inner(name)').eq('book_id', book.id).eq('released', false).single()
             if (holdRecord) {
@@ -77,18 +110,11 @@ export default function CheckOutForm() {
             }
         }
 
-        await proceedWithCheckout(book.id, book.title);
+        // --- Step 5: Proceed with Normal Checkout ---
+        await proceedWithCheckout(book.id, book.title, member);
     }
 
-    const proceedWithCheckout = async (bookId: string, bookTitle: string) => {
-        const { data: member, error: memberError } = await supabase.from('members').select('id, name, category').eq('barcode', memberBarcode).single()
-        if (memberError || !member) {
-            setMessage('Member not found.')
-            setIsError(true)
-            resetForm(true)
-            return
-        }
-
+    const proceedWithCheckout = async (bookId: string, bookTitle: string, member: any) => {
         const dueInDays = (member.category === 'teacher' || member.category === 'class') ? 30 : 15
         const dueDate = dayjs().add(dueInDays, 'day').format('YYYY-MM-DD')
 
@@ -96,20 +122,20 @@ export default function CheckOutForm() {
         if (borrowError) {
             setMessage('Failed to create borrow record.')
             setIsError(true)
-            resetForm(false) // Keep member on failure
+            resetForm(false)
             return
         }
         const { error: updateBookError } = await supabase.from('books').update({ status: 'borrowed' }).eq('id', bookId)
         if (updateBookError) {
             setMessage('Failed to update book status, but record was created.')
             setIsError(true)
-            resetForm(false) // Keep member on failure
+            resetForm(false)
             return
         }
 
         setMessage(`"${bookTitle}" issued to ${member.name}. Return by ${dayjs(dueDate).format('DD MMM YYYY')}`)
         setIsError(false)
-        resetForm(false) // Keep member on success
+        resetForm(false)
     }
 
     const handleConfirmHeldCheckout = async () => {
@@ -142,7 +168,7 @@ export default function CheckOutForm() {
             setMessage(`Held book "${heldInfo.bookTitle}" issued to ${member.name}. Return by ${dayjs(dueDate).format('DD MMM YYYY')}`);
             setIsError(false);
         }
-        resetForm(false); // Keep member on success
+        resetForm(false);
     }
 
     const resetForm = (resetMember: boolean) => {
@@ -159,7 +185,6 @@ export default function CheckOutForm() {
         else setTimeout(() => bookInputRef.current?.focus(), 100);
     }
 
-    // New function to clear only member input and reset the form completely
     const clearMemberAndReset = () => {
         resetForm(true);
     }
@@ -181,7 +206,6 @@ export default function CheckOutForm() {
                         onKeyDown={(e) => e.key === 'Enter' && suggestions.length === 0 && bookInputRef.current?.focus()}
                         disabled={loading}
                     />
-                    {/* Clear button appears when there is text */}
                     {memberQuery && !loading && (
                         <button
                             onClick={clearMemberAndReset}

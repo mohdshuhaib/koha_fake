@@ -2,7 +2,7 @@
 
 import { useEffect, useState, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
-import dayjs from 'dayjs' // Import the new custom component
+import dayjs from 'dayjs'
 import 'react-day-picker/dist/style.css'
 import { Barcode, X, CheckCircle2, AlertCircle, CalendarDays } from 'lucide-react'
 import clsx from 'classnames'
@@ -19,7 +19,6 @@ export default function CheckInForm() {
     const [isGlobalLeaveModalOpen, setIsGlobalLeaveModalOpen] = useState(false)
     const [globalHolidays, setGlobalHolidays] = useState<Date[]>([])
     const [globalHolidaysLoading, setGlobalHolidaysLoading] = useState(false)
-    const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null)
 
     const handleInitialScan = async () => {
         if (!barcode) return
@@ -29,14 +28,16 @@ export default function CheckInForm() {
 
         const { data: book } = await supabase.from('books').select('id, title').eq('barcode', barcode).single()
         if (!book) {
-            setNotification({ type: 'error', message: 'Book not found with that barcode.'})
+            setMessage('Book not found with that barcode.')
+            setIsError(true)
             setLoading(false)
             return
         }
 
         const { data: record } = await supabase.from('borrow_records').select('*, member:member_id(*)').eq('book_id', book.id).is('return_date', null).single()
         if (!record) {
-            setNotification({ type: 'error', message: 'This book is not currently checked out.'})
+            setMessage('This book is not currently checked out.')
+            setIsError(true)
             setLoading(false)
             return
         }
@@ -101,12 +102,14 @@ export default function CheckInForm() {
         const { error: updateBook } = await supabase.from('books').update({ status: 'available' }).eq('id', recordToProcess.book.id)
 
         if (updateBorrow || updateBook) {
-            setNotification({ type: 'error', message: 'The check-in process failed. Please try again.'})
+            setMessage('The check-in process failed. Please try again.')
+            setIsError(true)
         } else {
             let successMessage = `Returned "${recordToProcess.book.title}" by ${recordToProcess.member.name}.`
             if (fine > 0) successMessage += ` Fine: ₹${fine}.`
             if (totalHolidayCount > 0) successMessage += ` (${totalHolidayCount} total leave day(s) excluded.)`
-            setNotification({ type: 'success', message: successMessage })
+            setMessage(successMessage)
+            setIsError(false)
         }
         resetProcess()
     }
@@ -133,10 +136,12 @@ export default function CheckInForm() {
         const { error } = await supabase.from('holidays').insert(formattedDates);
 
         if (error) {
-            setNotification({ type: 'error', message: 'Failed to save global holidays. Please ensure no duplicate dates are selected.'})
+            setMessage('Failed to save global holidays. Please ensure no duplicate dates are selected.')
+            setIsError(true)
             console.error(error);
         } else {
-            setNotification({ type: 'success', message: 'Global leave days have been updated successfully.'})
+            setMessage('Global leave days have been updated successfully.')
+            setIsError(false)
             setIsGlobalLeaveModalOpen(false);
         }
         setGlobalHolidaysLoading(false);
@@ -147,8 +152,13 @@ export default function CheckInForm() {
         setManualHolidays([])
         setBarcode('')
         setLoading(false)
-        setMessage('')
-        setIsError(false)
+        // Keep message and error state for display, they will be cleared on the next scan.
+    }
+
+    const fullReset = () => {
+        resetProcess();
+        setMessage('');
+        setIsError(false);
     }
 
     return (
@@ -189,10 +199,10 @@ export default function CheckInForm() {
                 )}
             </div>
 
-            <Modal isOpen={!!activeRecord} onClose={resetProcess}>
+            <Modal isOpen={!!activeRecord} onClose={fullReset}>
                 <div className="p-4 border-b border-primary-dark-grey flex justify-between items-center">
                     <h3 className="font-bold text-lg font-heading text-heading-text-black">Select Personal Leave Days</h3>
-                    <button onClick={resetProcess} className="p-1 rounded-full text-text-grey hover:bg-primary-dark-grey hover:text-red-500 transition"><X size={20} /></button>
+                    <button onClick={fullReset} className="p-1 rounded-full text-text-grey hover:bg-primary-dark-grey hover:text-red-500 transition"><X size={20} /></button>
                 </div>
                 <div className="p-6 space-y-4">
                     <p className="text-sm text-center text-text-grey">{message}</p>
@@ -201,7 +211,7 @@ export default function CheckInForm() {
                     </div>
                     <div className="text-center font-semibold text-text-grey">You have selected {manualHolidays.length} personal leave day(s).</div>
                     <div className="flex justify-end gap-4 pt-2">
-                        <button onClick={resetProcess} className="bg-gray-200 text-text-grey px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark-grey transition">Cancel</button>
+                        <button onClick={fullReset} className="bg-gray-200 text-text-grey px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark-grey transition">Cancel</button>
                         <button onClick={() => handleFinalizeCheckIn(activeRecord, activeRecord.savedHolidays, manualHolidays)} disabled={loading} className="bg-dark-green text-white px-6 py-2 rounded-lg font-semibold hover:bg-icon-green transition">{loading ? 'Processing...' : `Confirm & Check In`}</button>
                     </div>
                 </div>
@@ -225,11 +235,6 @@ export default function CheckInForm() {
                     </div>
                 </div>
             </Modal>
-
-            <NotificationModal
-                notification={notification}
-                onClose={() => setNotification(null)}
-            />
         </>
     )
 }
@@ -241,29 +246,6 @@ function Modal({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => 
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
             <div className="bg-secondary-white rounded-xl shadow-2xl w-full max-w-lg border border-primary-dark-grey">
                 {children}
-            </div>
-        </div>
-    )
-}
-
-function NotificationModal({ notification, onClose }: { notification: { type: 'success' | 'error', message: string } | null, onClose: () => void }) {
-    if (!notification) return null;
-    const isError = notification.type === 'error';
-    return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-            <div className="bg-secondary-white rounded-xl shadow-2xl w-full max-w-sm border border-primary-dark-grey p-6 text-center">
-                {isError ? (
-                    <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-                ) : (
-                    <CheckCircle2 className="mx-auto h-12 w-12 text-green-500" />
-                )}
-                <h3 className={clsx("mt-4 text-xl font-bold font-heading", isError ? "text-red-700" : "text-dark-green")}>
-                    {isError ? 'Error' : 'Success'}
-                </h3>
-                <p className="mt-2 text-sm text-text-grey">{notification.message}</p>
-                <button onClick={onClose} className="mt-6 w-full bg-button-yellow text-button-text-black px-4 py-2 rounded-lg font-semibold hover:bg-yellow-500 transition">
-                    OK
-                </button>
             </div>
         </div>
     )
