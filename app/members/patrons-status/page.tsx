@@ -4,7 +4,7 @@ import { useEffect, useState, ReactNode } from 'react'
 import dayjs from 'dayjs'
 import Loading from '@/app/loading'
 import { supabase } from '@/lib/supabase'
-import { Search, X, BookOpen, IndianRupee, ChevronLeft, ChevronRight, Eye, ArrowLeft, Download, Calendar, Check, Clock } from 'lucide-react'
+import { Search, X, BookOpen, IndianRupee, ChevronLeft, ChevronRight, Eye, ArrowLeft, Download, Calendar, Check, Clock, Printer } from 'lucide-react'
 import Link from 'next/link'
 import clsx from 'classnames';
 import * as XLSX from 'xlsx';
@@ -50,6 +50,7 @@ export default function PatronStatusPage() {
   const [memberDetails, setMemberDetails] = useState<MemberDetails | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [downloadingBatch, setDownloadingBatch] = useState<string | null>(null);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -130,6 +131,50 @@ export default function PatronStatusPage() {
     } finally {
         setDownloadingBatch(null);
     }
+  };
+
+  const handlePrintMemberHistory = (details: MemberDetails) => {
+    if (!details || details.returned.length === 0) {
+        alert("This member has no returned book history to print.");
+        return;
+    }
+    setIsPrinting(true);
+
+    const excelData = details.returned.map((record, index) => ({
+        'SL No': index + 1,
+        'Book Name': record.books?.title || 'Unknown Book',
+        'Barcode': record.books?.barcode || 'N/A',
+        'Borrowed Date': dayjs(record.borrow_date).format('YYYY-MM-DD'),
+    }));
+
+    // Correctly create the worksheet with a title row, then add the data
+    const title = `Book Read List of ${details.name}`;
+    const worksheet = XLSX.utils.aoa_to_sheet([[title]]);
+    XLSX.utils.sheet_add_json(worksheet, excelData, { origin: 'A2' });
+
+    // Auto-fit columns for better readability
+    const objectMaxLength = Object.keys(excelData[0] || {}).map(key => key.length);
+    const columnWidths = excelData.reduce((widths, row) => {
+        Object.values(row).forEach((value, i) => {
+            const len = String(value).length;
+            if (widths[i] < len) {
+                widths[i] = len;
+            }
+        });
+        return widths;
+    }, objectMaxLength);
+
+    // Ensure the first column is wide enough for the title
+    if (columnWidths[0] < title.length) {
+        columnWidths[0] = title.length;
+    }
+    worksheet["!cols"] = columnWidths.map(width => ({ wch: width + 2 }));
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Reading History');
+    const fileName = `${details.name.replace(/\s+/g, '_')}_reading_history.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+    setIsPrinting(false);
   };
 
   const closeModal = () => {
@@ -238,7 +283,15 @@ export default function PatronStatusPage() {
       <DetailsModal isOpen={!!selectedMember} onClose={closeModal}>
         {detailsLoading ? <Loading /> : memberDetails ? (
           <>
-            <div className="p-4 border-b border-primary-dark-grey flex justify-between items-center"><h2 className="text-xl font-bold text-heading-text-black">{memberDetails.name}'s Status</h2><button onClick={closeModal} className="p-1 rounded-full hover:bg-primary-dark-grey"><X size={20}/></button></div>
+            <div className="p-4 border-b border-primary-dark-grey flex justify-between items-center">
+                <h2 className="text-xl font-bold text-heading-text-black">{memberDetails.name}'s Status</h2>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => handlePrintMemberHistory(memberDetails)} disabled={isPrinting} className="p-1.5 rounded-full text-text-grey hover:bg-primary-dark-grey disabled:opacity-50" title="Print Reading History">
+                        {isPrinting ? <LoadingSpinner/> : <Printer size={18} />}
+                    </button>
+                    <button onClick={closeModal} className="p-1 rounded-full hover:bg-primary-dark-grey"><X size={20}/></button>
+                </div>
+            </div>
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <StatCard label="Books Read" value={memberDetails.booksRead} icon={<BookOpen className="text-blue-500" />} />
@@ -288,7 +341,7 @@ function HistoryList({ title, records, isReturnedList }: { title: string; record
         {records.length === 0 ? <p className="text-text-grey text-sm p-4 bg-primary-grey rounded-md">No records in this category.</p> : (
           records.map((record, index) => (
             <div key={index} className="border-b border-primary-dark-grey pb-3 last:border-b-0">
-              <p className="font-semibold text-heading-text-black">{record.books?.title || 'Unknown Book'} ({record.books?.barcode || 'Unknown Barcode'})</p>
+              <p className="font-semibold text-heading-text-black">{record.books?.title || 'Unknown Book'} ({record.books?.barcode || 'N/A'})</p>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-grey mt-1">
                 <span><Calendar size={12} className="inline mr-1" /><strong>Borrowed:</strong> {dayjs(record.borrow_date).format('DD MMM YYYY')}</span>
                 {isReturnedList ? (
@@ -309,3 +362,10 @@ function HistoryList({ title, records, isReturnedList }: { title: string; record
     </div>
   )
 }
+
+const LoadingSpinner = () => (
+    <svg className="animate-spin h-5 w-5 text-text-grey" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+);
