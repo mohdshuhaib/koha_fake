@@ -27,9 +27,11 @@ type Record = {
   books: { title: string , barcode: string} | null
 }
 
+// ✅ UPDATED: Ranked type now includes optional totalPagesRead
 type Ranked = {
   name: string
   count: number
+  totalPagesRead?: number
 }
 
 // --- Main Page Component ---
@@ -76,29 +78,35 @@ export default function HistoryPage() {
     }
   }
 
-  // ✨ UPDATED: Fetch top 10 members
+  // ✅ UPDATED: Logic to count ONLY returned books and SUM pages
   const fetchTopMembers = async () => {
     const { data, error } = await supabase
       .from('borrow_records')
-      .select('member_id, members(name, category)')
+      .select('member_id, members(name, category), books(pages)')
+      .not('return_date', 'is', null) // Only fetch records for returned books
 
     if (!error && data) {
-      const counts: { [memberId: string]: Ranked } = {}
+      const counts: { [memberId: string]: { name: string; count: number; totalPagesRead: number } } = {}
+
       data.forEach((d: any) => {
-        const member = Array.isArray(d.members) ? d.members[0] : d.members
-        if (!member?.name || member?.category !== 'student') return
+        const member = Array.isArray(d.members) ? d.members[0] : d.members;
+        const book = Array.isArray(d.books) ? d.books[0] : d.books;
+
+        if (!member?.name || member?.category !== 'student') return;
+
         if (!counts[d.member_id]) {
-          counts[d.member_id] = { name: member.name, count: 1 }
-        } else {
-          counts[d.member_id].count++
+          counts[d.member_id] = { name: member.name, count: 0, totalPagesRead: 0 };
         }
+
+        counts[d.member_id].count++;
+        counts[d.member_id].totalPagesRead += book?.pages || 0; // Add pages, default to 0
       })
+
       const sorted = Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 10)
       setTopMembers(sorted)
     }
   }
 
-  // ✨ UPDATED: Fetch top 10 books
   const fetchTopBooks = async () => {
     const { data, error } = await supabase
       .from('borrow_records')
@@ -120,7 +128,6 @@ export default function HistoryPage() {
     }
   }
 
-  // ✨ UPDATED: Fetch top 10 batches
   const fetchTopBatches = async () => {
     const { data, error } = await supabase
       .from('borrow_records')
@@ -252,7 +259,7 @@ export default function HistoryPage() {
 
 // --- Helper Components ---
 
-// ✨ UPDATED: LeaderboardCard now manages its own expanded state
+// ✅ UPDATED: LeaderboardCard to display total pages read
 function LeaderboardCard({ title, icon, data, unit }: { title: string; icon: ReactNode; data: Ranked[]; unit: string }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const medals = ['🥇', '🥈', '🥉'];
@@ -271,7 +278,12 @@ function LeaderboardCard({ title, icon, data, unit }: { title: string; icon: Rea
               <span className="text-lg w-6 text-center">{medals[i] || `${i + 1}.`}</span>
               <span className="font-semibold text-heading-text-black">{item.name}</span>
             </span>
-            <span className="font-bold text-sm">{item.count} <span className="font-normal">{unit}</span></span>
+            <div className="text-right">
+                <span className="font-bold text-sm">{item.count} <span className="font-normal">{unit}</span></span>
+                {item.totalPagesRead !== undefined && (
+                    <span className="block text-xs font-normal text-text-grey">{item.totalPagesRead.toLocaleString()} pages read</span>
+                )}
+            </div>
           </li>
         ))}
         {data.length === 0 && <li className="text-center text-sm p-4">Not enough data yet.</li>}
