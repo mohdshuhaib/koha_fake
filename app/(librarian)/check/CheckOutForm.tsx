@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import dayjs from 'dayjs'
-import { User, Book, CheckCircle2, AlertCircle, X } from 'lucide-react'
+import { User, Book, CheckCircle2, AlertCircle, X, AlertTriangle } from 'lucide-react'
 import clsx from 'classnames'
 
 type HeldInfo = {
@@ -22,8 +22,13 @@ export default function CheckOutForm() {
     const [memberQuery, setMemberQuery] = useState('')
     const [suggestions, setSuggestions] = useState<any[]>([])
 
+    // State for Hold Confirmation
     const [isHoldModalOpen, setIsHoldModalOpen] = useState(false)
     const [heldInfo, setHeldInfo] = useState<HeldInfo | null>(null)
+
+    // State for Fine Warning
+    const [isFineModalOpen, setIsFineModalOpen] = useState(false)
+    const [fineWarningMember, setFineWarningMember] = useState<any>(null)
 
     const memberInputRef = useRef<HTMLInputElement>(null)
     const bookInputRef = useRef<HTMLInputElement>(null)
@@ -50,6 +55,7 @@ export default function CheckOutForm() {
         setTimeout(() => bookInputRef.current?.focus(), 100)
     }
 
+    // --- Primary Entry Point for Checkout ---
     const handleCheckout = async () => {
         if (!memberBarcode || !bookBarcode) return
         setLoading(true)
@@ -65,7 +71,7 @@ export default function CheckOutForm() {
             return
         }
 
-        // --- ✅ NEW: Step 2: Check for Unpaid Fines ---
+        // --- Step 2: Check for Unpaid Fines ---
         const { count: unpaidFines, error: fineError } = await supabase
             .from('borrow_records')
             .select('*', { count: 'exact', head: true })
@@ -74,19 +80,26 @@ export default function CheckOutForm() {
             .gt('fine', 0)
 
         if (fineError) {
-            setMessage('Could not verify member\'s fine status. Please try again.')
+            setMessage('Could not verify member\'s fine status.')
             setIsError(true)
             resetForm(true)
             return
         }
 
         if (unpaidFines && unpaidFines > 0) {
-            setMessage(`"${member.name}" has an outstanding fine and cannot borrow new books until it is paid.`)
-            setIsError(true)
-            resetForm(true) // Reset everything
+            // Pause execution and show Fine Warning Modal
+            setFineWarningMember(member)
+            setIsFineModalOpen(true)
+            setLoading(false)
             return
         }
 
+        // No fines? Proceed to book checks.
+        await proceedWithBookChecks(member);
+    }
+
+    // --- Helper: Called if no fines OR if "Skip" is clicked ---
+    const proceedWithBookChecks = async (member: any) => {
         // --- Step 3: Validate Book ---
         const { data: book, error: bookError } = await supabase.from('books').select('id, title, status').eq('barcode', bookBarcode).or('status.eq.available,status.eq.held').single()
         if (bookError || !book) {
@@ -110,11 +123,20 @@ export default function CheckOutForm() {
             }
         }
 
-        // --- Step 5: Proceed with Normal Checkout ---
-        await proceedWithCheckout(book.id, book.title, member);
+        // --- Step 5: Proceed with Final Checkout ---
+        await finalizeCheckout(book.id, book.title, member);
     }
 
-    const proceedWithCheckout = async (bookId: string, bookTitle: string, member: any) => {
+    // --- Handler for "Skip for now" on Fine Modal ---
+    const handleSkipFine = () => {
+        if (fineWarningMember) {
+            setIsFineModalOpen(false);
+            setLoading(true); // Resume loading indicator
+            proceedWithBookChecks(fineWarningMember);
+        }
+    }
+
+    const finalizeCheckout = async (bookId: string, bookTitle: string, member: any) => {
         const dueInDays = (member.category === 'teacher' || member.category === 'class') ? 30 : 15
         const dueDate = dayjs().add(dueInDays, 'day').format('YYYY-MM-DD')
 
@@ -135,7 +157,7 @@ export default function CheckOutForm() {
 
         setMessage(`"${bookTitle}" issued to ${member.name}. Return by ${dayjs(dueDate).format('DD MMM YYYY')}`)
         setIsError(false)
-        resetForm(false)
+        resetForm(false) // Keep member name
     }
 
     const handleConfirmHeldCheckout = async () => {
@@ -179,8 +201,12 @@ export default function CheckOutForm() {
         }
         setSuggestions([])
         setLoading(false)
+        // Reset Modal States
         setHeldInfo(null)
         setIsHoldModalOpen(false)
+        setIsFineModalOpen(false)
+        setFineWarningMember(null)
+
         if (resetMember) setTimeout(() => memberInputRef.current?.focus(), 100);
         else setTimeout(() => bookInputRef.current?.focus(), 100);
     }
@@ -242,6 +268,36 @@ export default function CheckOutForm() {
                 )}
             </div>
 
+            {/* Fine Warning Modal */}
+            {isFineModalOpen && fineWarningMember && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+                    <div className="bg-secondary-white rounded-xl shadow-2xl max-w-md w-full border border-primary-dark-grey">
+                        <div className="p-6 text-center">
+                            <AlertTriangle className="mx-auto h-12 w-12 text-red-500" />
+                            <h3 className="mt-4 text-xl font-bold font-heading text-heading-text-black">Outstanding Fine</h3>
+                            <p className="mt-2 text-sm text-text-grey">
+                                <strong>{fineWarningMember.name}</strong> has outstanding fines. Normally, borrowing is restricted until fines are paid.
+                            </p>
+                        </div>
+                        <div className="flex justify-end gap-3 bg-primary-grey p-4 rounded-b-xl">
+                            <button
+                                onClick={() => resetForm(false)}
+                                className="px-5 py-2 text-sm font-semibold text-text-grey bg-secondary-white border border-primary-dark-grey rounded-lg hover:bg-primary-dark-grey"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSkipFine}
+                                className="px-5 py-2 text-sm font-semibold text-white bg-yellow-600 rounded-lg hover:bg-yellow-700"
+                            >
+                                Skip for now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Hold Confirmation Modal */}
             {isHoldModalOpen && heldInfo && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
                     <div className="bg-secondary-white rounded-xl shadow-2xl max-w-md w-full border border-primary-dark-grey">
