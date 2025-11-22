@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState, ReactNode } from 'react'
+import { useEffect, useState, useRef, ReactNode } from 'react'
 import dayjs from 'dayjs'
 import Loading from '@/app/loading'
 import { supabase } from '@/lib/supabase'
-import { Search, X, BookOpen, IndianRupee, ChevronLeft, ChevronRight, Eye, ArrowLeft, Download, Calendar, Check, Clock, Printer } from 'lucide-react'
+import { Search, X, BookOpen, IndianRupee, ChevronLeft, ChevronRight, Eye, ArrowLeft, Download, Calendar, Check, Clock, Printer, Info } from 'lucide-react'
 import Link from 'next/link'
 import clsx from 'classnames';
 import * as XLSX from 'xlsx';
@@ -19,6 +19,9 @@ type BorrowRecord = {
   books: {
     title: string
     barcode: string
+    author: string        // ✨ Added
+    pages: number | null  // ✨ Added
+    shelf_location: string // ✨ Added
   } | null
 }
 
@@ -67,7 +70,12 @@ export default function PatronStatusPage() {
     setDetailsLoading(true)
     setMemberDetails(null)
 
-    const { data: records } = await supabase.from('borrow_records').select('*, books(title, barcode)').eq('member_id', member.id).order('borrow_date', { ascending: false })
+    // ✨ UPDATED: Fetch additional book details for the tooltip
+    const { data: records } = await supabase
+      .from('borrow_records')
+      .select('*, books(title, barcode, author, pages, shelf_location)')
+      .eq('member_id', member.id)
+      .order('borrow_date', { ascending: false })
 
     const returned: BorrowRecord[] = [];
     const notReturned: BorrowRecord[] = [];
@@ -147,12 +155,10 @@ export default function PatronStatusPage() {
         'Borrowed Date': dayjs(record.borrow_date).format('YYYY-MM-DD'),
     }));
 
-    // Correctly create the worksheet with a title row, then add the data
     const title = `Book Read List of ${details.name}`;
     const worksheet = XLSX.utils.aoa_to_sheet([[title]]);
     XLSX.utils.sheet_add_json(worksheet, excelData, { origin: 'A2' });
 
-    // Auto-fit columns for better readability
     const objectMaxLength = Object.keys(excelData[0] || {}).map(key => key.length);
     const columnWidths = excelData.reduce((widths, row) => {
         Object.values(row).forEach((value, i) => {
@@ -164,7 +170,6 @@ export default function PatronStatusPage() {
         return widths;
     }, objectMaxLength);
 
-    // Ensure the first column is wide enough for the title
     if (columnWidths[0] < title.length) {
         columnWidths[0] = title.length;
     }
@@ -310,6 +315,56 @@ export default function PatronStatusPage() {
 }
 
 // --- Helper Components ---
+
+// ✨ NEW: Individual History Item Component to handle tooltip state
+function HistoryItem({ record, isReturnedList }: { record: BorrowRecord, isReturnedList: boolean }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  return (
+    <div
+      className="border-b border-primary-dark-grey pb-3 last:border-b-0 relative group"
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+      onClick={() => setShowTooltip(!showTooltip)} // Toggle on click for mobile
+    >
+      <div className="flex items-center gap-2 cursor-help">
+         <p className="font-semibold text-heading-text-black hover:text-blue-600 transition-colors">
+           {record.books?.title || 'Unknown Book'}
+         </p>
+         <Info size={14} className="text-text-grey opacity-50 group-hover:opacity-100" />
+      </div>
+
+      {/* Tooltip */}
+      {showTooltip && record.books && (
+        <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-gray-800 text-white text-xs rounded-lg shadow-xl z-50 pointer-events-none">
+           <div className="space-y-1">
+             <p><span className="font-bold text-gray-400">Author:</span> {record.books.author || 'N/A'}</p>
+             <p><span className="font-bold text-gray-400">Barcode:</span> {record.books.barcode}</p>
+             <p><span className="font-bold text-gray-400">Pages:</span> {record.books.pages || '-'}</p>
+             <p><span className="font-bold text-gray-400">Shelf:</span> {record.books.shelf_location || 'N/A'}</p>
+           </div>
+           {/* Arrow */}
+           <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-gray-800"></div>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-grey mt-1">
+        <span><Calendar size={12} className="inline mr-1" /><strong>Borrowed:</strong> {dayjs(record.borrow_date).format('DD MMM YYYY')}</span>
+        {isReturnedList ? (
+            <span><Check size={12} className="inline mr-1" /><strong>Returned:</strong> {dayjs(record.return_date).format('DD MMM YYYY')}</span>
+        ) : (
+            <span><Clock size={12} className="inline mr-1" /><strong>Due:</strong> {dayjs(record.due_date).format('DD MMM YYYY')}</span>
+        )}
+        {record.fine > 0 && (
+          <span className={record.fine_paid ? 'text-green-600' : 'text-red-600'}>
+            <strong>Fine:</strong> ₹{record.fine} {record.fine_paid ? '(Paid)' : '(Unpaid)'}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function DetailsModal({ isOpen, onClose, children }: { isOpen: boolean; onClose: () => void; children: ReactNode }) {
   if (!isOpen) return null;
   return (
@@ -337,25 +392,12 @@ function HistoryList({ title, records, isReturnedList }: { title: string; record
   return (
     <div>
       <h3 className={clsx("text-lg font-bold mb-3", isReturnedList ? 'text-green-700' : 'text-red-700')}>{title}</h3>
-      <div className="space-y-3 text-sm max-h-60 overflow-y-auto pr-2">
+      {/* ✅ FIX: Removed max-h and overflow to allow tooltips to overflow naturally */}
+      <div className="space-y-3 text-sm">
         {records.length === 0 ? <p className="text-text-grey text-sm p-4 bg-primary-grey rounded-md">No records in this category.</p> : (
           records.map((record, index) => (
-            <div key={index} className="border-b border-primary-dark-grey pb-3 last:border-b-0">
-              <p className="font-semibold text-heading-text-black">{record.books?.title || 'Unknown Book'} ({record.books?.barcode || 'N/A'})</p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-grey mt-1">
-                <span><Calendar size={12} className="inline mr-1" /><strong>Borrowed:</strong> {dayjs(record.borrow_date).format('DD MMM YYYY')}</span>
-                {isReturnedList ? (
-                    <span><Check size={12} className="inline mr-1" /><strong>Returned:</strong> {dayjs(record.return_date).format('DD MMM YYYY')}</span>
-                ) : (
-                    <span><Clock size={12} className="inline mr-1" /><strong>Due:</strong> {dayjs(record.due_date).format('DD MMM YYYY')}</span>
-                )}
-                {record.fine > 0 && (
-                  <span className={record.fine_paid ? 'text-green-600' : 'text-red-600'}>
-                    <strong>Fine:</strong> ₹{record.fine} {record.fine_paid ? '(Paid)' : '(Unpaid)'}
-                  </span>
-                )}
-              </div>
-            </div>
+            // ✨ Render the new HistoryItem component
+            <HistoryItem key={index} record={record} isReturnedList={isReturnedList} />
           ))
         )}
       </div>
