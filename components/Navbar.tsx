@@ -1,22 +1,22 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase' // Corrected import path
-import { Menu, X, ChevronDown } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { Menu, X, ChevronDown, Code } from 'lucide-react' // Added Code icon for Dev
 import clsx from 'classnames'
 
 // Defines the structure for a navigation item
 interface NavItemType {
   href?: string
   label: string
+  icon?: React.ReactNode
   children?: NavItemType[]
 }
 
 export default function Navbar() {
-  // Replaced Next.js hooks with standard browser window properties
   const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [role, setRole] = useState<'member' | 'librarian' | null>(null)
+  const [role, setRole] = useState<'member' | 'librarian' | 'developer' | null>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -27,7 +27,15 @@ export default function Navbar() {
       if (user) {
         setIsLoggedIn(true)
         const rawRole = user.user_metadata?.role
-        setRole(rawRole === 'librarian' ? 'librarian' : 'member')
+
+        // ✅ Updated Logic: Handle 'developer' role explicitly
+        if (rawRole === 'developer') {
+            setRole('developer')
+        } else if (rawRole === 'librarian') {
+            setRole('librarian')
+        } else {
+            setRole('member')
+        }
       } else {
         setIsLoggedIn(false)
         setRole(null)
@@ -47,21 +55,39 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    // Replaced router.push with standard window navigation
     window.location.href = '/'
     setIsMenuOpen(false)
   }
 
+  // --- Declarative Navigation Structure ---
   const navItems: NavItemType[] = [
     { href: '/', label: 'Home' },
     { href: '/catalog', label: 'Catalog' },
     { href: '/patrons', label: 'Members' },
+
+    // --- Logic for Dashboard Links ---
     ...(isLoggedIn ? [
-      {
-        href: role === 'librarian' ? '/dashboard' : '/member/dashboard-mem',
-        label: 'Dashboard'
-      },
+      // 1. Developer: Gets Dev Console AND Library Dashboard
+      ...(role === 'developer' ? [
+        {
+            href: '/developer/dashboard-dev',
+            label: 'Dev Console',
+            icon: <Code size={16} className="inline mr-1"/>
+        },
+      ] : []),
+
+      // 2. Librarian: Gets only Library Dashboard
+      ...(role === 'librarian' ? [
+        { href: '/dashboard', label: 'Dashboard' },
+      ] : []),
+
+      // 3. Member: Gets Member Dashboard
+      ...(role === 'member' ? [
+        { href: '/member/dashboard-mem', label: 'Dashboard' },
+      ] : []),
     ] : []),
+
+    // --- Logic for Management Tools (Visible to Librarian & Developer) ---
     ...(role === 'librarian' ? [
       { href: '/check', label: 'Check In / Out' },
       {
@@ -71,6 +97,7 @@ export default function Navbar() {
           { href: '/members', label: 'Patrons' },
           { href: '/fines', label: 'Fines' },
           { href: '/periodicals', label: 'Periodicals' },
+          { href: '/dev-support', label: 'System Support' },
         ],
       },
       { href: '/backup', label: 'Backup' },
@@ -121,12 +148,14 @@ export default function Navbar() {
 
 function NavItem({ item, pathname, isMobile = false, onLinkClick }: { item: NavItemType; pathname: string; isMobile?: boolean; onLinkClick?: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
-  const isActive = item.href ? pathname === item.href : false;
+  // Check if current path matches href or any children hrefs
+  const isActive = item.href === pathname || item.children?.some(child => child.href === pathname);
 
   if (item.children) {
     return (
       <div className="relative" onMouseEnter={() => !isMobile && setIsOpen(true)} onMouseLeave={() => !isMobile && setIsOpen(false)}>
-        <button onClick={() => isMobile && setIsOpen(!isOpen)} className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-gray-100 hover:bg-dark-green hover:text-white">
+        <button onClick={() => isMobile && setIsOpen(!isOpen)} className={clsx("flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors", isActive ? "bg-dark-green text-white" : "text-gray-100 hover:bg-dark-green hover:text-white")}>
+          {item.icon}
           {item.label}
           <ChevronDown size={16} className={clsx("transition-transform", { "rotate-180": isOpen })} />
         </button>
@@ -134,7 +163,7 @@ function NavItem({ item, pathname, isMobile = false, onLinkClick }: { item: NavI
           <div
             className={clsx(
               "flex flex-col space-y-1",
-              !isMobile && "absolute left-0 top-full z-10 w-48 rounded-md bg-green-950 p-2 shadow-lg"
+              !isMobile && "absolute left-0 top-full z-10 w-48 rounded-md bg-green-950 p-2 shadow-lg border border-green-800"
             )}
           >
             {item.children.map(child => (
@@ -143,7 +172,7 @@ function NavItem({ item, pathname, isMobile = false, onLinkClick }: { item: NavI
                 href={child.href!}
                 onClick={onLinkClick}
                 className={clsx(
-                  "block rounded-md px-3 py-2 text-sm font-medium",
+                  "block rounded-md px-3 py-2 text-sm font-medium transition-colors",
                   pathname === child.href
                     ? "bg-dark-green text-white"
                     : "text-gray-100 hover:bg-dark-green hover:text-white"
@@ -163,10 +192,11 @@ function NavItem({ item, pathname, isMobile = false, onLinkClick }: { item: NavI
       href={item.href!}
       onClick={onLinkClick}
       className={clsx(
-        "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+        "rounded-md px-3 py-2 text-sm font-medium transition-colors flex items-center",
         isActive ? "bg-dark-green text-white" : "text-gray-100 hover:bg-dark-green hover:text-white"
       )}
     >
+      {item.icon}
       {item.label}
     </a>
   )
@@ -192,7 +222,7 @@ function AuthButton({ isLoggedIn, handleLogout, isMobile = false }: { isLoggedIn
       href="/login"
       className={clsx(
         "rounded-md px-4 py-2 text-sm font-medium transition-colors",
-        "bg-dark-green text-white hover:bg-dark-green",
+        "bg-dark-green text-white hover:bg-green-900",
         { "w-full text-center block": isMobile }
       )}
     >

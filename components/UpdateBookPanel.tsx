@@ -174,11 +174,11 @@ export default function UpdateBookPanel({ showSidebar, setShowSidebar }: Props) 
                 <div>
                   <label className="text-sm font-semibold text-text-grey">Status</label>
                   <select value={book.status} onChange={(e) => setBook({ ...book, status: e.target.value })} className="w-full mt-1 p-2 border border-primary-dark-grey rounded-md bg-primary-grey appearance-none">
-                    <option value="available">available</option>
-                    <option value="borrowed">borrowed</option>
-                    <option value="held">held</option>
-                    <option value="lost">lost</option>
-                    <option value="lost">maintenance</option>
+                    <option value="available">Available</option>
+                    <option value="borrowed">Borrowed</option>
+                    <option value="held">Held</option>
+                    <option value="lost">Lost</option>
+                    <option value="maintenance">Maintenance</option>
                   </select>
                 </div>
 

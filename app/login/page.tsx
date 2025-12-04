@@ -22,14 +22,20 @@ export default function LoginPage() {
   const [resetMsg, setResetMsg] = useState<{type: 'success' | 'error', text: string} | null>(null)
   const [resetLoading, setResetLoading] = useState(false)
 
-  // --- Logic (Unchanged, but organized) ---
+  // --- Logic (Updated for Developer Role) ---
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
-        // Redirect if a session already exists
+        // Redirect based on role
         const role = session.user.user_metadata?.role || 'member'
-        router.replace(role === 'librarian' ? '/dashboard' : '/member/dashboard-mem')
+        if (role === 'developer') {
+            router.replace('/developer/dashboard-dev')
+        } else if (role === 'librarian') {
+            router.replace('/dashboard')
+        } else {
+            router.replace('/member/dashboard-mem')
+        }
       } else {
         setCheckingSession(false)
       }
@@ -40,11 +46,20 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
     if (error) {
       setError(error.message)
     } else {
-      router.push('/dashboard') // Successful login redirects
+      // Check role immediately after login to redirect correctly
+      const role = data.user?.user_metadata?.role || 'member'
+      if (role === 'developer') {
+        router.push('/developer/dashboard-dev')
+      } else if (role === 'librarian') {
+        router.push('/dashboard')
+      } else {
+        router.push('/member/dashboard-mem')
+      }
     }
   }
 
@@ -141,16 +156,6 @@ export default function LoginPage() {
             </button>
           </div>
         )}
-
-        {/* --- Member Login Link --- */}
-        <div className="text-center mt-6 pt-6 border-t border-primary-dark-grey">
-          <p className="text-sm text-text-grey">
-            Are you a member of PMSA Library?{' '}
-            <Link href="/member-login" className="font-semibold text-link-text-green hover:underline">
-              Login here
-            </Link>
-          </p>
-        </div>
       </div>
     </main>
   )

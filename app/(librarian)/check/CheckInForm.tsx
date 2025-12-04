@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState, ReactNode } from 'react'
+import { useEffect, useState, useRef, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
 import dayjs from 'dayjs'
+import { CustomDayPicker } from '@/components/CustomDayPicker'
 import 'react-day-picker/dist/style.css'
 import { Barcode, X, CheckCircle2, AlertCircle, CalendarDays } from 'lucide-react'
 import clsx from 'classnames'
-import { CustomDayPicker } from '@/components/CustomDayPicker'
 
 // --- Main Component ---
 export default function CheckInForm() {
@@ -20,6 +20,14 @@ export default function CheckInForm() {
     const [globalHolidays, setGlobalHolidays] = useState<Date[]>([])
     const [globalHolidaysLoading, setGlobalHolidaysLoading] = useState(false)
 
+    // ✅ NEW: Ref for the input field
+    const inputRef = useRef<HTMLInputElement>(null)
+
+    // ✅ NEW: Focus input on initial load
+    useEffect(() => {
+        inputRef.current?.focus()
+    }, [])
+
     const handleInitialScan = async () => {
         if (!barcode) return
         setLoading(true)
@@ -31,6 +39,7 @@ export default function CheckInForm() {
             setMessage('Book not found with that barcode.')
             setIsError(true)
             setLoading(false)
+            resetProcess(false) // Clear loading but keep error, focus input
             return
         }
 
@@ -39,6 +48,7 @@ export default function CheckInForm() {
             setMessage('This book is not currently checked out.')
             setIsError(true)
             setLoading(false)
+            resetProcess(false)
             return
         }
 
@@ -111,7 +121,7 @@ export default function CheckInForm() {
             setMessage(successMessage)
             setIsError(false)
         }
-        resetProcess()
+        resetProcess(true) // True means clear barcode
     }
 
     const fetchAndSetGlobalHolidays = async () => {
@@ -147,16 +157,21 @@ export default function CheckInForm() {
         setGlobalHolidaysLoading(false);
     }
 
-    const resetProcess = () => {
+    // ✅ UPDATED: resetProcess now refocuses the input
+    const resetProcess = (clearBarcode = false) => {
         setActiveRecord(null)
         setManualHolidays([])
-        setBarcode('')
+        if (clearBarcode) setBarcode('')
         setLoading(false)
-        // Keep message and error state for display, they will be cleared on the next scan.
+
+        // Small timeout ensures focus happens after UI updates
+        setTimeout(() => {
+            inputRef.current?.focus()
+        }, 100)
     }
 
     const fullReset = () => {
-        resetProcess();
+        resetProcess(true);
         setMessage('');
         setIsError(false);
     }
@@ -174,6 +189,7 @@ export default function CheckInForm() {
                     <div className="relative w-full">
                         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4"><Barcode className="h-5 w-5 text-text-grey" /></div>
                         <input
+                            ref={inputRef} // ✅ Attach ref here
                             type="text"
                             className="w-full p-3 pl-12 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green transition"
                             placeholder="Scan book barcode to return"
