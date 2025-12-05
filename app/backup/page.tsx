@@ -81,8 +81,10 @@ export default function BackupPage() {
         `).order('payment_date', { ascending: false })
       ]);
 
+      // Type casting to handle potential Supabase type mismatches
       const borrowRecords = borrowRecordsRes.data as unknown as BorrowRecord[] || [];
       const finePayments = finePaymentsRes.data as unknown as FinePayment[] || [];
+      const periodicalRecords = periodicalRecordsRes.data as unknown as PeriodicalRecord[] || [];
 
       // --- 2. Process Borrowing History (Raw Data) ---
       const borrowHistoryData = borrowRecords.map(r => ({
@@ -99,28 +101,20 @@ export default function BackupPage() {
         'Amount Paid': r.paid_amount,
       }));
 
-      // --- 3. Process "Fine Payments" Sheet (Dashboard Style) ---
-      // Calculate Summaries
+      // --- 3. Process "Fine Payments" Sheet ---
       const totalCollected = finePayments.reduce((sum, p) => sum + (p.amount_paid || 0), 0);
-
-      // Calculate Outstanding (From Borrow Records where fine > 0 and not paid)
       const totalOutstanding = borrowRecords
         .filter(r => !r.fine_paid && r.fine > 0)
         .reduce((sum, r) => sum + ((r.fine || 0) - (r.paid_amount || 0)), 0);
 
-      // Calculate Waived (From Payments marked as Write-Off)
       const totalWaived = finePayments
         .filter(p => p.notes?.startsWith('Write-Off'))
         .reduce((sum, p) => {
-             // For a write-off, the 'waived' amount is essentially the remaining balance
-             // stored in the linked borrow record at the time of fetching
              const rec = p.borrow_records;
              if (!rec) return sum;
-             // Logic: if it was written off, fine - paid_amount is the waived portion
              return sum + ((rec.fine || 0) - (rec.paid_amount || 0));
         }, 0);
 
-      // Build the Fine Data Rows (List of all records with fines)
       const fineRecordsList = borrowRecords
         .filter(r => r.fine > 0)
         .map(r => ({
@@ -132,19 +126,13 @@ export default function BackupPage() {
             'Remaining': r.fine - r.paid_amount
         }));
 
-      // Construct the Sheet Data with Headers and Spacing
       const finesSheetData = [
-        // Summary Section
         { Member: 'SUMMARY STATS', Batch: '', Book: '', Total: '', Paid: '', Remaining: '' },
         { Member: 'Total Collected', Batch: '', Book: '', Total: totalCollected, Paid: '', Remaining: '' },
         { Member: 'Total Outstanding', Batch: '', Book: '', Total: totalOutstanding, Paid: '', Remaining: '' },
         { Member: 'Total Waived', Batch: '', Book: '', Total: totalWaived, Paid: '', Remaining: '' },
-        { Member: '', Batch: '', Book: '', Total: '', Paid: '', Remaining: '' }, // Spacer
-
-        // Table Header
+        { Member: '', Batch: '', Book: '', Total: '', Paid: '', Remaining: '' },
         { Member: 'MEMBER', Batch: 'BATCH', Book: 'BOOK', Total: 'TOTAL FINE', Paid: 'PAID', Remaining: 'REMAINING' },
-
-        // Table Data
         ...fineRecordsList
       ];
 
@@ -188,45 +176,44 @@ export default function BackupPage() {
       const statsSheetData = [
         { Category: '--- TOP READERS (BY BOOKS READ) ---', Rank: '', Name: '', Count: '', Pages: '' },
         ...topReadersByBooks.map((r, i) => ({ Category: 'Reader (Books)', Rank: i + 1, Name: r.name, Count: r.count, Pages: r.totalPages })),
-        { Category: '' },
+        { Category: '', Rank: '', Name: '', Count: '', Pages: '' },
         { Category: '--- TOP READERS (BY PAGES READ) ---', Rank: '', Name: '', Count: '', Pages: '' },
         ...topReadersByPages.map((r, i) => ({ Category: 'Reader (Pages)', Rank: i + 1, Name: r.name, Count: r.count, Pages: r.totalPages })),
-        { Category: '' },
+        { Category: '', Rank: '', Name: '', Count: '', Pages: '' },
         { Category: '--- TOP BATCHES (BY BOOKS READ) ---', Rank: '', Name: '', Count: '', Pages: '' },
         ...topBatchesByBooks.map((r, i) => ({ Category: 'Batch (Books)', Rank: i + 1, Name: r.name, Count: r.count, Pages: r.totalPages })),
-        { Category: '' },
+        { Category: '', Rank: '', Name: '', Count: '', Pages: '' },
         { Category: '--- TOP BATCHES (BY PAGES READ) ---', Rank: '', Name: '', Count: '', Pages: '' },
         ...topBatchesByPages.map((r, i) => ({ Category: 'Batch (Pages)', Rank: i + 1, Name: r.name, Count: r.count, Pages: r.totalPages })),
-        { Category: '' },
+        { Category: '', Rank: '', Name: '', Count: '', Pages: '' },
         { Category: '--- MOST POPULAR BOOKS ---', Rank: '', Name: '', Count: '', Pages: '' },
         ...topBooksPopularity.map((r, i) => ({ Category: 'Popular Books', Rank: i + 1, Name: r.name, Count: r.count, Pages: '-' })),
       ];
 
       // --- 5. Other Sheets ---
-      const periodicalsHistoryData = (periodicalRecordsRes.data as PeriodicalRecord[] | null)?.map(r => ({
+      const periodicalsHistoryData = periodicalRecords.map(r => ({
         'Periodical Name': r.periodicals?.name,
         'Issue/Identifier': r.issue_identifier,
         'Borrower Name': r.borrower_name,
         'Borrowed Date': dayjs(r.borrow_date).format('YYYY-MM-DD'),
         'Return Date': r.return_date ? dayjs(r.return_date).format('YYYY-MM-DD') : 'Not Returned'
-      })) || [];
+      }));
+
+      const finePaymentsData = finePayments.map(r => ({
+        'Payment Date': dayjs(r.payment_date).format('YYYY-MM-DD HH:mm'),
+        'Member Name': r.borrow_records?.members?.name,
+        'Book Title': r.borrow_records?.books?.title,
+        'Amount Paid': r.amount_paid,
+        'Notes': r.notes
+      }));
 
       // 6. Generate Workbook
       const wb = XLSX.utils.book_new();
-
-      // Create sheets
-      const wsBorrowing = XLSX.utils.json_to_sheet(borrowHistoryData);
-      const wsStats = XLSX.utils.json_to_sheet(statsSheetData);
-      const wsPeriodicals = XLSX.utils.json_to_sheet(periodicalsHistoryData);
-
-      // For fines, we use skipHeader: true because we manually created headers in the array
-      const wsFines = XLSX.utils.json_to_sheet(finesSheetData, { skipHeader: true });
-
-      // Append sheets
-      XLSX.utils.book_append_sheet(wb, wsBorrowing, 'Borrowing History');
-      XLSX.utils.book_append_sheet(wb, wsStats, 'Top Stats Summary');
-      XLSX.utils.book_append_sheet(wb, wsFines, 'Fine Payments'); // Updated Sheet
-      XLSX.utils.book_append_sheet(wb, wsPeriodicals, 'Periodicals History');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(borrowHistoryData), 'Borrowing History');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(statsSheetData), 'Top Stats Summary');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(finesSheetData, { skipHeader: true }), 'Fine Payments');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(periodicalsHistoryData), 'Periodicals History');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(finePaymentsData), 'Raw Payment Log');
 
       const fileName = `library_backup_${dayjs().format('YYYY-MM-DD')}.xlsx`;
       XLSX.writeFile(wb, fileName);
@@ -240,51 +227,64 @@ export default function BackupPage() {
     }
   }
 
-  const calculateTop = (data: any[] | null, keySelector: (item: any) => string | undefined) => {
-    if (!data) return [];
-    const counts: { [key: string]: number } = {};
-    data.forEach(item => {
-      const key = keySelector(item);
-      if (key) counts[key] = (counts[key] || 0) + 1;
-    });
-    return Object.entries(counts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 5);
-  };
-
   const deleteAllRecords = async () => {
-    const confirmDelete = window.confirm('⚠ Are you sure you want to delete all borrow records? This action cannot be undone!')
-    if (!confirmDelete) return
-
     setLoading(true);
-    setFeedback({ type: 'info', message: 'Deleting records...' });
-    const { error } = await supabase.from('borrow_records').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    setFeedback({ type: 'info', message: 'Clearing system data...' });
 
-    if (error) {
-      setFeedback({ type: 'error', message: `Failed to delete records: ${error.message}` });
-    } else {
-      setFeedback({ type: 'success', message: 'All borrow records have been permanently deleted.' });
+    try {
+        // 1. Delete from independent/dependent tables first
+        // Note: For BigInt/Int IDs we use .gt('id', 0)
+        // For UUIDs we use .neq('id', '00000000-0000-0000-0000-000000000000') to match "all rows"
+
+        // Delete Fine Payments (linked to Borrow Records)
+        await supabase.from('fine_payments').delete().gt('id', 0);
+
+        // Delete Hold Records (linked to Books/Members)
+        await supabase.from('hold_records').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+        // Delete Periodical Records (linked to Periodicals)
+        await supabase.from('periodical_records').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+        // Delete Holidays
+        await supabase.from('holidays').delete().gt('id', 0);
+
+        // Delete Librarians
+        await supabase.from('librarians').delete().gt('id', 0);
+
+        // 2. Finally, delete all Borrow Records (Central transaction table)
+        const { error: borrowError } = await supabase.from('borrow_records').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+        if (borrowError) throw borrowError;
+
+        setFeedback({ type: 'success', message: 'System reset complete. All transactional data has been cleared for the new semester.' });
+    } catch (error: any) {
+        console.error(error);
+        setFeedback({ type: 'error', message: `Failed to reset system: ${error.message || 'Unknown error'}` });
     }
+
     setLoading(false);
     setIsModalOpen(false);
   }
 
   return (
     <>
-      <main className="min-h-screen bg-primary-grey pt-24 px-4 pb-10">
+      <div className="min-h-screen bg-primary-grey pt-24 px-4 pb-10">
         <div className="max-w-3xl mx-auto space-y-8">
           <div className="text-center">
             <h1 className="text-3xl md:text-4xl font-heading font-bold text-heading-text-black uppercase tracking-wider">
-              Library Backup & Restore
+              Library Backup & Reset
             </h1>
-            <p className="text-text-grey mt-1">Manage and secure your library's data.</p>
+            <p className="text-text-grey mt-1">Secure your data or reset for a new semester.</p>
           </div>
 
+          {/* --- Backup Card --- */}
           <div className="bg-secondary-white border border-primary-dark-grey rounded-xl shadow-lg p-6">
             <div className="flex items-start gap-4">
               <div className="bg-primary-grey p-3 rounded-lg"><Download className="text-dark-green" size={24} /></div>
               <div>
                 <h2 className="text-xl font-bold font-heading text-heading-text-black">Generate Full Backup</h2>
                 <p className="text-sm text-text-grey mt-1 mb-4">
-                  Download a comprehensive Excel file containing all borrowing history, periodical records, fine payments, and calculated top statistics (Readers by Books/Pages, Batches by Books/Pages).
+                  Download a comprehensive Excel file containing all borrowing history, periodical records, fine payments, and calculated top statistics.
                 </p>
                 <button
                   onClick={fetchAndDownloadBackup}
@@ -309,13 +309,24 @@ export default function BackupPage() {
             </div>
           )}
 
+          {/* --- Danger Zone Card --- */}
           <div className="bg-red-50 border-2 border-dashed border-red-300 rounded-xl p-6">
             <div className="flex items-start gap-4">
               <div className="bg-red-100 p-3 rounded-lg"><AlertTriangle className="text-red-600" size={24} /></div>
               <div>
-                <h2 className="text-xl font-bold font-heading text-red-800">Danger Zone</h2>
+                <h2 className="text-xl font-bold font-heading text-red-800">New Year Reset</h2>
                 <p className="text-sm text-red-700 mt-1 mb-4">
-                  This action will permanently delete all borrowing history. This is irreversible and should only be done at the end of an academic year. <strong className="font-extrabold">Ensure you have a recent backup first.</strong>
+                  This action is for starting a fresh academic year. It will <strong>permanently delete</strong>:
+                </p>
+                <ul className="list-disc list-inside text-xs text-red-800 mb-4 space-y-1 font-semibold">
+                    <li>All Borrowing History & Fines</li>
+                    <li>All Hold Records</li>
+                    <li>All Periodical Borrowing Records</li>
+                    <li>Holiday Calendar Settings</li>
+                    <li>Librarian User List</li>
+                </ul>
+                <p className="text-sm text-red-700 mb-4">
+                    <strong>Books and Members will remain intact.</strong> Ensure you have downloaded a backup first.
                 </p>
                 <button
                   onClick={() => setIsModalOpen(true)}
@@ -323,13 +334,13 @@ export default function BackupPage() {
                   className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 text-white font-bold px-6 py-3 rounded-lg hover:bg-red-700 transition shadow disabled:opacity-70"
                 >
                   <Trash2 size={18} />
-                  Delete All Borrow Records
+                  Reset System Data
                 </button>
               </div>
             </div>
           </div>
         </div>
-      </main>
+      </div>
 
       <ConfirmationModal
         isOpen={isModalOpen}
@@ -342,7 +353,7 @@ export default function BackupPage() {
 
 function ConfirmationModal({ isOpen, onClose, onConfirm }: { isOpen: boolean, onClose: () => void, onConfirm: () => void }) {
   const [confirmText, setConfirmText] = useState('')
-  const requiredText = 'DELETE'
+  const requiredText = 'RESET'
 
   if (!isOpen) return null
 
@@ -350,12 +361,12 @@ function ConfirmationModal({ isOpen, onClose, onConfirm }: { isOpen: boolean, on
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
       <div className="bg-secondary-white rounded-xl shadow-2xl max-w-lg w-full border border-primary-dark-grey">
         <div className="p-4 border-b border-primary-dark-grey flex justify-between items-center">
-          <h2 className="text-lg font-bold font-heading text-red-700">Confirm Irreversible Action</h2>
+          <h2 className="text-lg font-bold font-heading text-red-700">Confirm System Reset</h2>
           <button onClick={onClose} className="p-1 rounded-full hover:bg-primary-dark-grey"><X size={20}/></button>
         </div>
         <div className="p-6 space-y-4">
           <p className="text-sm text-text-grey">
-            This action will permanently delete all borrow records from the database. This cannot be undone.
+            This action will wipe all transactional data to prepare for a new semester. <strong>Books and Members will NOT be deleted.</strong>
           </p>
           <p className="text-sm text-text-grey">
             To proceed, please type <strong className="text-red-700 font-mono">{requiredText}</strong> into the box below.
@@ -365,6 +376,7 @@ function ConfirmationModal({ isOpen, onClose, onConfirm }: { isOpen: boolean, on
             value={confirmText}
             onChange={(e) => setConfirmText(e.target.value)}
             className="w-full p-2 border border-primary-dark-grey rounded-md bg-primary-grey text-center font-bold tracking-widest"
+            placeholder="Type RESET"
           />
         </div>
         <div className="flex justify-end gap-3 bg-primary-grey p-4 rounded-b-xl">
@@ -374,7 +386,7 @@ function ConfirmationModal({ isOpen, onClose, onConfirm }: { isOpen: boolean, on
             disabled={confirmText !== requiredText}
             className="px-5 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            I understand, delete all records
+            Confirm Reset
           </button>
         </div>
       </div>
