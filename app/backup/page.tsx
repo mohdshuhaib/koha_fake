@@ -1,19 +1,50 @@
 'use client'
 
-import { useState, ReactNode } from 'react'
+import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import dayjs from 'dayjs'
 import * as XLSX from 'xlsx'
 import { Download, AlertTriangle, Trash2, CheckCircle2, X } from 'lucide-react'
 import clsx from 'classnames'
-import Link from 'next/link'
 
-// --- Type Definitions (from your original code) ---
-type Book = { title: string; author: string; barcode: string; }
-type Member = { name: string; batch: string; barcode: string; }
-type BorrowRecord = { borrow_date: string; due_date: string; return_date: string | null; fine: number; fine_paid: boolean; paid_amount: number; books: Book | null; members: Member | null; }
-type PeriodicalRecord = { borrow_date: string; return_date: string | null; issue_identifier: string; borrower_name: string; periodicals: { name: string } | null; }
-type FinePayment = { payment_date: string; amount_paid: number; borrow_records: { books: { title: string } | null; members: { name: string } | null; } | null; }
+// --- Type Definitions ---
+type Book = { title: string; author: string; barcode: string; pages: number | null }
+type Member = { name: string; batch: string; barcode: string; category: string }
+
+type BorrowRecord = {
+  borrow_date: string;
+  due_date: string;
+  return_date: string | null;
+  fine: number;
+  fine_paid: boolean;
+  paid_amount: number;
+  books: Book | null;
+  members: Member | null;
+  member_id: string;
+  book_id: string;
+}
+
+type PeriodicalRecord = {
+  borrow_date: string;
+  return_date: string | null;
+  issue_identifier: string;
+  borrower_name: string;
+  periodicals: { name: string } | null;
+}
+
+type FinePayment = {
+  payment_date: string;
+  amount_paid: number;
+  notes: string | null;
+  borrow_records: {
+      fine: number;
+      paid_amount: number;
+      books: { title: string } | null;
+      members: { name: string } | null;
+  } | null;
+}
+
+type RankedItem = { name: string; count: number; totalPages?: number }
 
 export default function BackupPage() {
   const [loading, setLoading] = useState(false)
@@ -25,30 +56,177 @@ export default function BackupPage() {
     setFeedback({ type: 'info', message: 'Preparing backup... This may take a moment.' })
 
     try {
+      // 1. Fetch all data
       const [
         borrowRecordsRes,
         periodicalRecordsRes,
         finePaymentsRes
       ] = await Promise.all([
-        supabase.from('borrow_records').select(`borrow_date, due_date, return_date, fine, fine_paid, paid_amount, books!inner(title, author, barcode), members!inner(name, batch, barcode)`).order('borrow_date', { ascending: false }),
-        supabase.from('periodical_records').select(`borrow_date, return_date, issue_identifier, borrower_name, periodicals!inner(name)`).order('borrow_date', { ascending: false }),
-        supabase.from('fine_payments').select(`payment_date, amount_paid, borrow_records!inner(books!inner(title), members!inner(name))`).order('payment_date', { ascending: false })
+        supabase.from('borrow_records').select(`
+            borrow_date, due_date, return_date, fine, fine_paid, paid_amount, member_id, book_id,
+            books!inner(title, author, barcode, pages),
+            members!inner(name, batch, barcode, category)
+        `).order('borrow_date', { ascending: false }),
+        supabase.from('periodical_records').select(`
+            borrow_date, return_date, issue_identifier, borrower_name,
+            periodicals!inner(name)
+        `).order('borrow_date', { ascending: false }),
+        supabase.from('fine_payments').select(`
+            payment_date, amount_paid, notes,
+            borrow_records!inner(
+                fine, paid_amount,
+                books!inner(title),
+                members!inner(name)
+            )
+        `).order('payment_date', { ascending: false })
       ]);
 
-      // --- Process Data (logic is the same as your original) ---
-      const borrowHistoryData = (borrowRecordsRes.data as BorrowRecord[] | null)?.map(r => ({ 'Member Name': r.members?.name, 'Batch': r.members?.batch, 'Book Title': r.books?.title, 'Borrowed Date': dayjs(r.borrow_date).format('YYYY-MM-DD'), 'Due Date': dayjs(r.due_date).format('YYYY-MM-DD'), 'Return Date': r.return_date ? dayjs(r.return_date).format('YYYY-MM-DD') : 'Not Returned', 'Fine': r.fine, 'Amount Paid': r.paid_amount, })) || [];
-      const topMembers = calculateTop(borrowRecordsRes.data as BorrowRecord[] | null, (r) => r.members?.name);
-      const topBooks = calculateTop(borrowRecordsRes.data as BorrowRecord[] | null, (r) => r.books?.title);
-      const topBatches = calculateTop(borrowRecordsRes.data as BorrowRecord[] | null, (r) => r.members?.batch);
-      const statsData = [ { Category: 'Top Readers', Rank: 1, Name: topMembers[0]?.name || '', Count: topMembers[0]?.count || '' }, { Category: 'Top Readers', Rank: 2, Name: topMembers[1]?.name || '', Count: topMembers[1]?.count || '' }, { Category: 'Top Readers', Rank: 3, Name: topMembers[2]?.name || '', Count: topMembers[2]?.count || '' }, { Category: 'Top Readers', Rank: 4, Name: topMembers[3]?.name || '', Count: topMembers[3]?.count || '' }, { Category: 'Top Readers', Rank: 5, Name: topMembers[4]?.name || '', Count: topMembers[4]?.count || '' }, { Category: '' }, { Category: 'Top Books', Rank: 1, Name: topBooks[0]?.name || '', Count: topBooks[0]?.count || '' }, { Category: 'Top Books', Rank: 2, Name: topBooks[1]?.name || '', Count: topBooks[1]?.count || '' }, { Category: 'Top Books', Rank: 3, Name: topBooks[2]?.name || '', Count: topBooks[2]?.count || '' }, { Category: 'Top Books', Rank: 4, Name: topBooks[3]?.name || '', Count: topBooks[3]?.count || '' }, { Category: 'Top Books', Rank: 5, Name: topBooks[4]?.name || '', Count: topBooks[4]?.count || '' }, { Category: '' }, { Category: 'Top Batches', Rank: 1, Name: topBatches[0]?.name || '', Count: topBatches[0]?.count || '' }, { Category: 'Top Batches', Rank: 2, Name: topBatches[1]?.name || '', Count: topBatches[1]?.count || '' }, { Category: 'Top Batches', Rank: 3, Name: topBatches[2]?.name || '', Count: topBatches[2]?.count || '' }, { Category: 'Top Batches', Rank: 4, Name: topBatches[3]?.name || '', Count: topBatches[3]?.count || '' }, { Category: 'Top Batches', Rank: 5, Name: topBatches[4]?.name || '', Count: topBatches[4]?.count || '' }, ];
-      const periodicalsHistoryData = (periodicalRecordsRes.data as PeriodicalRecord[] | null)?.map(r => ({ 'Periodical Name': r.periodicals?.name, 'Issue/Identifier': r.issue_identifier, 'Borrower Name': r.borrower_name, 'Borrowed Date': dayjs(r.borrow_date).format('YYYY-MM-DD'), 'Return Date': r.return_date ? dayjs(r.return_date).format('YYYY-MM-DD') : 'Not Returned', })) || [];
-      const finePaymentsData = (finePaymentsRes.data as FinePayment[] | null)?.map(r => ({ 'Payment Date': dayjs(r.payment_date).format('YYYY-MM-DD HH:mm'), 'Member Name': r.borrow_records?.members?.name, 'Book Title': r.borrow_records?.books?.title, 'Amount Paid': r.amount_paid, })) || [];
+      const borrowRecords = borrowRecordsRes.data as unknown as BorrowRecord[] || [];
+      const finePayments = finePaymentsRes.data as unknown as FinePayment[] || [];
 
+      // --- 2. Process Borrowing History (Raw Data) ---
+      const borrowHistoryData = borrowRecords.map(r => ({
+        'Member Name': r.members?.name,
+        'Member Barcode': r.members?.barcode,
+        'Batch': r.members?.batch,
+        'Book Title': r.books?.title,
+        'Book Barcode': r.books?.barcode,
+        'Pages': r.books?.pages || 0,
+        'Borrowed Date': dayjs(r.borrow_date).format('YYYY-MM-DD'),
+        'Due Date': dayjs(r.due_date).format('YYYY-MM-DD'),
+        'Return Date': r.return_date ? dayjs(r.return_date).format('YYYY-MM-DD') : 'Not Returned',
+        'Fine': r.fine,
+        'Amount Paid': r.paid_amount,
+      }));
+
+      // --- 3. Process "Fine Payments" Sheet (Dashboard Style) ---
+      // Calculate Summaries
+      const totalCollected = finePayments.reduce((sum, p) => sum + (p.amount_paid || 0), 0);
+
+      // Calculate Outstanding (From Borrow Records where fine > 0 and not paid)
+      const totalOutstanding = borrowRecords
+        .filter(r => !r.fine_paid && r.fine > 0)
+        .reduce((sum, r) => sum + ((r.fine || 0) - (r.paid_amount || 0)), 0);
+
+      // Calculate Waived (From Payments marked as Write-Off)
+      const totalWaived = finePayments
+        .filter(p => p.notes?.startsWith('Write-Off'))
+        .reduce((sum, p) => {
+             // For a write-off, the 'waived' amount is essentially the remaining balance
+             // stored in the linked borrow record at the time of fetching
+             const rec = p.borrow_records;
+             if (!rec) return sum;
+             // Logic: if it was written off, fine - paid_amount is the waived portion
+             return sum + ((rec.fine || 0) - (rec.paid_amount || 0));
+        }, 0);
+
+      // Build the Fine Data Rows (List of all records with fines)
+      const fineRecordsList = borrowRecords
+        .filter(r => r.fine > 0)
+        .map(r => ({
+            'Member': r.members?.name,
+            'Batch': r.members?.batch,
+            'Book': r.books?.title,
+            'Total': r.fine,
+            'Paid': r.paid_amount,
+            'Remaining': r.fine - r.paid_amount
+        }));
+
+      // Construct the Sheet Data with Headers and Spacing
+      const finesSheetData = [
+        // Summary Section
+        { Member: 'SUMMARY STATS', Batch: '', Book: '', Total: '', Paid: '', Remaining: '' },
+        { Member: 'Total Collected', Batch: '', Book: '', Total: totalCollected, Paid: '', Remaining: '' },
+        { Member: 'Total Outstanding', Batch: '', Book: '', Total: totalOutstanding, Paid: '', Remaining: '' },
+        { Member: 'Total Waived', Batch: '', Book: '', Total: totalWaived, Paid: '', Remaining: '' },
+        { Member: '', Batch: '', Book: '', Total: '', Paid: '', Remaining: '' }, // Spacer
+
+        // Table Header
+        { Member: 'MEMBER', Batch: 'BATCH', Book: 'BOOK', Total: 'TOTAL FINE', Paid: 'PAID', Remaining: 'REMAINING' },
+
+        // Table Data
+        ...fineRecordsList
+      ];
+
+      // --- 4. Calculate Top Stats ---
+      const readerStats: Record<string, RankedItem> = {};
+      const batchStats: Record<string, RankedItem> = {};
+      const bookStats: Record<string, RankedItem> = {};
+
+      borrowRecords.forEach(r => {
+        const memberName = r.members?.name || 'Unknown';
+        const memberId = r.member_id;
+        const batch = r.members?.batch;
+        const bookTitle = r.books?.title || 'Unknown';
+        const bookId = r.book_id;
+        const pages = r.books?.pages || 0;
+        const isReturned = !!r.return_date;
+        const isStudent = r.members?.category === 'student';
+
+        if (isReturned && isStudent) {
+            if (!readerStats[memberId]) readerStats[memberId] = { name: memberName, count: 0, totalPages: 0 };
+            readerStats[memberId].count += 1;
+            readerStats[memberId].totalPages! += pages;
+        }
+        if (isReturned && batch && isStudent) {
+            if (!batchStats[batch]) batchStats[batch] = { name: batch, count: 0, totalPages: 0 };
+            batchStats[batch].count += 1;
+            batchStats[batch].totalPages! += pages;
+        }
+        if (bookTitle) {
+            if (!bookStats[bookId]) bookStats[bookId] = { name: bookTitle, count: 0 };
+            bookStats[bookId].count += 1;
+        }
+      });
+
+      const topReadersByBooks = Object.values(readerStats).sort((a, b) => b.count - a.count).slice(0, 5);
+      const topReadersByPages = Object.values(readerStats).sort((a, b) => (b.totalPages || 0) - (a.totalPages || 0)).slice(0, 5);
+      const topBatchesByBooks = Object.values(batchStats).sort((a, b) => b.count - a.count).slice(0, 5);
+      const topBatchesByPages = Object.values(batchStats).sort((a, b) => (b.totalPages || 0) - (a.totalPages || 0)).slice(0, 5);
+      const topBooksPopularity = Object.values(bookStats).sort((a, b) => b.count - a.count).slice(0, 5);
+
+      const statsSheetData = [
+        { Category: '--- TOP READERS (BY BOOKS READ) ---', Rank: '', Name: '', Count: '', Pages: '' },
+        ...topReadersByBooks.map((r, i) => ({ Category: 'Reader (Books)', Rank: i + 1, Name: r.name, Count: r.count, Pages: r.totalPages })),
+        { Category: '' },
+        { Category: '--- TOP READERS (BY PAGES READ) ---', Rank: '', Name: '', Count: '', Pages: '' },
+        ...topReadersByPages.map((r, i) => ({ Category: 'Reader (Pages)', Rank: i + 1, Name: r.name, Count: r.count, Pages: r.totalPages })),
+        { Category: '' },
+        { Category: '--- TOP BATCHES (BY BOOKS READ) ---', Rank: '', Name: '', Count: '', Pages: '' },
+        ...topBatchesByBooks.map((r, i) => ({ Category: 'Batch (Books)', Rank: i + 1, Name: r.name, Count: r.count, Pages: r.totalPages })),
+        { Category: '' },
+        { Category: '--- TOP BATCHES (BY PAGES READ) ---', Rank: '', Name: '', Count: '', Pages: '' },
+        ...topBatchesByPages.map((r, i) => ({ Category: 'Batch (Pages)', Rank: i + 1, Name: r.name, Count: r.count, Pages: r.totalPages })),
+        { Category: '' },
+        { Category: '--- MOST POPULAR BOOKS ---', Rank: '', Name: '', Count: '', Pages: '' },
+        ...topBooksPopularity.map((r, i) => ({ Category: 'Popular Books', Rank: i + 1, Name: r.name, Count: r.count, Pages: '-' })),
+      ];
+
+      // --- 5. Other Sheets ---
+      const periodicalsHistoryData = (periodicalRecordsRes.data as PeriodicalRecord[] | null)?.map(r => ({
+        'Periodical Name': r.periodicals?.name,
+        'Issue/Identifier': r.issue_identifier,
+        'Borrower Name': r.borrower_name,
+        'Borrowed Date': dayjs(r.borrow_date).format('YYYY-MM-DD'),
+        'Return Date': r.return_date ? dayjs(r.return_date).format('YYYY-MM-DD') : 'Not Returned'
+      })) || [];
+
+      // 6. Generate Workbook
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(borrowHistoryData), 'Borrowing History');
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(statsData), 'Top Stats Summary');
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(periodicalsHistoryData), 'Periodicals History');
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(finePaymentsData), 'Fine Payments');
+
+      // Create sheets
+      const wsBorrowing = XLSX.utils.json_to_sheet(borrowHistoryData);
+      const wsStats = XLSX.utils.json_to_sheet(statsSheetData);
+      const wsPeriodicals = XLSX.utils.json_to_sheet(periodicalsHistoryData);
+
+      // For fines, we use skipHeader: true because we manually created headers in the array
+      const wsFines = XLSX.utils.json_to_sheet(finesSheetData, { skipHeader: true });
+
+      // Append sheets
+      XLSX.utils.book_append_sheet(wb, wsBorrowing, 'Borrowing History');
+      XLSX.utils.book_append_sheet(wb, wsStats, 'Top Stats Summary');
+      XLSX.utils.book_append_sheet(wb, wsFines, 'Fine Payments'); // Updated Sheet
+      XLSX.utils.book_append_sheet(wb, wsPeriodicals, 'Periodicals History');
 
       const fileName = `library_backup_${dayjs().format('YYYY-MM-DD')}.xlsx`;
       XLSX.writeFile(wb, fileName);
@@ -67,21 +245,17 @@ export default function BackupPage() {
     const counts: { [key: string]: number } = {};
     data.forEach(item => {
       const key = keySelector(item);
-      if (key) {
-        counts[key] = (counts[key] || 0) + 1;
-      }
+      if (key) counts[key] = (counts[key] || 0) + 1;
     });
-    return Object.entries(counts)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
+    return Object.entries(counts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 5);
   };
 
   const deleteAllRecords = async () => {
+    const confirmDelete = window.confirm('⚠ Are you sure you want to delete all borrow records? This action cannot be undone!')
+    if (!confirmDelete) return
+
     setLoading(true);
     setFeedback({ type: 'info', message: 'Deleting records...' });
-    // In Supabase, you can set up a "cascade delete" so this is not needed.
-    // But for safety, we'll keep it. A better approach is an RPC function.
     const { error } = await supabase.from('borrow_records').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
     if (error) {
@@ -104,14 +278,13 @@ export default function BackupPage() {
             <p className="text-text-grey mt-1">Manage and secure your library's data.</p>
           </div>
 
-          {/* --- Backup Card --- */}
           <div className="bg-secondary-white border border-primary-dark-grey rounded-xl shadow-lg p-6">
             <div className="flex items-start gap-4">
               <div className="bg-primary-grey p-3 rounded-lg"><Download className="text-dark-green" size={24} /></div>
               <div>
                 <h2 className="text-xl font-bold font-heading text-heading-text-black">Generate Full Backup</h2>
                 <p className="text-sm text-text-grey mt-1 mb-4">
-                  Download a complete backup of all borrowing history, periodical records, and fine payments in a single Excel (.xlsx) file.
+                  Download a comprehensive Excel file containing all borrowing history, periodical records, fine payments, and calculated top statistics (Readers by Books/Pages, Batches by Books/Pages).
                 </p>
                 <button
                   onClick={fetchAndDownloadBackup}
@@ -136,7 +309,6 @@ export default function BackupPage() {
             </div>
           )}
 
-          {/* --- Danger Zone Card --- */}
           <div className="bg-red-50 border-2 border-dashed border-red-300 rounded-xl p-6">
             <div className="flex items-start gap-4">
               <div className="bg-red-100 p-3 rounded-lg"><AlertTriangle className="text-red-600" size={24} /></div>
@@ -168,7 +340,6 @@ export default function BackupPage() {
   )
 }
 
-// --- Reusable Confirmation Modal ---
 function ConfirmationModal({ isOpen, onClose, onConfirm }: { isOpen: boolean, onClose: () => void, onConfirm: () => void }) {
   const [confirmText, setConfirmText] = useState('')
   const requiredText = 'DELETE'
