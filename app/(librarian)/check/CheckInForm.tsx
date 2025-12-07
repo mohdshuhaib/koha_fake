@@ -20,10 +20,10 @@ export default function CheckInForm() {
     const [globalHolidays, setGlobalHolidays] = useState<Date[]>([])
     const [globalHolidaysLoading, setGlobalHolidaysLoading] = useState(false)
 
-    // ✅ NEW: Ref for the input field
+    // Ref for the input field
     const inputRef = useRef<HTMLInputElement>(null)
 
-    // ✅ NEW: Focus input on initial load
+    // Focus input on initial load
     useEffect(() => {
         inputRef.current?.focus()
     }, [])
@@ -39,7 +39,7 @@ export default function CheckInForm() {
             setMessage('Book not found with that barcode.')
             setIsError(true)
             setLoading(false)
-            resetProcess(false) // Clear loading but keep error, focus input
+            resetProcess(false)
             return
         }
 
@@ -74,6 +74,7 @@ export default function CheckInForm() {
         if (effectiveDaysAfterGlobal > allowedDays) {
             setMessage(`Book "${book.title}" is overdue after considering ${globalHolidayCount} global leave day(s). Please select any additional personal leave days.`)
             setIsError(false)
+            // Save the fetched global holidays into activeRecord to use in the modal later
             setActiveRecord({ ...record, member: memberData, book, savedHolidays: savedHolidays || [] })
             setLoading(false)
         } else {
@@ -121,7 +122,7 @@ export default function CheckInForm() {
             setMessage(successMessage)
             setIsError(false)
         }
-        resetProcess(true) // True means clear barcode
+        resetProcess(true)
     }
 
     const fetchAndSetGlobalHolidays = async () => {
@@ -157,14 +158,11 @@ export default function CheckInForm() {
         setGlobalHolidaysLoading(false);
     }
 
-    // ✅ UPDATED: resetProcess now refocuses the input
     const resetProcess = (clearBarcode = false) => {
         setActiveRecord(null)
         setManualHolidays([])
         if (clearBarcode) setBarcode('')
         setLoading(false)
-
-        // Small timeout ensures focus happens after UI updates
         setTimeout(() => {
             inputRef.current?.focus()
         }, 100)
@@ -175,6 +173,14 @@ export default function CheckInForm() {
         setMessage('');
         setIsError(false);
     }
+
+    // Helper to extract Global Dates for the active modal
+    const getGlobalDatesForModal = () => {
+        if (!activeRecord || !activeRecord.savedHolidays) return [];
+        return activeRecord.savedHolidays.map((h: any) => dayjs(h.leave_date).toDate());
+    }
+
+    const globalDatesForDisplay = getGlobalDatesForModal();
 
     return (
         <>
@@ -189,7 +195,7 @@ export default function CheckInForm() {
                     <div className="relative w-full">
                         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4"><Barcode className="h-5 w-5 text-text-grey" /></div>
                         <input
-                            ref={inputRef} // ✅ Attach ref here
+                            ref={inputRef}
                             type="text"
                             className="w-full p-3 pl-12 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green transition"
                             placeholder="Scan book barcode to return"
@@ -222,10 +228,40 @@ export default function CheckInForm() {
                 </div>
                 <div className="p-6 space-y-4">
                     <p className="text-sm text-center text-text-grey">{message}</p>
-                    <div className="bg-primary-grey p-2 sm:p-4 rounded-lg border border-primary-dark-grey">
-                        <CustomDayPicker mode="multiple" min={1} selected={manualHolidays} onSelect={(days) => setManualHolidays(days || [])} fromDate={activeRecord ? new Date(activeRecord.borrow_date) : new Date()} toDate={new Date()} />
+
+                    {/* Calendar Container */}
+                    <div className="bg-primary-grey p-2 sm:p-4 rounded-lg border border-primary-dark-grey flex flex-col items-center">
+                        <CustomDayPicker
+                            mode="multiple"
+                            min={1}
+                            selected={manualHolidays}
+                            onSelect={(days) => setManualHolidays(days || [])}
+                            fromDate={activeRecord ? new Date(activeRecord.borrow_date) : new Date()}
+                            toDate={new Date()}
+
+                            // ✅ NEW: Disable Global Dates
+                            disabled={globalDatesForDisplay}
+
+                            // ✅ NEW: Style Global Dates distinctively
+                            modifiers={{ globalHoliday: globalDatesForDisplay }}
+                            modifiersClassNames={{
+                                globalHoliday: 'bg-red-100 text-red-700 font-bold hover:bg-red-100 cursor-not-allowed decoration-red-700'
+                            }}
+                        />
+                         {/* Legend for the user */}
+                         <div className="flex gap-4 text-xs mt-3">
+                             <div className="flex items-center gap-1">
+                                 <span className="w-3 h-3 rounded-full bg-red-100 border border-red-200"></span> Global Holiday
+                             </div>
+                             <div className="flex items-center gap-1">
+                                 <span className="w-3 h-3 rounded-full bg-button-yellow border border-yellow-500"></span> Personal Leave
+                             </div>
+                         </div>
                     </div>
-                    <div className="text-center font-semibold text-text-grey">You have selected {manualHolidays.length} personal leave day(s).</div>
+
+                    <div className="text-center font-semibold text-text-grey">
+                        You have selected {manualHolidays.length} personal leave day(s).
+                    </div>
                     <div className="flex justify-end gap-4 pt-2">
                         <button onClick={fullReset} className="bg-gray-200 text-text-grey px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark-grey transition">Cancel</button>
                         <button onClick={() => handleFinalizeCheckIn(activeRecord, activeRecord.savedHolidays, manualHolidays)} disabled={loading} className="bg-dark-green text-white px-6 py-2 rounded-lg font-semibold hover:bg-icon-green transition">{loading ? 'Processing...' : `Confirm & Check In`}</button>
@@ -241,7 +277,7 @@ export default function CheckInForm() {
                 <div className="p-6 space-y-4">
                     <p className="text-sm text-center text-text-grey">Select all official college holidays. These will be automatically excluded from all fine calculations.</p>
                     {globalHolidaysLoading ? <div className="text-center p-8">Loading...</div> : (
-                        <div className="bg-primary-grey p-2 sm:p-4 rounded-lg border border-primary-dark-grey">
+                        <div className="bg-primary-grey p-2 sm:p-4 rounded-lg border border-primary-dark-grey flex justify-center">
                             <CustomDayPicker mode="multiple" selected={globalHolidays} onSelect={(days) => setGlobalHolidays(days || [])} />
                         </div>
                     )}
