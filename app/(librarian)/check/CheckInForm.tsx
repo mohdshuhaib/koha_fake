@@ -1,14 +1,21 @@
 'use client'
 
-import { useEffect, useState, useRef, ReactNode } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import dayjs from 'dayjs'
+import isBetween from 'dayjs/plugin/isBetween'
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
 import { CustomDayPicker } from '@/components/CustomDayPicker'
 import 'react-day-picker/dist/style.css'
 import { Barcode, X, CheckCircle2, AlertCircle, CalendarDays } from 'lucide-react'
 import clsx from 'classnames'
 
-// --- Main Component ---
+// Extend dayjs with necessary plugins
+dayjs.extend(isBetween)
+dayjs.extend(isSameOrAfter)
+dayjs.extend(isSameOrBefore)
+
 export default function CheckInForm() {
     const [barcode, setBarcode] = useState('')
     const [message, setMessage] = useState('')
@@ -20,10 +27,8 @@ export default function CheckInForm() {
     const [globalHolidays, setGlobalHolidays] = useState<Date[]>([])
     const [globalHolidaysLoading, setGlobalHolidaysLoading] = useState(false)
 
-    // Ref for the input field
     const inputRef = useRef<HTMLInputElement>(null)
 
-    // Focus input on initial load
     useEffect(() => {
         inputRef.current?.focus()
     }, [])
@@ -52,17 +57,24 @@ export default function CheckInForm() {
             return
         }
 
-        const returnDate = dayjs()
-        const borrowDate = dayjs(record.borrow_date)
+        const returnDate = dayjs().endOf('day')
+        const borrowDate = dayjs(record.borrow_date).startOf('day')
         const totalDaysDiff = returnDate.diff(borrowDate, 'day')
 
-        const { data: savedHolidays } = await supabase
+        // Fetch ALL holidays that cover the range to be safe
+        const { data: potentialHolidays } = await supabase
             .from('holidays')
             .select('leave_date')
             .gte('leave_date', borrowDate.format('YYYY-MM-DD'))
             .lte('leave_date', returnDate.format('YYYY-MM-DD'))
 
-        const globalHolidayCount = savedHolidays?.length || 0
+        // ✅ STRICT FILTERING: Only count holidays that are actually within the user's borrow duration
+        const validGlobalHolidays = (potentialHolidays || []).filter(h => {
+            const hDate = dayjs(h.leave_date);
+            return hDate.isSameOrAfter(borrowDate, 'day') && hDate.isSameOrBefore(returnDate, 'day');
+        });
+
+        const globalHolidayCount = validGlobalHolidays.length
         const effectiveDaysAfterGlobal = totalDaysDiff - globalHolidayCount
 
         const memberData = Array.isArray(record.member) ? record.member[0] : record.member;
@@ -74,11 +86,16 @@ export default function CheckInForm() {
         if (effectiveDaysAfterGlobal > allowedDays) {
             setMessage(`Book "${book.title}" is overdue after considering ${globalHolidayCount} global leave day(s). Please select any additional personal leave days.`)
             setIsError(false)
-            // Save the fetched global holidays into activeRecord to use in the modal later
-            setActiveRecord({ ...record, member: memberData, book, savedHolidays: savedHolidays || [] })
+            // Pass the STRICTLY FILTERED holidays to the modal
+            setActiveRecord({
+                ...record,
+                member: memberData,
+                book,
+                savedHolidays: validGlobalHolidays
+            })
             setLoading(false)
         } else {
-            await handleFinalizeCheckIn({ ...record, member: memberData, book }, savedHolidays || [], [])
+            await handleFinalizeCheckIn({ ...record, member: memberData, book }, validGlobalHolidays, [])
         }
     }
 
@@ -88,8 +105,8 @@ export default function CheckInForm() {
         setIsError(false)
         setActiveRecord(null)
 
-        const returnDate = dayjs()
-        const borrowDate = dayjs(recordToProcess.borrow_date)
+        const returnDate = dayjs().endOf('day')
+        const borrowDate = dayjs(recordToProcess.borrow_date).startOf('day')
         const totalDaysDiff = returnDate.diff(borrowDate, 'day')
 
         const globalDates = savedHolidays.map(d => d.leave_date)
@@ -174,7 +191,6 @@ export default function CheckInForm() {
         setIsError(false);
     }
 
-    // Helper to extract Global Dates for the active modal
     const getGlobalDatesForModal = () => {
         if (!activeRecord || !activeRecord.savedHolidays) return [];
         return activeRecord.savedHolidays.map((h: any) => dayjs(h.leave_date).toDate());
@@ -221,84 +237,76 @@ export default function CheckInForm() {
                 )}
             </div>
 
-            <Modal isOpen={!!activeRecord} onClose={fullReset}>
-                <div className="p-4 border-b border-primary-dark-grey flex justify-between items-center">
-                    <h3 className="font-bold text-lg font-heading text-heading-text-black">Select Personal Leave Days</h3>
-                    <button onClick={fullReset} className="p-1 rounded-full text-text-grey hover:bg-primary-dark-grey hover:text-red-500 transition"><X size={20} /></button>
-                </div>
-                <div className="p-6 space-y-4">
-                    <p className="text-sm text-center text-text-grey">{message}</p>
-
-                    {/* Calendar Container */}
-                    <div className="bg-primary-grey p-2 sm:p-4 rounded-lg border border-primary-dark-grey flex flex-col items-center">
-                        <CustomDayPicker
-                            mode="multiple"
-                            min={1}
-                            selected={manualHolidays}
-                            onSelect={(days) => setManualHolidays(days || [])}
-                            fromDate={activeRecord ? new Date(activeRecord.borrow_date) : new Date()}
-                            toDate={new Date()}
-
-                            // ✅ NEW: Disable Global Dates
-                            disabled={globalDatesForDisplay}
-
-                            // ✅ NEW: Style Global Dates distinctively
-                            modifiers={{ globalHoliday: globalDatesForDisplay }}
-                            modifiersClassNames={{
-                                globalHoliday: 'bg-red-100 text-red-700 font-bold hover:bg-red-100 cursor-not-allowed decoration-red-700'
-                            }}
-                        />
-                         {/* Legend for the user */}
-                         <div className="flex gap-4 text-xs mt-3">
-                             <div className="flex items-center gap-1">
-                                 <span className="w-3 h-3 rounded-full bg-red-100 border border-red-200"></span> Global Holiday
-                             </div>
-                             <div className="flex items-center gap-1">
-                                 <span className="w-3 h-3 rounded-full bg-button-yellow border border-yellow-500"></span> Personal Leave
-                             </div>
-                         </div>
-                    </div>
-
-                    <div className="text-center font-semibold text-text-grey">
-                        You have selected {manualHolidays.length} personal leave day(s).
-                    </div>
-                    <div className="flex justify-end gap-4 pt-2">
-                        <button onClick={fullReset} className="bg-gray-200 text-text-grey px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark-grey transition">Cancel</button>
-                        <button onClick={() => handleFinalizeCheckIn(activeRecord, activeRecord.savedHolidays, manualHolidays)} disabled={loading} className="bg-dark-green text-white px-6 py-2 rounded-lg font-semibold hover:bg-icon-green transition">{loading ? 'Processing...' : `Confirm & Check In`}</button>
-                    </div>
-                </div>
-            </Modal>
-
-            <Modal isOpen={isGlobalLeaveModalOpen} onClose={() => setIsGlobalLeaveModalOpen(false)}>
-                <div className="p-4 border-b border-primary-dark-grey flex justify-between items-center">
-                    <h3 className="font-bold text-lg font-heading text-heading-text-black">Manage Global Leave Days</h3>
-                    <button onClick={() => setIsGlobalLeaveModalOpen(false)} className="p-1 rounded-full text-text-grey hover:bg-primary-dark-grey hover:text-red-500 transition"><X size={20} /></button>
-                </div>
-                <div className="p-6 space-y-4">
-                    <p className="text-sm text-center text-text-grey">Select all official college holidays. These will be automatically excluded from all fine calculations.</p>
-                    {globalHolidaysLoading ? <div className="text-center p-8">Loading...</div> : (
-                        <div className="bg-primary-grey p-2 sm:p-4 rounded-lg border border-primary-dark-grey flex justify-center">
-                            <CustomDayPicker mode="multiple" selected={globalHolidays} onSelect={(days) => setGlobalHolidays(days || [])} />
+            {/* Personal Leave Modal */}
+            {activeRecord && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+                    <div className="bg-secondary-white rounded-xl shadow-2xl w-full max-w-lg border border-primary-dark-grey">
+                        <div className="p-4 border-b border-primary-dark-grey flex justify-between items-center">
+                            <h3 className="font-bold text-lg font-heading text-heading-text-black">Select Personal Leave Days</h3>
+                            <button onClick={fullReset} className="p-1 rounded-full text-text-grey hover:bg-primary-dark-grey hover:text-red-500 transition"><X size={20} /></button>
                         </div>
-                    )}
-                    <div className="flex justify-end gap-4 pt-2">
-                        <button onClick={() => setIsGlobalLeaveModalOpen(false)} className="bg-gray-200 text-text-grey px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark-grey transition">Cancel</button>
-                        <button onClick={handleSaveGlobalHolidays} disabled={globalHolidaysLoading} className="bg-dark-green text-white px-6 py-2 rounded-lg font-semibold hover:bg-icon-green transition">{globalHolidaysLoading ? 'Saving...' : 'Save Global Leaves'}</button>
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-center text-text-grey">{message}</p>
+
+                            <div className="bg-primary-grey p-2 sm:p-4 rounded-lg border border-primary-dark-grey flex flex-col items-center">
+                                <CustomDayPicker
+                                    mode="multiple"
+                                    min={1}
+                                    selected={manualHolidays}
+                                    onSelect={(days) => setManualHolidays(days || [])}
+                                    fromDate={activeRecord ? new Date(activeRecord.borrow_date) : new Date()}
+                                    toDate={new Date()}
+                                    disabled={globalDatesForDisplay}
+                                    modifiers={{ globalHoliday: globalDatesForDisplay }}
+                                    modifiersClassNames={{
+                                        globalHoliday: 'bg-red-100 text-red-700 font-bold hover:bg-red-100 cursor-not-allowed decoration-red-700'
+                                    }}
+                                />
+                                 <div className="flex gap-4 text-xs mt-3">
+                                     <div className="flex items-center gap-1">
+                                         <span className="w-3 h-3 rounded-full bg-red-100 border border-red-200"></span> Global Holiday
+                                     </div>
+                                     <div className="flex items-center gap-1">
+                                         <span className="w-3 h-3 rounded-full bg-button-yellow border border-yellow-500"></span> Personal Leave
+                                     </div>
+                                 </div>
+                            </div>
+
+                            <div className="text-center font-semibold text-text-grey">
+                                You have selected {manualHolidays.length} personal leave day(s).
+                            </div>
+                            <div className="flex justify-end gap-4 pt-2">
+                                <button onClick={fullReset} className="bg-gray-200 text-text-grey px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark-grey transition">Cancel</button>
+                                <button onClick={() => handleFinalizeCheckIn(activeRecord, activeRecord.savedHolidays, manualHolidays)} disabled={loading} className="bg-dark-green text-white px-6 py-2 rounded-lg font-semibold hover:bg-icon-green transition">{loading ? 'Processing...' : `Confirm & Check In`}</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </Modal>
-        </>
-    )
-}
+            )}
 
-// --- Reusable Modal Component ---
-function Modal({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: ReactNode }) {
-    if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-            <div className="bg-secondary-white rounded-xl shadow-2xl w-full max-w-lg border border-primary-dark-grey">
-                {children}
-            </div>
-        </div>
+            {/* Global Leave Modal */}
+            {isGlobalLeaveModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+                    <div className="bg-secondary-white rounded-xl shadow-2xl w-full max-w-lg border border-primary-dark-grey">
+                        <div className="p-4 border-b border-primary-dark-grey flex justify-between items-center">
+                            <h3 className="font-bold text-lg font-heading text-heading-text-black">Manage Global Leave Days</h3>
+                            <button onClick={() => setIsGlobalLeaveModalOpen(false)} className="p-1 rounded-full text-text-grey hover:bg-primary-dark-grey hover:text-red-500 transition"><X size={20} /></button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-center text-text-grey">Select all official college holidays. These will be automatically excluded from all fine calculations.</p>
+                            {globalHolidaysLoading ? <div className="text-center p-8">Loading...</div> : (
+                                <div className="bg-primary-grey p-2 sm:p-4 rounded-lg border border-primary-dark-grey flex justify-center">
+                                    <CustomDayPicker mode="multiple" selected={globalHolidays} onSelect={(days) => setGlobalHolidays(days || [])} />
+                                </div>
+                            )}
+                            <div className="flex justify-end gap-4 pt-2">
+                                <button onClick={() => setIsGlobalLeaveModalOpen(false)} className="bg-gray-200 text-text-grey px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark-grey transition">Cancel</button>
+                                <button onClick={handleSaveGlobalHolidays} disabled={globalHolidaysLoading} className="bg-dark-green text-white px-6 py-2 rounded-lg font-semibold hover:bg-icon-green transition">{globalHolidaysLoading ? 'Saving...' : 'Save Global Leaves'}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     )
 }
