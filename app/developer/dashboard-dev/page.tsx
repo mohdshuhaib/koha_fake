@@ -14,8 +14,10 @@ import {
   User,
   Reply,
   Send,
-  Edit2, // New icon for editing
-  X
+  Edit2,
+  X,
+  Image as ImageIcon,
+  Clock
 } from 'lucide-react'
 import clsx from 'classnames'
 
@@ -29,6 +31,7 @@ type Feedback = {
   created_at: string
   reply?: string | null
   reply_at?: string | null
+  screenshot_url?: string | null
 }
 
 export default function DeveloperDashboard() {
@@ -226,13 +229,23 @@ export default function DeveloperDashboard() {
                                             </span>
                                         </div>
                                         <span className="text-xs font-medium text-text-grey flex items-center gap-1 bg-primary-grey px-2 py-1 rounded-md border border-primary-dark-grey">
-                                            {dayjs(item.created_at).format('DD MMM YYYY, h:mm A')}
+                                            <Clock size={12} /> {dayjs(item.created_at).format('DD MMM YYYY, h:mm A')}
                                         </span>
                                     </div>
 
                                     <p className="text-heading-text-black leading-relaxed whitespace-pre-wrap text-sm md:text-base bg-primary-grey p-4 rounded-lg border border-primary-dark-grey">
                                         {item.message}
                                     </p>
+
+                                    {/* Screenshot Display */}
+                                    {item.screenshot_url && (
+                                        <div className="mt-2">
+                                            <p className="text-xs font-semibold text-text-grey mb-1 flex items-center gap-1"><ImageIcon size={12}/> Screenshot</p>
+                                            <a href={item.screenshot_url} target="_blank" rel="noopener noreferrer">
+                                                <img src={item.screenshot_url} alt="Screenshot" className="max-h-40 rounded-lg border border-primary-dark-grey hover:opacity-90 transition cursor-zoom-in" />
+                                            </a>
+                                        </div>
+                                    )}
 
                                     <div className="flex items-center gap-2 text-sm text-text-grey">
                                         <User size={14} />
@@ -258,8 +271,8 @@ export default function DeveloperDashboard() {
                                     {replyingTo !== item.id && (
                                         <button
                                             onClick={() => {
-                                                if(item.reply) startEditingReply(item); // Edit existing
-                                                else { setReplyingTo(item.id); setReplyText(''); } // New reply
+                                                if(item.reply) startEditingReply(item);
+                                                else { setReplyingTo(item.id); setReplyText(''); }
                                             }}
                                             className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg font-bold transition shadow-sm text-sm"
                                         >
