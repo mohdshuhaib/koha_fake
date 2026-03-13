@@ -85,7 +85,7 @@ export default function HistoryPage() {
       const batch = r.members?.batch
       const bookTitle = r.books?.title
       const bookId = r.book_id
-      const pages = r.books?.pages || 0
+      const pages = r.pages_read || 0
       const isReturned = !!r.return_date
 
       // -- Top Readers Logic (Only Returned) --
