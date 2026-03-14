@@ -24,6 +24,10 @@ import {
   IndianRupee,
   BookMarked,
   ShieldCheck,
+  ScanLine,
+  User,
+  BookText,
+  CheckCheck,
 } from 'lucide-react'
 import clsx from 'classnames'
 
@@ -94,6 +98,89 @@ function getFallbackDueDateKey(borrowDate: string, category?: string | null) {
   return toIST(borrowDate).startOf('day').add(allowedDays, 'day').format('YYYY-MM-DD')
 }
 
+function ModalShell({
+  children,
+  onClose,
+  maxWidth = 'max-w-5xl',
+}: {
+  children: React.ReactNode
+  onClose?: () => void
+  maxWidth?: string
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm">
+      <div className="flex min-h-full items-center justify-center p-3 sm:p-4">
+        <div
+          className={clsx(
+            'w-full overflow-hidden rounded-2xl border border-primary-dark-grey bg-secondary-white shadow-2xl',
+            maxWidth
+          )}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SectionCard({
+  title,
+  description,
+  children,
+}: {
+  title: string
+  description?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="rounded-2xl border border-primary-dark-grey bg-primary-grey/40 p-4 sm:p-5">
+      <div className="mb-4">
+        <h4 className="text-sm font-bold uppercase tracking-wide text-heading-text-black">
+          {title}
+        </h4>
+        {description && <p className="mt-1 text-sm leading-6 text-text-grey">{description}</p>}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  subtext,
+  tone = 'default',
+}: {
+  icon: React.ReactNode
+  label: string
+  value: React.ReactNode
+  subtext?: React.ReactNode
+  tone?: 'default' | 'success' | 'danger'
+}) {
+  return (
+    <div
+      className={clsx(
+        'rounded-2xl border p-4',
+        tone === 'danger'
+          ? 'border-red-200 bg-red-50'
+          : tone === 'success'
+            ? 'border-green-200 bg-green-50'
+            : 'border-primary-dark-grey bg-white'
+      )}
+    >
+      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-grey">
+        {icon}
+        {label}
+      </div>
+      <div className="mt-2 break-words font-malayalam text-lg sm:text-xl font-bold text-heading-text-black">
+        {value}
+      </div>
+      {subtext && <div className="mt-2 text-xs sm:text-sm leading-5 text-text-grey">{subtext}</div>}
+    </div>
+  )
+}
+
 export default function CheckInForm() {
   const [barcode, setBarcode] = useState('')
   const [message, setMessage] = useState('')
@@ -144,6 +231,11 @@ export default function CheckInForm() {
     setTotalPagesInput(activeRecord.book.pages ? String(activeRecord.book.pages) : '')
   }, [activeRecord])
 
+  const clearMessage = () => {
+    setMessage('')
+    setIsError(false)
+  }
+
   const fetchGlobalHolidays = async () => {
     const { data, error } = await supabase
       .from('holidays')
@@ -162,13 +254,12 @@ export default function CheckInForm() {
   const fetchAndSetGlobalHolidays = async () => {
     setGlobalHolidaysLoading(true)
     const data = await fetchGlobalHolidays()
-    setGlobalHolidays(
-      data.map((d) => parseISTDateKey(d.leave_date).toDate())
-    )
+    setGlobalHolidays(data.map((d) => parseISTDateKey(d.leave_date).toDate()))
     setGlobalHolidaysLoading(false)
   }
 
   const openGlobalLeaveModal = async () => {
+    clearMessage()
     await fetchAndSetGlobalHolidays()
     setIsGlobalLeaveModalOpen(true)
   }
@@ -204,10 +295,9 @@ export default function CheckInForm() {
     personalHolidays: Date[]
   ) => {
     const todayKey = dayjs().tz(IST).format('YYYY-MM-DD')
-    const dueDateKey =
-      recordToProcess.due_date
-        ? toISTDateKey(recordToProcess.due_date)
-        : getFallbackDueDateKey(recordToProcess.borrow_date, recordToProcess.member.category)
+    const dueDateKey = recordToProcess.due_date
+      ? toISTDateKey(recordToProcess.due_date)
+      : getFallbackDueDateKey(recordToProcess.borrow_date, recordToProcess.member.category)
 
     const dueDay = parseISTDateKey(dueDateKey)
     const returnDay = parseISTDateKey(todayKey)
@@ -223,15 +313,17 @@ export default function CheckInForm() {
     }
 
     const overdueDays = returnDay.diff(dueDay, 'day')
-
     const overdueStartKey = dueDay.add(1, 'day').format('YYYY-MM-DD')
+
     const globalDates = savedHolidays.map((d) => d.leave_date)
     const personalDates = personalHolidays
       .map((d) => toISTDateKey(d))
       .filter((key) => {
         const day = parseISTDateKey(key)
-        return day.isSameOrAfter(parseISTDateKey(overdueStartKey), 'day') &&
+        return (
+          day.isSameOrAfter(parseISTDateKey(overdueStartKey), 'day') &&
           day.isSameOrBefore(returnDay, 'day')
+        )
       })
 
     const allUniqueExcludedDates = new Set([...globalDates, ...personalDates])
@@ -312,12 +404,31 @@ export default function CheckInForm() {
     }
   }
 
+  const resetProcess = (clearBarcode = false) => {
+    setActiveRecord(null)
+    setManualHolidays([])
+    setPagesReadInput('')
+    setIsFullRead(false)
+    setTotalPagesInput('')
+    if (clearBarcode) setBarcode('')
+    setLoading(false)
+
+    setTimeout(() => {
+      inputRef.current?.focus()
+    }, 100)
+  }
+
+  const fullReset = () => {
+    resetProcess(true)
+    setMessage('')
+    setIsError(false)
+  }
+
   const handleInitialScan = async () => {
     if (!barcode.trim()) return
 
     setLoading(true)
-    setMessage('')
-    setIsError(false)
+    clearMessage()
 
     const { data: book, error: bookError } = await supabase
       .from('books')
@@ -329,7 +440,7 @@ export default function CheckInForm() {
       setMessage('Book not found with that barcode.')
       setIsError(true)
       setLoading(false)
-      resetProcess(false)
+      setTimeout(() => inputRef.current?.focus(), 100)
       return
     }
 
@@ -349,7 +460,7 @@ export default function CheckInForm() {
       setMessage('This book is not currently checked out.')
       setIsError(true)
       setLoading(false)
-      resetProcess(false)
+      setTimeout(() => inputRef.current?.focus(), 100)
       return
     }
 
@@ -371,7 +482,9 @@ export default function CheckInForm() {
     }
 
     const preview = buildFineComputation(tempRecord, overdueGlobalHolidays, [])
-    const isOverdue = preview.effectiveOverdueDays > 0 || parseISTDateKey(todayKey).isAfter(parseISTDateKey(dueDateKey), 'day')
+    const isOverdue =
+      preview.effectiveOverdueDays > 0 ||
+      parseISTDateKey(todayKey).isAfter(parseISTDateKey(dueDateKey), 'day')
 
     setActiveRecord({
       ...tempRecord,
@@ -381,7 +494,7 @@ export default function CheckInForm() {
 
     setMessage(
       isOverdue
-        ? `This return is overdue based on the due date. Review leave days and reading details before check-in.`
+        ? 'This return is overdue based on the due date. Review leave days and reading details before check-in.'
         : `Review reading details and confirm check-in for "${book.title}".`
     )
     setIsError(false)
@@ -440,12 +553,9 @@ export default function CheckInForm() {
 
   const handleSaveGlobalHolidays = async () => {
     setGlobalHolidaysLoading(true)
-    setMessage('')
-    setIsError(false)
+    clearMessage()
 
-    const selectedDateKeys = Array.from(
-      new Set(globalHolidays.map((d) => toISTDateKey(d)))
-    ).sort()
+    const selectedDateKeys = Array.from(new Set(globalHolidays.map((d) => toISTDateKey(d)))).sort()
 
     const existingRows = await fetchGlobalHolidays()
     const existingDateKeys = existingRows.map((row) => row.leave_date)
@@ -492,8 +602,7 @@ export default function CheckInForm() {
 
   const handleResetGlobalHolidays = async () => {
     setGlobalHolidaysLoading(true)
-    setMessage('')
-    setIsError(false)
+    clearMessage()
 
     const existingRows = await fetchGlobalHolidays()
     const existingDateKeys = existingRows.map((row) => row.leave_date)
@@ -520,29 +629,8 @@ export default function CheckInForm() {
     setIsError(false)
   }
 
-  const resetProcess = (clearBarcode = false) => {
-    setActiveRecord(null)
-    setManualHolidays([])
-    setPagesReadInput('')
-    setIsFullRead(false)
-    setTotalPagesInput('')
-    if (clearBarcode) setBarcode('')
-    setLoading(false)
-
-    setTimeout(() => {
-      inputRef.current?.focus()
-    }, 100)
-  }
-
-  const fullReset = () => {
-    resetProcess(true)
-    setMessage('')
-    setIsError(false)
-  }
-
-  const globalDatesForReturnModal = activeRecord?.savedHolidays.map((h) =>
-    parseISTDateKey(h.leave_date).toDate()
-  ) ?? []
+  const globalDatesForReturnModal =
+    activeRecord?.savedHolidays.map((h) => parseISTDateKey(h.leave_date).toDate()) ?? []
 
   const sortedGlobalHolidayDateKeys = Array.from(
     new Set(globalHolidays.map((d) => toISTDateKey(d)))
@@ -553,431 +641,540 @@ export default function CheckInForm() {
     : null
 
   const dueDateLabel = activeRecord
-    ? (activeRecord.due_date
-        ? toISTDateKey(activeRecord.due_date)
-        : getFallbackDueDateKey(activeRecord.borrow_date, activeRecord.member.category))
+    ? activeRecord.due_date
+      ? toISTDateKey(activeRecord.due_date)
+      : getFallbackDueDateKey(activeRecord.borrow_date, activeRecord.member.category)
     : null
 
   return (
     <>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-          <h2 className="text-2xl font-bold font-heading text-heading-text-black uppercase">
-            Check In a Book
-          </h2>
-
-          <button
-            onClick={openGlobalLeaveModal}
-            className="flex items-center gap-2 text-sm font-semibold text-dark-green hover:text-icon-green transition flex-shrink-0"
-          >
-            <CalendarDays size={16} /> Manage Global Leaves
-          </button>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-center gap-4">
-          <div className="relative w-full">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-              <Barcode className="h-5 w-5 text-text-grey" />
-            </div>
-
-            <input
-              ref={inputRef}
-              type="text"
-              className="w-full p-3 pl-12 pr-14 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green transition"
-              placeholder="Scan book barcode to return"
-              value={barcode}
-              onChange={(e) => setBarcode(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleInitialScan()}
-              disabled={!!activeRecord || loading}
-            />
-
-            {isMobileDevice && !loading && !activeRecord && (
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
-                <button
-                  type="button"
-                  onClick={() => setIsScannerOpen(true)}
-                  className="flex items-center justify-center h-9 w-9 rounded-lg text-text-grey hover:text-dark-green hover:bg-secondary-white transition"
-                  aria-label="Scan book barcode"
-                >
-                  <Camera size={18} />
-                </button>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={handleInitialScan}
-            disabled={loading || !!activeRecord || !barcode}
-            className="w-full sm:w-auto bg-button-yellow text-button-text-black px-8 py-3 rounded-lg font-bold hover:bg-yellow-500 transition disabled:opacity-60"
-          >
-            {loading ? 'Scanning...' : 'Scan'}
-          </button>
-        </div>
-
-        {message && !activeRecord && (
-          <div
-            className={clsx(
-              'flex items-center gap-3 p-3 rounded-lg text-sm',
-              isError ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-            )}
-          >
-            {isError ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}
-            <span className="font-medium">{message}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Return Details Modal */}
-      {activeRecord && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-          <div className="bg-secondary-white rounded-xl shadow-2xl w-full max-w-4xl border border-primary-dark-grey max-h-[92vh] overflow-hidden">
-            <div className="p-4 border-b border-primary-dark-grey flex justify-between items-center">
+      <div className="mx-auto w-full max-w-5xl">
+        <div className="rounded-2xl border border-primary-dark-grey bg-white shadow-sm">
+          <div className="border-b border-primary-dark-grey px-4 py-4 sm:px-6">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <h3 className="font-bold text-lg font-heading text-heading-text-black">
-                  Confirm Book Return
-                </h3>
-                <p className="text-sm text-text-grey mt-1">
-                  Review the return details, leave adjustments, and reading progress.
+                <h2 className="text-lg sm:text-xl font-bold text-heading-text-black">
+                  Check In a Book
+                </h2>
+                <p className="mt-1 text-sm text-text-grey">
+                  Scan a borrowed book, review overdue calculations, leave adjustments, and reading
+                  progress, then confirm the check-in.
                 </p>
               </div>
+
               <button
-                onClick={fullReset}
-                className="p-1 rounded-full text-text-grey hover:bg-primary-dark-grey hover:text-red-500 transition"
+                onClick={openGlobalLeaveModal}
+                className="inline-flex items-center gap-2 self-start rounded-xl border border-primary-dark-grey bg-white px-4 py-2.5 text-sm font-semibold text-dark-green transition hover:bg-primary-grey"
               >
-                <X size={20} />
+                <CalendarDays size={16} />
+                Manage Global Leaves
               </button>
             </div>
+          </div>
 
-            <div className="p-6 overflow-y-auto max-h-[calc(92vh-80px)] space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="rounded-xl border border-primary-dark-grey bg-primary-grey p-4">
-                  <div className="flex items-center gap-2 text-text-grey text-xs uppercase font-semibold">
-                    <BookMarked size={14} />
-                    Book
-                  </div>
-                  <p className="mt-2 font-bold text-heading-text-black">{activeRecord.book.title}</p>
-                  <p className="text-xs text-text-grey mt-1">{activeRecord.book.barcode}</p>
-                </div>
+          <div className="space-y-6 px-4 py-5 sm:px-6 sm:py-6">
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_auto]">
+              <div className="min-w-0">
+                <label className="mb-2 block text-sm font-semibold text-heading-text-black">
+                  Book Barcode
+                </label>
 
-                <div className="rounded-xl border border-primary-dark-grey bg-primary-grey p-4">
-                  <div className="flex items-center gap-2 text-text-grey text-xs uppercase font-semibold">
-                    <ShieldCheck size={14} />
-                    Member
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                    <Barcode className="h-5 w-5 text-text-grey" />
                   </div>
-                  <p className="mt-2 font-bold text-heading-text-black">{activeRecord.member.name}</p>
-                  <p className="text-xs text-text-grey mt-1">
-                    {activeRecord.member.barcode} • {activeRecord.member.category}
-                  </p>
-                </div>
 
-                <div className="rounded-xl border border-primary-dark-grey bg-primary-grey p-4">
-                  <div className="flex items-center gap-2 text-text-grey text-xs uppercase font-semibold">
-                    <Clock3 size={14} />
-                    Borrowed On
-                  </div>
-                  <p className="mt-2 font-bold text-heading-text-black">
-                    {formatIST(activeRecord.borrow_date)}
-                  </p>
-                </div>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    className="w-full rounded-xl border border-primary-dark-grey bg-primary-grey py-3 pl-12 pr-20 text-sm text-heading-text-black placeholder:text-text-grey transition focus:outline-none focus:ring-2 focus:ring-dark-green"
+                    placeholder="Scan or enter book barcode to return"
+                    value={barcode}
+                    onChange={(e) => {
+                      clearMessage()
+                      setBarcode(e.target.value)
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleInitialScan()}
+                    disabled={!!activeRecord || loading}
+                  />
 
-                <div className="rounded-xl border border-primary-dark-grey bg-primary-grey p-4">
-                  <div className="flex items-center gap-2 text-text-grey text-xs uppercase font-semibold">
-                    <CalendarDays size={14} />
-                    Due Date
+                  <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-2">
+                    {barcode && !loading && !activeRecord && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBarcode('')
+                          clearMessage()
+                          inputRef.current?.focus()
+                        }}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-text-grey transition hover:bg-secondary-white hover:text-red-500"
+                        aria-label="Clear barcode"
+                      >
+                        <X size={18} />
+                      </button>
+                    )}
+
+                    {isMobileDevice && !loading && !activeRecord && (
+                      <button
+                        type="button"
+                        onClick={() => setIsScannerOpen(true)}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-text-grey transition hover:bg-secondary-white hover:text-dark-green"
+                        aria-label="Scan book barcode"
+                      >
+                        <Camera size={18} />
+                      </button>
+                    )}
                   </div>
-                  <p className="mt-2 font-bold text-heading-text-black">
-                    {dueDateLabel ? formatIST(dueDateLabel) : '-'}
-                  </p>
                 </div>
               </div>
 
-              {computedPreview && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div
-                    className={clsx(
-                      'rounded-xl border p-4',
-                      computedPreview.effectiveOverdueDays > 0
-                        ? 'border-red-200 bg-red-50'
-                        : 'border-green-200 bg-green-50'
-                    )}
-                  >
-                    <p className="text-xs uppercase font-semibold text-text-grey">Overdue Days</p>
-                    <p className="mt-2 text-2xl font-bold text-heading-text-black">
-                      {computedPreview.effectiveOverdueDays}
-                    </p>
-                  </div>
+              <div className="flex flex-col gap-2 sm:flex-row lg:items-end">
+                <button
+                  type="button"
+                  onClick={fullReset}
+                  className="inline-flex w-full items-center justify-center rounded-xl border border-primary-dark-grey bg-white px-5 py-3 text-sm font-semibold text-heading-text-black transition hover:bg-primary-grey sm:w-auto"
+                  disabled={loading}
+                >
+                  Reset
+                </button>
 
-                  <div className="rounded-xl border border-primary-dark-grey bg-primary-grey p-4">
-                    <p className="text-xs uppercase font-semibold text-text-grey">Excluded Leave Days</p>
-                    <p className="mt-2 text-2xl font-bold text-heading-text-black">
-                      {computedPreview.totalExcludedDays}
-                    </p>
-                  </div>
+                <button
+                  onClick={handleInitialScan}
+                  disabled={loading || !!activeRecord || !barcode.trim()}
+                  className="inline-flex w-full items-center justify-center rounded-xl bg-button-yellow px-6 py-3 text-sm font-bold text-button-text-black transition hover:bg-yellow-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                >
+                  {loading ? 'Scanning...' : 'Scan Book'}
+                </button>
+              </div>
+            </div>
 
-                  <div
-                    className={clsx(
-                      'rounded-xl border p-4',
-                      computedPreview.fine > 0
-                        ? 'border-red-200 bg-red-50'
-                        : 'border-green-200 bg-green-50'
-                    )}
-                  >
-                    <p className="text-xs uppercase font-semibold text-text-grey">Fine</p>
-                    <p className="mt-2 text-2xl font-bold text-heading-text-black">
-                      ₹{computedPreview.fine}
-                    </p>
-                  </div>
+            <div className="rounded-2xl border border-primary-dark-grey bg-primary-grey/30 p-4">
+              <div className="flex items-start gap-3">
+                <ScanLine className="mt-0.5 h-4 w-4 flex-shrink-0 text-dark-green" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-heading-text-black">
+                    Staff Workflow Tip
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-text-grey">
+                    After scanning, the return review panel opens so you can verify fines, excluded
+                    leave days, and reading progress before final check-in.
+                  </p>
                 </div>
-              )}
+              </div>
+            </div>
 
-              {activeRecord.isOverdue && (
-                <div className="space-y-4 rounded-xl border border-primary-dark-grey bg-primary-grey p-4">
-                  <div>
-                    <h4 className="font-bold text-heading-text-black">Personal Leave Days</h4>
-                    <p className="text-sm text-text-grey mt-1">
-                      Select any additional personal leave days that should be excluded from overdue fine calculation.
-                      Global leave days are already locked and highlighted.
-                    </p>
-                  </div>
+            {message && !activeRecord && (
+              <div
+                className={clsx(
+                  'flex items-start gap-3 rounded-xl border px-4 py-3 text-sm',
+                  isError
+                    ? 'border-red-200 bg-red-50 text-red-800'
+                    : 'border-green-200 bg-green-50 text-green-800'
+                )}
+              >
+                <div className="mt-0.5 flex-shrink-0">
+                  {isError ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
+                </div>
+                <p className="break-words font-medium leading-6">{message}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-                  <div className="rounded-lg border border-primary-dark-grey bg-secondary-white p-2 sm:p-4 flex flex-col items-center">
-                    <CustomDayPicker
-                      mode="multiple"
-                      selected={manualHolidays}
-                      onSelect={(days) => setManualHolidays(days || [])}
-                      fromDate={toIST(activeRecord.borrow_date).toDate()}
-                      toDate={dayjs().tz(IST).toDate()}
-                      disabled={globalDatesForReturnModal}
-                      modifiers={{ globalHoliday: globalDatesForReturnModal }}
-                      modifiersClassNames={{
-                        globalHoliday:
-                          'bg-red-100 text-red-700 font-bold hover:bg-red-100 cursor-not-allowed',
-                      }}
+      {activeRecord && (
+        <ModalShell onClose={fullReset} maxWidth="max-w-6xl">
+          <div className="flex max-h-[94vh] flex-col">
+            <div className="border-b border-primary-dark-grey px-4 py-4 sm:px-6">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-lg sm:text-xl font-bold text-heading-text-black">
+                    Confirm Book Return
+                  </h3>
+                  <p className="mt-1 text-sm text-text-grey">
+                    Review the return details, leave adjustments, and reading progress.
+                  </p>
+                </div>
+
+                <button
+                  onClick={fullReset}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-text-grey transition hover:bg-primary-dark-grey hover:text-red-500"
+                  aria-label="Close return modal"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  <StatCard
+                    icon={<BookMarked size={14} />}
+                    label="Book"
+                    value={activeRecord.book.title}
+                    subtext={
+                      <span className="break-all text-xs text-text-grey">
+                        {activeRecord.book.barcode}
+                      </span>
+                    }
+                  />
+
+                  <StatCard
+                    icon={<User size={14} />}
+                    label="Member"
+                    value={activeRecord.member.name}
+                    subtext={
+                      <span className="break-all text-xs text-text-grey capitalize">
+                        {activeRecord.member.barcode} • {activeRecord.member.category}
+                      </span>
+                    }
+                  />
+
+                  <StatCard
+                    icon={<Clock3 size={14} />}
+                    label="Borrowed On"
+                    value={formatIST(activeRecord.borrow_date)}
+                  />
+
+                  <StatCard
+                    icon={<CalendarDays size={14} />}
+                    label="Due Date"
+                    value={dueDateLabel ? formatIST(dueDateLabel) : '-'}
+                  />
+                </div>
+
+                {computedPreview && (
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <StatCard
+                      icon={<Clock3 size={14} />}
+                      label="Overdue Days"
+                      value={computedPreview.effectiveOverdueDays}
+                      tone={computedPreview.effectiveOverdueDays > 0 ? 'danger' : 'success'}
+                      subtext={
+                        computedPreview.effectiveOverdueDays > 0
+                          ? 'Effective overdue after excluded days.'
+                          : 'No overdue days after exclusions.'
+                      }
                     />
 
-                    <div className="flex flex-wrap gap-4 text-xs mt-3 justify-center">
-                      <div className="flex items-center gap-1">
-                        <span className="w-3 h-3 rounded-full bg-red-100 border border-red-200"></span>
-                        Global Leave
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="w-3 h-3 rounded-full bg-button-yellow border border-yellow-500"></span>
-                        Personal Leave
-                      </div>
-                    </div>
-                  </div>
+                    <StatCard
+                      icon={<CalendarDays size={14} />}
+                      label="Excluded Leave Days"
+                      value={computedPreview.totalExcludedDays}
+                      subtext="Global and personal leave days excluded from overdue calculation."
+                    />
 
-                  <p className="text-sm text-text-grey font-medium text-center">
-                    Selected personal leave days: {manualHolidays.length}
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-4 rounded-xl border border-primary-dark-grey bg-primary-grey p-4">
-                <div>
-                  <h4 className="font-bold text-heading-text-black">Reading Progress</h4>
-                  <p className="text-sm text-text-grey mt-1">
-                    Record how many pages the member read before returning the book.
-                  </p>
-                </div>
-
-                <label className="flex items-center gap-3 cursor-pointer text-sm font-medium text-heading-text-black">
-                  <input
-                    type="checkbox"
-                    checked={isFullRead}
-                    onChange={(e) => {
-                      const checked = e.target.checked
-                      setIsFullRead(checked)
-                      if (checked && activeRecord.book.pages) {
-                        setPagesReadInput(String(activeRecord.book.pages))
+                    <StatCard
+                      icon={<IndianRupee size={14} />}
+                      label="Fine"
+                      value={`₹${computedPreview.fine}`}
+                      tone={computedPreview.fine > 0 ? 'danger' : 'success'}
+                      subtext={
+                        computedPreview.fine > 0
+                          ? 'Fine will be saved during check-in.'
+                          : 'No fine will be charged.'
                       }
-                    }}
-                    className="accent-green-700"
-                  />
-                  Full read
-                </label>
+                    />
+                  </div>
+                )}
 
-                {isFullRead ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {activeRecord.book.pages ? (
-                      <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-                        <p className="text-sm text-text-grey">Total book pages</p>
-                        <p className="mt-1 text-xl font-bold text-heading-text-black">
-                          {activeRecord.book.pages}
+                {activeRecord.isOverdue && (
+                  <SectionCard
+                    title="Personal Leave Days"
+                    description="Select any additional personal leave days that should be excluded from overdue fine calculation. Global leave days are already locked and highlighted."
+                  >
+                    <div className="rounded-xl border border-primary-dark-grey bg-white p-3 sm:p-4">
+                      <div className="overflow-x-auto">
+                        <div className="flex min-w-[320px] justify-center">
+                          <CustomDayPicker
+                            mode="multiple"
+                            selected={manualHolidays}
+                            onSelect={(days) => setManualHolidays(days || [])}
+                            fromDate={toIST(activeRecord.borrow_date).toDate()}
+                            toDate={dayjs().tz(IST).toDate()}
+                            disabled={globalDatesForReturnModal}
+                            modifiers={{ globalHoliday: globalDatesForReturnModal }}
+                            modifiersClassNames={{
+                              globalHoliday:
+                                'bg-red-100 text-red-700 font-bold hover:bg-red-100 cursor-not-allowed',
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap justify-center gap-4 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="h-3 w-3 rounded-full border border-red-200 bg-red-100" />
+                          Global Leave
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="h-3 w-3 rounded-full border border-yellow-500 bg-button-yellow" />
+                          Personal Leave
+                        </div>
+                      </div>
+
+                      <p className="mt-4 text-center text-sm font-medium text-text-grey">
+                        Selected personal leave days: {manualHolidays.length}
+                      </p>
+                    </div>
+                  </SectionCard>
+                )}
+
+                <SectionCard
+                  title="Reading Progress"
+                  description="Record how many pages the member read before returning the book."
+                >
+                  <div className="space-y-4">
+                    <label className="inline-flex items-start gap-3 rounded-xl border border-primary-dark-grey bg-white px-4 py-3 text-sm font-medium text-heading-text-black">
+                      <input
+                        type="checkbox"
+                        checked={isFullRead}
+                        onChange={(e) => {
+                          const checked = e.target.checked
+                          setIsFullRead(checked)
+                          if (checked && activeRecord.book.pages) {
+                            setPagesReadInput(String(activeRecord.book.pages))
+                          }
+                        }}
+                        className="mt-0.5 accent-green-700"
+                      />
+                      <div>
+                        <p className="font-semibold text-heading-text-black">Full read</p>
+                        <p className="mt-1 text-sm text-text-grey">
+                          Mark this if the member completed the entire book.
                         </p>
-                        <p className="mt-2 text-sm text-text-grey">
-                          Pages read will be saved as {activeRecord.book.pages}.
-                        </p>
+                      </div>
+                    </label>
+
+                    {isFullRead ? (
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        {activeRecord.book.pages ? (
+                          <div className="rounded-2xl border border-green-200 bg-green-50 p-4">
+                            <p className="text-sm text-text-grey">Total book pages</p>
+                            <p className="mt-1 text-2xl font-bold text-heading-text-black">
+                              {activeRecord.book.pages}
+                            </p>
+                            <p className="mt-2 text-sm leading-6 text-text-grey">
+                              Pages read will be saved as {activeRecord.book.pages}.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2 rounded-2xl border border-primary-dark-grey bg-white p-4">
+                            <label className="text-sm font-semibold text-heading-text-black">
+                              Enter total pages of this book
+                            </label>
+                            <input
+                              type="number"
+                              min={1}
+                              value={totalPagesInput}
+                              onChange={(e) => setTotalPagesInput(e.target.value)}
+                              className="w-full rounded-xl border border-primary-dark-grey bg-secondary-white p-3 text-heading-text-black placeholder:text-text-grey transition focus:outline-none focus:ring-2 focus:ring-dark-green"
+                              placeholder="Enter total pages"
+                            />
+                            <p className="text-xs leading-5 text-text-grey">
+                              Since this book has no saved page count, this will update the book’s
+                              total pages and also save it as fully read.
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="rounded-2xl border border-primary-dark-grey bg-white p-4">
+                          <div className="flex items-center gap-2 text-xs font-semibold uppercase text-text-grey">
+                            <CheckCheck size={14} />
+                            Saved Reading Result
+                          </div>
+                          <p className="mt-2 text-lg font-bold text-heading-text-black">
+                            Full book completed
+                          </p>
+                          <p className="mt-2 text-sm leading-6 text-text-grey">
+                            This return will be recorded as a completed reading entry.
+                          </p>
+                        </div>
                       </div>
                     ) : (
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-heading-text-black">
-                          Enter total pages of this book
-                        </label>
-                        <input
-                          type="number"
-                          min={1}
-                          value={totalPagesInput}
-                          onChange={(e) => setTotalPagesInput(e.target.value)}
-                          className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green transition"
-                          placeholder="Enter total pages"
-                        />
-                        <p className="text-xs text-text-grey">
-                          Since this book has no saved page count, this will update the book’s total pages and also save it as fully read.
-                        </p>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div className="space-y-2 rounded-2xl border border-primary-dark-grey bg-white p-4">
+                          <label className="text-sm font-semibold text-heading-text-black">
+                            Pages read
+                          </label>
+                          <input
+                            type="number"
+                            min={0}
+                            value={pagesReadInput}
+                            onChange={(e) => setPagesReadInput(e.target.value)}
+                            className="w-full rounded-xl border border-primary-dark-grey bg-secondary-white p-3 text-heading-text-black placeholder:text-text-grey transition focus:outline-none focus:ring-2 focus:ring-dark-green"
+                            placeholder="Enter pages read"
+                          />
+                        </div>
+
+                        <div className="rounded-2xl border border-primary-dark-grey bg-white p-4">
+                          <div className="flex items-center gap-2 text-xs font-semibold uppercase text-text-grey">
+                            <BookText size={14} />
+                            Saved Total Pages
+                          </div>
+                          <p className="mt-2 text-2xl font-bold text-heading-text-black">
+                            {activeRecord.book.pages ?? 'Not set'}
+                          </p>
+                          <p className="mt-2 text-xs leading-5 text-text-grey">
+                            If total pages are saved, pages read cannot exceed that number.
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-heading-text-black">
-                        Pages read
-                      </label>
-                      <input
-                        type="number"
-                        min={0}
-                        value={pagesReadInput}
-                        onChange={(e) => setPagesReadInput(e.target.value)}
-                        className="w-full p-3 rounded-lg bg-secondary-white border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green transition"
-                        placeholder="Enter pages read"
-                      />
-                    </div>
+                </SectionCard>
 
-                    <div className="rounded-lg border border-primary-dark-grey bg-secondary-white p-4">
-                      <p className="text-sm text-text-grey">Saved total pages</p>
-                      <p className="mt-1 text-xl font-bold text-heading-text-black">
-                        {activeRecord.book.pages ?? 'Not set'}
-                      </p>
-                      <p className="mt-2 text-xs text-text-grey">
-                        If total pages are saved, pages read cannot exceed that number.
-                      </p>
+                {message && (
+                  <div
+                    className={clsx(
+                      'flex items-start gap-3 rounded-xl border px-4 py-3 text-sm',
+                      isError
+                        ? 'border-red-200 bg-red-50 text-red-800'
+                        : 'border-green-200 bg-green-50 text-green-800'
+                    )}
+                  >
+                    <div className="mt-0.5 flex-shrink-0">
+                      {isError ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
                     </div>
+                    <p className="break-words font-medium leading-6">{message}</p>
                   </div>
                 )}
               </div>
+            </div>
 
-              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
+            <div className="border-t border-primary-dark-grey px-4 py-4 sm:px-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
                 <button
                   onClick={fullReset}
-                  className="bg-gray-200 text-text-grey px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark-grey transition"
+                  className="inline-flex items-center justify-center rounded-xl border border-primary-dark-grey bg-white px-6 py-3 text-sm font-semibold text-heading-text-black transition hover:bg-primary-grey"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleConfirmCheckIn}
                   disabled={loading}
-                  className="bg-dark-green text-white px-6 py-2 rounded-lg font-semibold hover:bg-icon-green transition disabled:opacity-70"
+                  className="inline-flex items-center justify-center rounded-xl bg-dark-green px-6 py-3 text-sm font-semibold text-white transition hover:bg-icon-green disabled:opacity-70"
                 >
                   {loading ? 'Processing...' : 'Confirm & Check In'}
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </ModalShell>
       )}
 
-      {/* Global Leave Modal */}
       {isGlobalLeaveModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-          <div className="bg-secondary-white rounded-xl shadow-2xl w-full max-w-6xl border border-primary-dark-grey max-h-[94vh] overflow-hidden">
-            <div className="p-5 border-b border-primary-dark-grey flex justify-between items-center">
-              <div>
-                <h3 className="font-bold text-xl font-heading text-heading-text-black">
-                  Manage Global Leave Days
-                </h3>
-                <p className="text-sm text-text-grey mt-1">
-                  These official leave dates are automatically excluded from overdue fine calculations.
-                </p>
+        <ModalShell onClose={() => setIsGlobalLeaveModalOpen(false)} maxWidth="max-w-7xl">
+          <div className="flex max-h-[94vh] flex-col">
+            <div className="border-b border-primary-dark-grey px-4 py-4 sm:px-6">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-lg sm:text-xl font-bold text-heading-text-black">
+                    Manage Global Leave Days
+                  </h3>
+                  <p className="mt-1 text-sm text-text-grey">
+                    These official leave dates are automatically excluded from overdue fine
+                    calculations.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setIsGlobalLeaveModalOpen(false)}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-text-grey transition hover:bg-primary-dark-grey hover:text-red-500"
+                  aria-label="Close global leaves modal"
+                >
+                  <X size={20} />
+                </button>
               </div>
-              <button
-                onClick={() => setIsGlobalLeaveModalOpen(false)}
-                className="p-1 rounded-full text-text-grey hover:bg-primary-dark-grey hover:text-red-500 transition"
-              >
-                <X size={20} />
-              </button>
             </div>
 
-            <div className="p-6 overflow-y-auto max-h-[calc(94vh-88px)]">
+            <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
               {globalHolidaysLoading ? (
-                <div className="text-center p-12 text-text-grey">Loading global leave days...</div>
+                <div className="rounded-2xl border border-primary-dark-grey bg-primary-grey/30 p-12 text-center text-text-grey">
+                  Loading global leave days...
+                </div>
               ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-6">
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div className="rounded-xl bg-primary-grey border border-primary-dark-grey p-4">
-                        <p className="text-xs uppercase font-semibold text-text-grey">Total Selected</p>
-                        <p className="mt-2 text-2xl font-bold text-heading-text-black">
-                          {sortedGlobalHolidayDateKeys.length}
-                        </p>
-                      </div>
-                      <div className="rounded-xl bg-primary-grey border border-primary-dark-grey p-4">
-                        <p className="text-xs uppercase font-semibold text-text-grey">First Leave</p>
-                        <p className="mt-2 text-lg font-bold text-heading-text-black">
-                          {sortedGlobalHolidayDateKeys[0]
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                      <StatCard
+                        icon={<CalendarDays size={14} />}
+                        label="Total Selected"
+                        value={sortedGlobalHolidayDateKeys.length}
+                      />
+                      <StatCard
+                        icon={<Clock3 size={14} />}
+                        label="First Leave"
+                        value={
+                          sortedGlobalHolidayDateKeys[0]
                             ? formatIST(sortedGlobalHolidayDateKeys[0])
-                            : '-'}
-                        </p>
-                      </div>
-                      <div className="rounded-xl bg-primary-grey border border-primary-dark-grey p-4">
-                        <p className="text-xs uppercase font-semibold text-text-grey">Last Leave</p>
-                        <p className="mt-2 text-lg font-bold text-heading-text-black">
-                          {sortedGlobalHolidayDateKeys.length > 0
-                            ? formatIST(sortedGlobalHolidayDateKeys[sortedGlobalHolidayDateKeys.length - 1])
-                            : '-'}
-                        </p>
-                      </div>
+                            : '-'
+                        }
+                      />
+                      <StatCard
+                        icon={<Clock3 size={14} />}
+                        label="Last Leave"
+                        value={
+                          sortedGlobalHolidayDateKeys.length > 0
+                            ? formatIST(
+                                sortedGlobalHolidayDateKeys[
+                                  sortedGlobalHolidayDateKeys.length - 1
+                                ]
+                              )
+                            : '-'
+                        }
+                      />
                     </div>
 
-                    <div className="rounded-xl bg-primary-grey border border-primary-dark-grey p-3 sm:p-5">
-                      <div className="mb-4">
-                        <h4 className="font-bold text-heading-text-black">Pick Official Leave Days</h4>
-                        <p className="text-sm text-text-grey mt-1">
-                          Select every official college leave date. All calculations use IST dates.
-                        </p>
+                    <SectionCard
+                      title="Pick Official Leave Days"
+                      description="Select every official college leave date. All calculations use IST dates."
+                    >
+                      <div className="overflow-x-auto rounded-xl border border-primary-dark-grey bg-white p-3 sm:p-4">
+                        <div className="flex min-w-[320px] justify-center">
+                          <CustomDayPicker
+                            mode="multiple"
+                            selected={globalHolidays}
+                            onSelect={(days) => setGlobalHolidays(days || [])}
+                          />
+                        </div>
                       </div>
-
-                      <div className="bg-secondary-white rounded-lg border border-primary-dark-grey p-2 sm:p-4 flex justify-center overflow-x-auto">
-                        <CustomDayPicker
-                          mode="multiple"
-                          selected={globalHolidays}
-                          onSelect={(days) => setGlobalHolidays(days || [])}
-                        />
-                      </div>
-                    </div>
+                    </SectionCard>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="rounded-xl bg-primary-grey border border-primary-dark-grey p-4">
+                    <SectionCard
+                      title="Selected Leave Dates"
+                      description="Dates are sorted automatically in order."
+                    >
                       <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <h4 className="font-bold text-heading-text-black">Selected Leave Dates</h4>
-                          <p className="text-sm text-text-grey mt-1">
-                            Sorted automatically in order.
-                          </p>
+                        <div className="text-sm text-text-grey">
+                          Total dates: {sortedGlobalHolidayDateKeys.length}
                         </div>
+
                         <button
                           onClick={() => setIsResetGlobalLeavesModalOpen(true)}
                           disabled={sortedGlobalHolidayDateKeys.length === 0}
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
                         >
                           <RotateCcw size={15} />
                           Reset All
                         </button>
                       </div>
 
-                      <div className="mt-4 max-h-[420px] overflow-y-auto space-y-2">
+                      <div className="mt-4 max-h-[420px] space-y-2 overflow-y-auto pr-1">
                         {sortedGlobalHolidayDateKeys.length === 0 ? (
-                          <div className="rounded-lg border border-dashed border-primary-dark-grey bg-secondary-white p-6 text-center text-sm text-text-grey">
+                          <div className="rounded-xl border border-dashed border-primary-dark-grey bg-white p-6 text-center text-sm text-text-grey">
                             No global leave days selected yet.
                           </div>
                         ) : (
                           sortedGlobalHolidayDateKeys.map((dateKey, index) => (
                             <div
                               key={dateKey}
-                              className="flex items-center justify-between rounded-lg border border-primary-dark-grey bg-secondary-white px-4 py-3"
+                              className="flex items-center justify-between gap-4 rounded-xl border border-primary-dark-grey bg-white px-4 py-3"
                             >
-                              <div>
+                              <div className="min-w-0">
                                 <p className="font-semibold text-heading-text-black">
                                   {formatIST(dateKey, 'DD MMM YYYY')}
                                 </p>
@@ -985,95 +1182,106 @@ export default function CheckInForm() {
                                   {formatIST(dateKey, 'dddd')}
                                 </p>
                               </div>
-                              <div className="text-xs font-bold text-text-grey">
+                              <div className="flex-shrink-0 text-xs font-bold text-text-grey">
                                 #{index + 1}
                               </div>
                             </div>
                           ))
                         )}
                       </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row justify-end gap-3">
-                      <button
-                        onClick={() => setIsGlobalLeaveModalOpen(false)}
-                        className="bg-gray-200 text-text-grey px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark-grey transition"
-                      >
-                        Close
-                      </button>
-                      <button
-                        onClick={handleSaveGlobalHolidays}
-                        disabled={globalHolidaysLoading}
-                        className="bg-dark-green text-white px-6 py-2 rounded-lg font-semibold hover:bg-icon-green transition disabled:opacity-70"
-                      >
-                        {globalHolidaysLoading ? 'Saving...' : 'Save Global Leaves'}
-                      </button>
-                    </div>
+                    </SectionCard>
                   </div>
                 </div>
               )}
             </div>
+
+            <div className="border-t border-primary-dark-grey px-4 py-4 sm:px-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button
+                  onClick={() => setIsGlobalLeaveModalOpen(false)}
+                  className="inline-flex items-center justify-center rounded-xl border border-primary-dark-grey bg-white px-6 py-3 text-sm font-semibold text-heading-text-black transition hover:bg-primary-grey"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleSaveGlobalHolidays}
+                  disabled={globalHolidaysLoading}
+                  className="inline-flex items-center justify-center rounded-xl bg-dark-green px-6 py-3 text-sm font-semibold text-white transition hover:bg-icon-green disabled:opacity-70"
+                >
+                  {globalHolidaysLoading ? 'Saving...' : 'Save Global Leaves'}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        </ModalShell>
       )}
 
-      {/* Reset Global Leaves Confirmation Modal */}
       {isResetGlobalLeavesModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[60] p-4">
-          <div className="bg-secondary-white rounded-xl shadow-2xl w-full max-w-2xl border border-primary-dark-grey overflow-hidden">
-            <div className="p-5 border-b border-primary-dark-grey">
-              <h3 className="font-bold text-xl font-heading text-heading-text-black">
+        <ModalShell onClose={() => setIsResetGlobalLeavesModalOpen(false)} maxWidth="max-w-3xl">
+          <div className="flex max-h-[90vh] flex-col">
+            <div className="border-b border-primary-dark-grey px-4 py-4 sm:px-6">
+              <h3 className="text-lg sm:text-xl font-bold text-heading-text-black">
                 Clear All Global Leave Days?
               </h3>
-              <p className="text-sm text-text-grey mt-1">
+              <p className="mt-1 text-sm text-text-grey">
                 This will remove all currently saved global leave days from the system.
               </p>
             </div>
 
-            <div className="p-5 space-y-4">
-              <div className="rounded-xl bg-primary-grey border border-primary-dark-grey p-4">
-                <p className="text-sm font-semibold text-heading-text-black mb-3">
+            <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
+              <div className="rounded-2xl border border-primary-dark-grey bg-primary-grey/40 p-4">
+                <p className="mb-3 text-sm font-semibold text-heading-text-black">
                   Dates to be removed ({sortedGlobalHolidayDateKeys.length})
                 </p>
 
-                <div className="max-h-72 overflow-y-auto space-y-2">
-                  {sortedGlobalHolidayDateKeys.map((dateKey, index) => (
-                    <div
-                      key={dateKey}
-                      className="flex items-center justify-between rounded-lg border border-primary-dark-grey bg-secondary-white px-4 py-3"
-                    >
-                      <div>
-                        <p className="font-semibold text-heading-text-black">
-                          {formatIST(dateKey, 'DD MMM YYYY')}
-                        </p>
-                        <p className="text-xs text-text-grey">
-                          {formatIST(dateKey, 'dddd')}
-                        </p>
-                      </div>
-                      <div className="text-xs font-bold text-text-grey">#{index + 1}</div>
+                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                  {sortedGlobalHolidayDateKeys.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-primary-dark-grey bg-white p-6 text-center text-sm text-text-grey">
+                      No saved leave dates found.
                     </div>
-                  ))}
+                  ) : (
+                    sortedGlobalHolidayDateKeys.map((dateKey, index) => (
+                      <div
+                        key={dateKey}
+                        className="flex items-center justify-between gap-4 rounded-xl border border-primary-dark-grey bg-white px-4 py-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-semibold text-heading-text-black">
+                            {formatIST(dateKey, 'DD MMM YYYY')}
+                          </p>
+                          <p className="text-xs text-text-grey">
+                            {formatIST(dateKey, 'dddd')}
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0 text-xs font-bold text-text-grey">
+                          #{index + 1}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
+            </div>
 
-              <div className="flex flex-col sm:flex-row justify-end gap-3">
+            <div className="border-t border-primary-dark-grey px-4 py-4 sm:px-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
                 <button
                   onClick={() => setIsResetGlobalLeavesModalOpen(false)}
-                  className="bg-gray-200 text-text-grey px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark-grey transition"
+                  className="inline-flex items-center justify-center rounded-xl border border-primary-dark-grey bg-white px-6 py-3 text-sm font-semibold text-heading-text-black transition hover:bg-primary-grey"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleResetGlobalHolidays}
                   disabled={globalHolidaysLoading}
-                  className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition disabled:opacity-70"
+                  className="inline-flex items-center justify-center rounded-xl bg-red-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-70"
                 >
                   {globalHolidaysLoading ? 'Clearing...' : 'Clear All Leave Days'}
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </ModalShell>
       )}
 
       <BarcodeScannerModal
@@ -1081,6 +1289,7 @@ export default function CheckInForm() {
         onClose={() => setIsScannerOpen(false)}
         title="Scan Book Barcode"
         onScanSuccess={(value) => {
+          clearMessage()
           setBarcode(value)
         }}
       />

@@ -56,7 +56,7 @@ export default function CheckPage() {
         </div>
 
         {/* --- Tab Navigation --- */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <TabButton
             label="Check Out"
             icon={<ArrowUpRight size={18} />}

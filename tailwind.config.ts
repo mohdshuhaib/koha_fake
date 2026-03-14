@@ -20,12 +20,19 @@ module.exports = {
         'button-text-black': '#000000',
         'sub-heading-text-grey': '#6e716e',
         'link-text-green': '#6A7F39',
-        'green-new':'#2C6B2F',
+        'green-new': '#2C6B2F',
       },
       fontFamily: {
         body: "var(--font-muller2)",
         heading: "var(--font-muller)",
         malayalam: "var(--font-anek)",
+      },
+      boxShadow: {
+        soft: '0 10px 30px rgba(0,0,0,0.08)',
+      },
+      borderRadius: {
+        '2xl': '1rem',
+        '3xl': '1.5rem',
       },
     },
   },

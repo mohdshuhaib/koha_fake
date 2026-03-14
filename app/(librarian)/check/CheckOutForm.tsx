@@ -6,12 +6,18 @@ import { supabase } from '@/lib/supabase'
 import dayjs from 'dayjs'
 import {
   User,
-  Book,
+  BookOpen,
   CheckCircle2,
   AlertCircle,
   X,
   AlertTriangle,
   Camera,
+  BadgeCheck,
+  ScanLine,
+  CalendarDays,
+  ShieldAlert,
+  ShieldCheck,
+  CreditCard,
 } from 'lucide-react'
 import clsx from 'classnames'
 import BarcodeScannerModal from '@/components/BarcodeScannerModal'
@@ -29,15 +35,48 @@ type MemberSuggestion = {
   barcode: string
 }
 
+type SelectedMember = {
+  id?: string
+  name: string
+  barcode: string
+  category?: string | null
+}
+
+function ModalShell({
+  children,
+  maxWidth = 'max-w-lg',
+}: {
+  children: React.ReactNode
+  maxWidth?: string
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm">
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div
+          className={clsx(
+            'w-full overflow-hidden rounded-2xl border border-primary-dark-grey bg-secondary-white shadow-2xl',
+            maxWidth
+          )}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function CheckOutForm() {
   const [memberBarcode, setMemberBarcode] = useState('')
   const [bookBarcode, setBookBarcode] = useState('')
   const [message, setMessage] = useState('')
   const [isError, setIsError] = useState(false)
   const [loading, setLoading] = useState(false)
+
   const [memberQuery, setMemberQuery] = useState('')
   const [suggestions, setSuggestions] = useState<MemberSuggestion[]>([])
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
+
+  const [selectedMember, setSelectedMember] = useState<SelectedMember | null>(null)
 
   const [isHoldModalOpen, setIsHoldModalOpen] = useState(false)
   const [heldInfo, setHeldInfo] = useState<HeldInfo | null>(null)
@@ -77,6 +116,11 @@ export default function CheckOutForm() {
     return () => clearTimeout(delayDebounce)
   }, [memberQuery, memberBarcode])
 
+  const clearMessage = () => {
+    setMessage('')
+    setIsError(false)
+  }
+
   const fetchMemberSuggestions = async () => {
     const query = memberQuery.trim()
 
@@ -96,8 +140,13 @@ export default function CheckOutForm() {
   }
 
   const handleSelectMember = (member: MemberSuggestion) => {
+    clearMessage()
     setMemberBarcode(member.barcode)
     setMemberQuery(`${member.name} (${member.barcode})`)
+    setSelectedMember({
+      name: member.name,
+      barcode: member.barcode,
+    })
     setSuggestions([])
     setActiveSuggestionIndex(-1)
     setTimeout(() => bookInputRef.current?.focus(), 100)
@@ -114,25 +163,86 @@ export default function CheckOutForm() {
     return dayjs().startOf('day').add(dueInDays, 'day').format('YYYY-MM-DD')
   }
 
+  const resolveMember = async () => {
+    if (!memberBarcode) return null
+
+    const { data: member, error } = await supabase
+      .from('members')
+      .select('id, name, barcode, category')
+      .eq('barcode', memberBarcode)
+      .single()
+
+    if (error || !member) return null
+    return member
+  }
+
+  const resetAll = () => {
+    setMemberBarcode('')
+    setBookBarcode('')
+    setMemberQuery('')
+    setSelectedMember(null)
+    setSuggestions([])
+    setActiveSuggestionIndex(-1)
+    setLoading(false)
+    setHeldInfo(null)
+    setIsHoldModalOpen(false)
+    setIsFineModalOpen(false)
+    setFineWarningMember(null)
+    setMessage('')
+    setIsError(false)
+
+    setTimeout(() => memberInputRef.current?.focus(), 100)
+  }
+
+  const resetAfterSuccess = () => {
+    setBookBarcode('')
+    setLoading(false)
+    setHeldInfo(null)
+    setIsHoldModalOpen(false)
+    setIsFineModalOpen(false)
+    setFineWarningMember(null)
+    setTimeout(() => bookInputRef.current?.focus(), 100)
+  }
+
+  const clearSelectedMember = () => {
+    setMemberBarcode('')
+    setBookBarcode('')
+    setMemberQuery('')
+    setSelectedMember(null)
+    setSuggestions([])
+    setActiveSuggestionIndex(-1)
+    setHeldInfo(null)
+    setIsHoldModalOpen(false)
+    setIsFineModalOpen(false)
+    setFineWarningMember(null)
+    clearMessage()
+
+    setTimeout(() => memberInputRef.current?.focus(), 100)
+  }
+
   const handleCheckout = async () => {
     if (!memberBarcode || !bookBarcode) return
 
     setLoading(true)
-    setMessage('')
-    setIsError(false)
+    clearMessage()
 
-    const { data: member, error: memberError } = await supabase
-      .from('members')
-      .select('id, name, category')
-      .eq('barcode', memberBarcode)
-      .single()
+    let member = await resolveMember()
 
-    if (memberError || !member) {
+    if (!member) {
       setMessage('Member not found. Please check the name or barcode.')
       setIsError(true)
-      resetForm(true)
+      setLoading(false)
+      setTimeout(() => memberInputRef.current?.focus(), 100)
       return
     }
+
+    setSelectedMember({
+      id: member.id,
+      name: member.name,
+      barcode: member.barcode,
+      category: member.category,
+    })
+    setMemberQuery(`${member.name} (${member.barcode})`)
 
     const { count: unpaidFines, error: fineError } = await supabase
       .from('borrow_records')
@@ -144,7 +254,7 @@ export default function CheckOutForm() {
     if (fineError) {
       setMessage("Could not verify member's fine status.")
       setIsError(true)
-      resetForm(true)
+      setLoading(false)
       return
     }
 
@@ -169,7 +279,8 @@ export default function CheckOutForm() {
     if (bookError || !book) {
       setMessage('Book is not available for checkout or barcode is incorrect.')
       setIsError(true)
-      resetForm(false)
+      setLoading(false)
+      setTimeout(() => bookInputRef.current?.focus(), 100)
       return
     }
 
@@ -224,15 +335,16 @@ export default function CheckOutForm() {
     if (rpcError) {
       setMessage(rpcError.message || 'Failed to complete checkout.')
       setIsError(true)
-      resetForm(false)
+      setLoading(false)
+      setTimeout(() => bookInputRef.current?.focus(), 100)
       return
     }
 
     setMessage(
-      `"${bookTitle}" issued to ${member.name}. Return by ${dayjs(dueDate).format('DD MMM YYYY')}`
+      `"${bookTitle}" issued to ${member.name}. Return by ${dayjs(dueDate).format('DD MMM YYYY')}.`
     )
     setIsError(false)
-    resetForm(false)
+    resetAfterSuccess()
   }
 
   const handleConfirmHeldCheckout = async () => {
@@ -241,18 +353,22 @@ export default function CheckOutForm() {
     setLoading(true)
     setIsHoldModalOpen(false)
 
-    const { data: member, error: memberError } = await supabase
-      .from('members')
-      .select('id, name, category')
-      .eq('barcode', memberBarcode)
-      .single()
+    const member = await resolveMember()
 
-    if (memberError || !member) {
+    if (!member) {
       setMessage('Member not found.')
       setIsError(true)
-      resetForm(true)
+      setLoading(false)
+      setTimeout(() => memberInputRef.current?.focus(), 100)
       return
     }
+
+    setSelectedMember({
+      id: member.id,
+      name: member.name,
+      barcode: member.barcode,
+      category: member.category,
+    })
 
     const dueDate = getDueDate(member.category)
 
@@ -266,40 +382,15 @@ export default function CheckOutForm() {
     if (rpcError) {
       setMessage(rpcError.message || 'Failed to process checkout for held book.')
       setIsError(true)
-      console.error(rpcError)
-    } else {
-      setMessage(
-        `Held book "${heldInfo.bookTitle}" issued to ${member.name}. Return by ${dayjs(dueDate).format('DD MMM YYYY')}`
-      )
-      setIsError(false)
+      setLoading(false)
+      return
     }
 
-    resetForm(false)
-  }
-
-  const resetForm = (resetMember: boolean) => {
-    setBookBarcode('')
-    if (resetMember) {
-      setMemberBarcode('')
-      setMemberQuery('')
-    }
-    setSuggestions([])
-    setActiveSuggestionIndex(-1)
-    setLoading(false)
-    setHeldInfo(null)
-    setIsHoldModalOpen(false)
-    setIsFineModalOpen(false)
-    setFineWarningMember(null)
-
-    if (resetMember) {
-      setTimeout(() => memberInputRef.current?.focus(), 100)
-    } else {
-      setTimeout(() => bookInputRef.current?.focus(), 100)
-    }
-  }
-
-  const clearMemberAndReset = () => {
-    resetForm(true)
+    setMessage(
+      `Held book "${heldInfo.bookTitle}" issued to ${member.name}. Return by ${dayjs(dueDate).format('DD MMM YYYY')}.`
+    )
+    setIsError(false)
+    resetAfterSuccess()
   }
 
   const handleMemberKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -332,7 +423,9 @@ export default function CheckOutForm() {
       }
 
       if (memberQuery.trim()) {
+        clearMessage()
         setMemberBarcode(memberQuery.trim())
+        setSelectedMember(null)
         setSuggestions([])
         setActiveSuggestionIndex(-1)
         setTimeout(() => bookInputRef.current?.focus(), 100)
@@ -348,210 +441,385 @@ export default function CheckOutForm() {
 
   return (
     <>
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold font-heading text-heading-text-black uppercase">
-          Check Out a Book
-        </h2>
-
-        <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-            <User className="h-5 w-5 text-text-grey" />
+      <div className="mx-auto w-full max-w-4xl">
+        <div className="rounded-2xl border border-primary-dark-grey bg-white shadow-sm">
+          <div className="border-b border-primary-dark-grey px-4 py-4 sm:px-6">
+            <h2 className="text-lg sm:text-xl font-bold text-heading-text-black">
+              Check Out a Book
+            </h2>
+            <p className="mt-1 text-sm text-text-grey">
+              Select a member, scan the book barcode, verify any warnings, and issue the book.
+            </p>
           </div>
 
-          <input
-            ref={memberInputRef}
-            type="text"
-            className="w-full p-3 pl-12 pr-20 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green transition"
-            placeholder="Enter member name or scan barcode"
-            value={memberQuery}
-            onChange={(e) => {
-              setMemberQuery(e.target.value)
-              setMemberBarcode('')
-            }}
-            onKeyDown={handleMemberKeyDown}
-            disabled={loading}
-          />
+          <div className="space-y-6 px-4 py-5 sm:px-6 sm:py-6">
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+              <div className="relative min-w-0">
+                <label className="mb-2 block text-sm font-semibold text-heading-text-black">
+                  Member
+                </label>
 
-          <div className="absolute inset-y-0 right-0 flex items-center pr-2 gap-1">
-            {isMobileDevice && !loading && (
-              <button
-                type="button"
-                onClick={() => setIsMemberScannerOpen(true)}
-                className="flex items-center justify-center h-9 w-9 rounded-lg text-text-grey hover:text-dark-green hover:bg-secondary-white transition"
-                aria-label="Scan member barcode"
-              >
-                <Camera size={18} />
-              </button>
-            )}
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                    <User className="h-5 w-5 text-text-grey" />
+                  </div>
 
-            {memberQuery && !loading && (
-              <button
-                onClick={clearMemberAndReset}
-                className="flex items-center justify-center h-9 w-9 rounded-lg text-text-grey hover:text-red-500 hover:bg-secondary-white transition"
-                aria-label="Clear member"
-              >
-                <X size={18} />
-              </button>
-            )}
-          </div>
+                  <input
+                    ref={memberInputRef}
+                    type="text"
+                    className="w-full rounded-xl border border-primary-dark-grey bg-primary-grey py-3 pl-12 pr-24 text-sm text-heading-text-black placeholder:text-text-grey transition focus:outline-none focus:ring-2 focus:ring-dark-green"
+                    placeholder="Enter member name or barcode"
+                    value={memberQuery}
+                    onChange={(e) => {
+                      clearMessage()
+                      setMemberQuery(e.target.value)
+                      setMemberBarcode('')
+                      setSelectedMember(null)
+                    }}
+                    onKeyDown={handleMemberKeyDown}
+                    disabled={loading}
+                  />
 
-          {suggestions.length > 0 && (
-            <ul className="absolute z-10 mt-1 w-full bg-secondary-white text-text-grey border border-primary-dark-grey rounded-lg shadow-lg max-h-60 overflow-y-auto">
-              {suggestions.map((member, index) => (
-                <li
-                  key={member.barcode}
-                  onClick={() => handleSelectMember(member)}
-                  className={clsx(
-                    'px-4 py-3 cursor-pointer transition',
-                    activeSuggestionIndex === index
-                      ? 'bg-primary-dark-grey'
-                      : 'hover:bg-primary-dark-grey'
+                  <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-2">
+                    {isMobileDevice && !loading && (
+                      <button
+                        type="button"
+                        onClick={() => setIsMemberScannerOpen(true)}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-text-grey transition hover:bg-secondary-white hover:text-dark-green"
+                        aria-label="Scan member barcode"
+                      >
+                        <Camera size={18} />
+                      </button>
+                    )}
+
+                    {memberQuery && !loading && (
+                      <button
+                        type="button"
+                        onClick={clearSelectedMember}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-text-grey transition hover:bg-secondary-white hover:text-red-500"
+                        aria-label="Clear member"
+                      >
+                        <X size={18} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {suggestions.length > 0 && (
+                  <ul className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-primary-dark-grey bg-secondary-white shadow-lg">
+                    {suggestions.map((member, index) => (
+                      <li
+                        key={member.barcode}
+                        onClick={() => handleSelectMember(member)}
+                        className={clsx(
+                          'cursor-pointer px-4 py-3 transition',
+                          activeSuggestionIndex === index
+                            ? 'bg-primary-grey'
+                            : 'hover:bg-primary-grey'
+                        )}
+                      >
+                        <span className="block break-words text-sm font-semibold text-heading-text-black">
+                          {member.name}
+                        </span>
+                        <span className="block break-all text-xs text-text-grey">
+                          {member.barcode}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="relative min-w-0">
+                <label className="mb-2 block text-sm font-semibold text-heading-text-black">
+                  Book Barcode
+                </label>
+
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                    <BookOpen className="h-5 w-5 text-text-grey" />
+                  </div>
+
+                  <input
+                    ref={bookInputRef}
+                    type="text"
+                    className="w-full rounded-xl border border-primary-dark-grey bg-primary-grey py-3 pl-12 pr-14 text-sm text-heading-text-black placeholder:text-text-grey transition focus:outline-none focus:ring-2 focus:ring-dark-green"
+                    placeholder="Scan or enter book barcode"
+                    value={bookBarcode}
+                    onChange={(e) => {
+                      clearMessage()
+                      setBookBarcode(e.target.value)
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleCheckout()}
+                    disabled={loading}
+                  />
+
+                  {isMobileDevice && !loading && (
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsBookScannerOpen(true)}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-text-grey transition hover:bg-secondary-white hover:text-dark-green"
+                        aria-label="Scan book barcode"
+                      >
+                        <Camera size={18} />
+                      </button>
+                    </div>
                   )}
-                >
-                  <span className="block text-sm font-medium text-heading-text-black">
-                    {member.name}
-                  </span>
-                  <span className="block text-xs text-text-grey">{member.barcode}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-            <Book className="h-5 w-5 text-text-grey" />
-          </div>
-
-          <input
-            ref={bookInputRef}
-            type="text"
-            className="w-full p-3 pl-12 pr-14 rounded-lg bg-primary-grey border border-primary-dark-grey text-text-grey placeholder-text-grey focus:outline-none focus:ring-2 focus:ring-dark-green transition"
-            placeholder="Scan book barcode"
-            value={bookBarcode}
-            onChange={(e) => setBookBarcode(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleCheckout()}
-            disabled={loading}
-          />
-
-          {isMobileDevice && !loading && (
-            <div className="absolute inset-y-0 right-0 flex items-center pr-2">
-              <button
-                type="button"
-                onClick={() => setIsBookScannerOpen(true)}
-                className="flex items-center justify-center h-9 w-9 rounded-lg text-text-grey hover:text-dark-green hover:bg-secondary-white transition"
-                aria-label="Scan book barcode"
-              >
-                <Camera size={18} />
-              </button>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
 
-        <button
-          onClick={handleCheckout}
-          disabled={loading || !memberBarcode || !bookBarcode}
-          className="w-full sm:w-auto bg-button-yellow text-button-text-black px-8 py-3 rounded-lg font-bold hover:bg-yellow-500 transition disabled:opacity-60"
-        >
-          {loading ? 'Processing...' : 'Check Out'}
-        </button>
+            {selectedMember && (
+              <div className="rounded-2xl border border-green-200 bg-green-50 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <BadgeCheck className="h-4 w-4 text-green-700" />
+                      <p className="text-sm font-semibold text-green-800">
+                        Selected Member
+                      </p>
+                    </div>
 
-        {message && (
-          <div
-            className={clsx(
-              'flex items-center gap-3 p-3 rounded-lg text-sm',
-              isError ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                    <p className="mt-2 break-words text-sm font-semibold text-heading-text-black">
+                      {selectedMember.name}
+                    </p>
+                    <p className="mt-1 break-all text-xs text-text-grey capitalize">
+                      Barcode: {selectedMember.barcode}
+                      {selectedMember.category ? ` • ${selectedMember.category}` : ''}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={clearSelectedMember}
+                    className="inline-flex items-center justify-center rounded-xl border border-green-200 bg-white px-3 py-2 text-sm font-medium text-green-800 transition hover:bg-green-100"
+                  >
+                    Change Member
+                  </button>
+                </div>
+              </div>
             )}
-          >
-            {isError ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}
-            <span className="font-medium">{message}</span>
+
+            <div className="rounded-2xl border border-primary-dark-grey bg-primary-grey/30 p-4">
+              <div className="flex items-start gap-3">
+                <ScanLine className="mt-0.5 h-4 w-4 flex-shrink-0 text-dark-green" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-heading-text-black">
+                    Staff Workflow Tip
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-text-grey">
+                    After a successful checkout, the selected member stays active so you can issue
+                    another book faster without searching again.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-primary-dark-grey pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-text-grey">
+                Verify both member and book barcode before confirming checkout.
+              </p>
+
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <button
+                  type="button"
+                  onClick={resetAll}
+                  className="inline-flex w-full items-center justify-center rounded-xl border border-primary-dark-grey bg-white px-5 py-3 text-sm font-semibold text-heading-text-black transition hover:bg-primary-grey sm:w-auto"
+                  disabled={loading}
+                >
+                  Reset
+                </button>
+
+                <button
+                  onClick={handleCheckout}
+                  disabled={loading || !memberBarcode || !bookBarcode}
+                  className="inline-flex w-full items-center justify-center rounded-xl bg-button-yellow px-6 py-3 text-sm font-bold text-button-text-black transition hover:bg-yellow-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                >
+                  {loading ? 'Processing...' : 'Check Out'}
+                </button>
+              </div>
+            </div>
+
+            {message && (
+              <div
+                className={clsx(
+                  'flex items-start gap-3 rounded-xl border px-4 py-3 text-sm',
+                  isError
+                    ? 'border-red-200 bg-red-50 text-red-800'
+                    : 'border-green-200 bg-green-50 text-green-800'
+                )}
+              >
+                <div className="mt-0.5 flex-shrink-0">
+                  {isError ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
+                </div>
+                <p className="break-words font-medium leading-6">{message}</p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {isFineModalOpen && fineWarningMember && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-          <div className="bg-secondary-white rounded-xl shadow-2xl max-w-md w-full border border-primary-dark-grey">
-            <div className="p-6 text-center">
-              <AlertTriangle className="mx-auto h-12 w-12 text-red-500" />
-              <h3 className="mt-4 text-xl font-bold font-heading text-heading-text-black">
-                Outstanding Fine
-              </h3>
-              <p className="mt-2 text-sm text-text-grey">
-                <strong>{fineWarningMember.name}</strong> has outstanding fines. Normally,
-                borrowing is restricted until fines are paid.
+        <ModalShell maxWidth="max-w-md">
+          <div className="border-b border-primary-dark-grey px-5 py-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-bold text-heading-text-black">
+                  Outstanding Fine
+                </h3>
+                <p className="mt-1 text-sm text-text-grey">
+                  This member currently has unpaid fines.
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setIsFineModalOpen(false)
+                  setFineWarningMember(null)
+                }}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-text-grey transition hover:bg-primary-dark-grey hover:text-red-500"
+                aria-label="Close fine warning"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-4 px-5 py-5">
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-center">
+              <CreditCard className="mx-auto h-10 w-10 text-red-600" />
+              <p className="mt-3 break-words text-base font-semibold text-heading-text-black">
+                {fineWarningMember.name}
               </p>
-              <p className="mt-3 text-sm text-text-grey">
-                To view the fines, go to the{' '}
-                <Link
-                  href="/fines"
-                  className="font-semibold text-dark-green hover:underline"
-                >
+              <p className="mt-2 text-sm leading-6 text-text-grey">
+                Borrowing is usually restricted until fines are paid.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-primary-dark-grey bg-primary-grey/40 p-4">
+              <p className="text-sm leading-6 text-text-grey">
+                To review the member’s pending fines, open the{' '}
+                <Link href="/fines" className="font-semibold text-dark-green hover:underline">
                   Fine Page
                 </Link>
                 .
               </p>
             </div>
-            <div className="flex justify-end gap-3 bg-primary-grey p-4 rounded-b-xl">
+          </div>
+
+          <div className="border-t border-primary-dark-grey px-5 py-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
               <button
-                onClick={() => resetForm(false)}
-                className="px-5 py-2 text-sm font-semibold text-text-grey bg-secondary-white border border-primary-dark-grey rounded-lg hover:bg-primary-dark-grey"
+                onClick={() => {
+                  setIsFineModalOpen(false)
+                  setFineWarningMember(null)
+                  setLoading(false)
+                  setTimeout(() => bookInputRef.current?.focus(), 100)
+                }}
+                className="inline-flex items-center justify-center rounded-xl border border-primary-dark-grey bg-white px-5 py-3 text-sm font-semibold text-heading-text-black transition hover:bg-primary-grey"
               >
                 Cancel
               </button>
+
               <button
                 onClick={handleSkipFine}
-                className="px-5 py-2 text-sm font-semibold text-white bg-yellow-600 rounded-lg hover:bg-yellow-700"
+                className="inline-flex items-center justify-center rounded-xl bg-yellow-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-yellow-700"
               >
-                Skip for now
+                Skip for Now
               </button>
             </div>
           </div>
-        </div>
+        </ModalShell>
       )}
 
       {isHoldModalOpen && heldInfo && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-          <div className="bg-secondary-white rounded-xl shadow-2xl max-w-md w-full border border-primary-dark-grey">
-            <div className="p-6 text-center">
-              <AlertCircle
-                className={clsx(
-                  'mx-auto h-12 w-12',
-                  heldInfo.holdPolicy === 'strict' ? 'text-red-500' : 'text-yellow-500'
-                )}
-              />
-
-              <h3 className="mt-4 text-xl font-bold font-heading text-heading-text-black">
-                Book on Hold
-              </h3>
-
-              {heldInfo.holdPolicy === 'strict' ? (
-                <p className="mt-2 text-sm text-text-grey">
-                  This book, <strong className="text-heading-text-black">"{heldInfo.bookTitle}"</strong>,
-                  is on a <strong className="text-heading-text-black">strict hold</strong> for{' '}
-                  <strong className="text-heading-text-black">
-                    {heldInfo.heldForMemberName}
-                  </strong>
-                  . This means the holder may need this book at any time, so it should not be
-                  issued to anybody else until the hold is released.
+        <ModalShell maxWidth="max-w-md">
+          <div className="border-b border-primary-dark-grey px-5 py-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-bold text-heading-text-black">
+                  Book on Hold
+                </h3>
+                <p className="mt-1 text-sm text-text-grey">
+                  This book has an active hold request.
                 </p>
-              ) : (
-                <p className="mt-2 text-sm text-text-grey">
-                  This book, <strong className="text-heading-text-black">"{heldInfo.bookTitle}"</strong>,
-                  is on hold for{' '}
-                  <strong className="text-heading-text-black">
-                    {heldInfo.heldForMemberName}
-                  </strong>
-                  , but the hold is marked as <strong className="text-heading-text-black">flexible</strong>.
-                  Others may check it out for now, though the holder may still ask for it later.
-                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setIsHoldModalOpen(false)
+                  setHeldInfo(null)
+                  setLoading(false)
+                }}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-text-grey transition hover:bg-primary-dark-grey hover:text-red-500"
+                aria-label="Close hold warning"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-4 px-5 py-5">
+            <div
+              className={clsx(
+                'rounded-2xl border p-4 text-center',
+                heldInfo.holdPolicy === 'strict'
+                  ? 'border-red-200 bg-red-50'
+                  : 'border-amber-200 bg-amber-50'
               )}
+            >
+              {heldInfo.holdPolicy === 'strict' ? (
+                <ShieldAlert className="mx-auto h-10 w-10 text-red-600" />
+              ) : (
+                <ShieldCheck className="mx-auto h-10 w-10 text-amber-600" />
+              )}
+
+              <p className="mt-3 break-words text-base font-semibold text-heading-text-black">
+                {heldInfo.bookTitle}
+              </p>
+
+              <p className="mt-2 text-sm leading-6 text-text-grey">
+                Held for{' '}
+                <strong className="text-heading-text-black">
+                  {heldInfo.heldForMemberName}
+                </strong>
+                .
+              </p>
+
+              <div className="mt-3">
+                <span
+                  className={clsx(
+                    'inline-flex rounded-full px-3 py-1 text-xs font-semibold',
+                    heldInfo.holdPolicy === 'strict'
+                      ? 'bg-red-100 text-red-700'
+                      : 'bg-amber-100 text-amber-700'
+                  )}
+                >
+                  {heldInfo.holdPolicy === 'strict' ? 'Mandatory Hold' : 'Flexible Hold'}
+                </span>
+              </div>
             </div>
 
-            <div className="flex justify-end gap-3 bg-primary-grey p-4 rounded-b-xl">
+            <div className="rounded-2xl border border-primary-dark-grey bg-primary-grey/40 p-4">
+              <p className="text-sm leading-6 text-text-grey">
+                {heldInfo.holdPolicy === 'strict'
+                  ? 'This book should not be issued to anyone else until the hold is released.'
+                  : 'This hold is flexible, so checkout can continue if required.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="border-t border-primary-dark-grey px-5 py-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
               <button
-                onClick={() => resetForm(false)}
-                className="px-5 py-2 text-sm font-semibold text-text-grey bg-secondary-white border border-primary-dark-grey rounded-lg hover:bg-primary-dark-grey"
+                onClick={() => {
+                  setIsHoldModalOpen(false)
+                  setHeldInfo(null)
+                  setLoading(false)
+                  setTimeout(() => bookInputRef.current?.focus(), 100)
+                }}
+                className="inline-flex items-center justify-center rounded-xl border border-primary-dark-grey bg-white px-5 py-3 text-sm font-semibold text-heading-text-black transition hover:bg-primary-grey"
               >
                 Cancel
               </button>
@@ -560,17 +828,17 @@ export default function CheckOutForm() {
                 onClick={handleConfirmHeldCheckout}
                 disabled={heldInfo.holdPolicy === 'strict'}
                 className={clsx(
-                  'px-5 py-2 text-sm font-semibold rounded-lg transition',
+                  'inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition',
                   heldInfo.holdPolicy === 'strict'
-                    ? 'bg-primary-dark-grey text-text-grey cursor-not-allowed'
-                    : 'text-white bg-dark-green hover:bg-icon-green'
+                    ? 'cursor-not-allowed bg-primary-dark-grey text-text-grey'
+                    : 'bg-dark-green text-white hover:bg-icon-green'
                 )}
               >
                 Continue Checkout
               </button>
             </div>
           </div>
-        </div>
+        </ModalShell>
       )}
 
       <BarcodeScannerModal
@@ -578,8 +846,10 @@ export default function CheckOutForm() {
         onClose={() => setIsMemberScannerOpen(false)}
         title="Scan Member Barcode"
         onScanSuccess={(value) => {
+          clearMessage()
           setMemberBarcode(value)
           setMemberQuery(value)
+          setSelectedMember(null)
           setSuggestions([])
           setActiveSuggestionIndex(-1)
           setTimeout(() => bookInputRef.current?.focus(), 100)
@@ -591,6 +861,7 @@ export default function CheckOutForm() {
         onClose={() => setIsBookScannerOpen(false)}
         title="Scan Book Barcode"
         onScanSuccess={(value) => {
+          clearMessage()
           setBookBarcode(value)
         }}
       />

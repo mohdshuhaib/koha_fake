@@ -9,137 +9,133 @@ export default function Hero() {
       href="https://shuhaibcv.vercel.app"
       target="_blank"
       rel="noreferrer"
-      className="font-bold text-button-yellow hover:text-yellow-300 hover:underline transition-all duration-300"
+      className="font-bold text-button-yellow transition hover:text-yellow-300 hover:underline"
     >
       Shuhaib
     </a>
   )
 
   return (
-    // h-screen ensures it takes exactly the screen height.
-    // pt-16 accounts for the 4rem (h-16) height of the fixed Navbar so content is perfectly centered in the remaining space.
-    <div className="relative h-screen w-full bg-primary-grey overflow-hidden flex flex-col items-center justify-center pt-16 px-4 font-heading">
-
-      {/* --- Infinity Animation Background Elements --- */}
-      <div className="absolute inset-0 w-full h-full pointer-events-none">
-        {/* Adjusted blob positions and opacity for a cleaner look without the card background */}
-        <div className="absolute top-[10%] left-[10%] w-[30rem] h-[30rem] bg-dark-green/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob opacity-60"></div>
-        <div className="absolute top-[10%] right-[10%] w-[30rem] h-[30rem] bg-button-yellow/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000 opacity-60"></div>
-        <div className="absolute bottom-[10%] left-[20%] w-[30rem] h-[30rem] bg-green-400/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000 opacity-60"></div>
-        {/* Subtle Grid Pattern */}
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10"></div>
+    <section className="relative isolate overflow-hidden bg-primary-grey pt-16">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute left-[-10%] top-[8%] h-56 w-56 rounded-full bg-dark-green/20 blur-3xl sm:h-72 sm:w-72 lg:h-[24rem] lg:w-[24rem]" />
+        <div className="absolute right-[-10%] top-[10%] h-56 w-56 rounded-full bg-button-yellow/20 blur-3xl sm:h-72 sm:w-72 lg:h-[24rem] lg:w-[24rem]" />
+        <div className="absolute bottom-[5%] left-[20%] h-56 w-56 rounded-full bg-green-400/20 blur-3xl sm:h-72 sm:w-72 lg:h-[22rem] lg:w-[22rem]" />
+        <div className="absolute inset-0 opacity-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
       </div>
 
-      {/* --- Main Content --- */}
-      {/* Removed bg-dark-green/90. Now it's transparent/subtle glass to let the background shine through. */}
-      <div className="relative z-10 max-w-5xl w-full text-center space-y-8 animate-fade-in-up">
+      <div className="relative mx-auto flex min-h-[calc(100dvh-4rem)] max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+        <div className="w-full py-4 sm:py-6">
+          <div className="mx-auto max-w-5xl rounded-[2rem] border border-black/5 bg-white/50 p-5 shadow-xl backdrop-blur-md sm:p-6 lg:p-10">
+            <div className="text-center animate-fade-in-up">
+              <div className="mb-4 flex justify-center sm:mb-6">
+                <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/70 px-3 py-1.5 shadow-sm backdrop-blur-sm">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-600"></span>
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-600 sm:text-xs">
+                    PMSA Wafy College
+                  </span>
+                </div>
+              </div>
 
-        {/* Floating Badge */}
-        <div className="flex justify-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/5 border border-black/10 backdrop-blur-sm shadow-sm">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-600"></span>
-            </span>
-            <span className="text-xs font-bold text-gray-600 tracking-wider uppercase">PMSA Wafy College</span>
+              <div className="mx-auto max-w-4xl">
+                <h1 className="font-heading text-3xl font-extrabold uppercase leading-[0.95] tracking-tight sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl">
+                  <span className="bg-gradient-to-b from-gray-800 to-gray-500 bg-clip-text text-transparent">
+                    Welcome to
+                  </span>
+                  <br />
+                  <span className="bg-gradient-to-r from-dark-green to-icon-green bg-clip-text text-transparent">
+                    PMSA Library
+                  </span>
+                </h1>
+              </div>
+
+              <div className="mx-auto mt-4 max-w-2xl space-y-2 sm:mt-6 sm:space-y-3">
+                <p className="text-sm font-medium leading-relaxed text-heading-text-black sm:text-base md:text-lg">
+                  Your Digital Companion for{" "}
+                  <span className="text-dark-green underline decoration-wavy decoration-yellow-400/50 underline-offset-4">
+                    Smarter Reading
+                  </span>
+                </p>
+                <p className="text-xs leading-6 text-text-grey sm:text-sm md:text-base">
+                  Explore a vast world of books, manage checkouts effortlessly, and stay updated
+                  with real-time notifications.
+                </p>
+              </div>
+
+              <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:justify-center">
+                <Link
+                  href="/catalog"
+                  className="group inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-button-yellow px-5 py-3 text-sm font-bold uppercase tracking-wide text-button-text-black shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl sm:px-7"
+                >
+                  <span>Browse Catalog</span>
+                  <BookOpen size={18} />
+                </Link>
+
+                <Link
+                  href="/login"
+                  className="group inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-primary-dark-grey bg-white/70 px-5 py-3 text-sm font-bold uppercase tracking-wide text-heading-text-black shadow-md backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-dark-green hover:bg-white hover:shadow-lg sm:px-7"
+                >
+                  <span>Librarian Login</span>
+                  <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+                </Link>
+              </div>
+
+              <div className="mt-6 flex flex-col items-center gap-3 sm:mt-8">
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center">
+                  <Link
+                    href="/member-login"
+                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-white/60 px-4 py-2.5 text-xs text-text-grey transition hover:bg-white/80 sm:text-sm"
+                  >
+                    <Library size={16} className="text-dark-green" />
+                    <span>
+                      Are you a member?{" "}
+                      <span className="font-semibold text-dark-green">
+                        Login here
+                      </span>
+                    </span>
+                  </Link>
+
+                  <a
+                    href="https://t.me/librarypmsa"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-white/60 px-4 py-2.5 text-xs text-text-grey transition hover:bg-white/80 sm:text-sm"
+                  >
+                    <Send size={16} className="text-blue-500" />
+                    <span>
+                      Join our <span className="font-semibold text-blue-600">Telegram group</span>
+                    </span>
+                  </a>
+                </div>
+
+                <div className="pt-1 text-center text-[9px] uppercase tracking-[0.22em] text-gray-400 sm:text-[10px]">
+                  Made with ❤️ by {shuhaib}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* Main Headline */}
-        <h1 className="text-6xl md:text-8xl font-extrabold uppercase leading-none tracking-tight">
-          <span className="bg-gradient-to-b from-gray-800 to-gray-500 bg-clip-text text-transparent drop-shadow-sm">
-            Welcome to
-          </span>
-          <br />
-          <span className="bg-gradient-to-r from-dark-green to-icon-green bg-clip-text text-transparent drop-shadow-sm">
-            PMSA Library
-          </span>
-        </h1>
-
-        {/* Subtitle */}
-        <div className="space-y-4 max-w-2xl mx-auto">
-          <p className="text-xl md:text-2xl text-heading-text-black font-medium">
-            Your Digital Companion for <span className="text-dark-green underline decoration-wavy decoration-yellow-400/50 underline-offset-4">Smarter Reading</span>
-          </p>
-          <p className="text-base md:text-lg text-text-grey leading-relaxed font-light">
-            Explore a vast world of books, manage checkouts effortlessly, and stay updated with real-time notifications.
-          </p>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
-          <Link
-            href="/catalog"
-            className="group relative px-8 py-4 bg-button-yellow text-button-text-black rounded-full font-bold uppercase tracking-wide shadow-xl hover:shadow-yellow-400/40 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
-          >
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              Browse Catalog <BookOpen size={20} />
-            </span>
-            {/* Hover Shine Effect */}
-            <div className="absolute inset-0 bg-white/40 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-          </Link>
-
-          <Link
-            href="/login"
-            className="group relative px-8 py-4 bg-white/50 backdrop-blur-sm border border-primary-dark-grey text-heading-text-black rounded-full font-bold uppercase tracking-wide hover:bg-white hover:border-dark-green transition-all duration-300 shadow-md hover:shadow-lg"
-          >
-            <span className="flex items-center justify-center gap-2">
-              Librarian Login <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-            </span>
-          </Link>
-        </div>
-
-        {/* Footer Links (Compact for single screen view) */}
-        <div className="pt-8 flex flex-col items-center justify-center gap-4">
-          <div className="flex flex-wrap justify-center gap-4 text-sm text-text-grey">
-            <Link
-              href="/member-login"
-              className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/60 transition-colors duration-200"
-            >
-              <Library size={16} className="text-dark-green" />
-              <span>Are you a member? <span className="font-bold text-dark-green underline decoration-transparent hover:decoration-current transition-all">Login here</span></span>
-            </Link>
-
-            <a
-              href="https://t.me/librarypmsa"
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/60 transition-colors duration-200"
-            >
-              <Send size={16} className="text-blue-500" />
-              <span>Join our <span className="font-bold text-blue-600 underline decoration-transparent hover:decoration-current transition-all">Telegram group</span></span>
-            </a>
-          </div>
-
-          <div className="text-[10px] text-gray-400 font-mono uppercase tracking-widest">
-            Made with ❤️ by {shuhaib}
-          </div>
-        </div>
-
       </div>
 
-      {/* --- Styles --- */}
       <style jsx global>{`
-        @keyframes blob {
-          0% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-          100% { transform: translate(0px, 0px) scale(1); }
-        }
-        .animate-blob {
-          animation: blob 10s infinite;
-        }
-        .animation-delay-2000 { animation-delay: 2s; }
-        .animation-delay-4000 { animation-delay: 4s; }
-
         @keyframes fade-in-up {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
+
         .animate-fade-in-up {
-          animation: fade-in-up 1s ease-out forwards;
+          animation: fade-in-up 0.8s ease-out forwards;
         }
       `}</style>
-    </div>
+    </section>
   )
 }

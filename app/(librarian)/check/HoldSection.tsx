@@ -9,13 +9,38 @@ export default function HoldSection() {
   const [subTab, setSubTab] = useState<'hold' | 'held'>('hold')
 
   return (
-    <div>
-      <div className="flex border-b border-primary-dark-grey mb-6">
-        <button onClick={() => setSubTab('hold')} className={clsx('px-6 py-3 font-bold', subTab === 'hold' ? 'border-b-2 border-dark-green text-dark-green' : 'text-text-grey')}>Place a Hold</button>
-        <button onClick={() => setSubTab('held')} className={clsx('px-6 py-3 font-bold', subTab === 'held' ? 'border-b-2 border-dark-green text-dark-green' : 'text-text-grey')}>View Held Books</button>
+    <div className="space-y-6">
+      <div className="w-full overflow-x-auto">
+        <div className="inline-flex min-w-full sm:min-w-0 rounded-2xl bg-primary-grey p-1 border border-primary-dark-grey">
+          <button
+            onClick={() => setSubTab('hold')}
+            className={clsx(
+              'flex-1 whitespace-nowrap rounded-xl px-4 sm:px-5 py-2.5 text-sm sm:text-base font-semibold transition-all duration-200',
+              subTab === 'hold'
+                ? 'bg-white text-dark-green shadow-sm'
+                : 'text-text-grey hover:text-heading-text-black'
+            )}
+          >
+            Place a Hold
+          </button>
+
+          <button
+            onClick={() => setSubTab('held')}
+            className={clsx(
+              'flex-1 whitespace-nowrap rounded-xl px-4 sm:px-5 py-2.5 text-sm sm:text-base font-semibold transition-all duration-200',
+              subTab === 'held'
+                ? 'bg-white text-dark-green shadow-sm'
+                : 'text-text-grey hover:text-heading-text-black'
+            )}
+          >
+            View Held Books
+          </button>
+        </div>
       </div>
 
-      {subTab === 'hold' ? <HoldForm /> : <HeldBooksList />}
+      <div className="rounded-2xl">
+        {subTab === 'hold' ? <HoldForm /> : <HeldBooksList />}
+      </div>
     </div>
   )
 }
