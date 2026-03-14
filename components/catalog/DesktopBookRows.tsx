@@ -3,7 +3,7 @@
 import { Star } from 'lucide-react'
 import clsx from 'classnames'
 import StatusBadge from './StatusBadge'
-import type { Book, BookReview } from '@/app/catalog/page'
+import type { Book, BookReview } from '@/app/catalog/catalog-utils'
 
 export default function DesktopBookRows({
   book,

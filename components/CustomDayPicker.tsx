@@ -1,34 +1,68 @@
 'use client'
 
 import { DayPicker, DayPickerProps } from 'react-day-picker'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import clsx from 'classnames'
 
-// This is a reusable, styled calendar component
-export function CustomDayPicker(props: DayPickerProps) {
+export function CustomDayPicker({
+  className,
+  classNames,
+  showOutsideDays = true,
+  ...props
+}: DayPickerProps) {
   return (
     <DayPicker
-      showOutsideDays
-      className="p-3"
+      showOutsideDays={showOutsideDays}
+      className={clsx('rdp-root flex justify-center p-3 sm:p-4', className)}
+      components={{
+        Chevron: ({ orientation, className }) =>
+          orientation === 'left' ? (
+            <ChevronLeft className={clsx('h-4 w-4', className)} />
+          ) : (
+            <ChevronRight className={clsx('h-4 w-4', className)} />
+          ),
+      }}
       classNames={{
-        months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
-        month: 'space-y-4',
-        caption: 'flex justify-center pt-1 relative items-center',
-        caption_label: 'text-lg font-bold text-heading-text-black',
-        nav: 'space-x-1 flex items-center',
-        nav_button: 'h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100',
-        nav_button_previous: 'absolute left-1',
-        nav_button_next: 'absolute right-1',
-        table: 'w-full border-collapse space-y-1',
-        head_row: 'flex',
-        head_cell: 'text-text-grey rounded-md w-9 font-normal text-[0.8rem]',
-        row: 'flex w-full mt-2',
-        cell: 'h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-primary-dark-grey first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20',
-        day: 'h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-full hover:bg-primary-dark-grey transition-colors',
-        day_selected: 'bg-button-yellow text-button-text-black hover:bg-button-yellow focus:bg-button-yellow focus:text-button-text-black font-bold',
-        day_today: 'bg-primary-dark-grey text-heading-text-black rounded-full',
-        day_outside: 'text-text-grey opacity-50',
-        day_disabled: 'text-text-grey opacity-50',
-        day_range_middle: 'aria-selected:bg-primary-dark-grey aria-selected:text-text-grey',
-        day_hidden: 'invisible',
+        root: 'w-full',
+
+        months: 'flex justify-center',
+        month: 'inline-block space-y-4',
+
+        month_caption: 'relative mx-auto flex w-fit min-w-[280px] items-center justify-center pt-1',
+        caption_label: 'px-10 text-base sm:text-lg font-bold text-heading-text-black',
+
+        nav: 'contents',
+
+        button_previous:
+          'absolute left-0 inline-flex h-8 w-8 items-center justify-center rounded-md border border-primary-dark-grey bg-white text-heading-text-black hover:bg-primary-grey transition',
+        button_next:
+          'absolute right-0 inline-flex h-8 w-8 items-center justify-center rounded-md border border-primary-dark-grey bg-white text-heading-text-black hover:bg-primary-grey transition',
+
+        month_grid: 'mx-auto border-collapse',
+        weekdays: 'flex',
+        weekday:
+          'flex h-10 w-10 items-center justify-center text-[0.8rem] font-medium text-text-grey',
+        week: 'mt-2 flex w-full',
+
+        day: 'relative h-10 w-10 p-0 text-center',
+        day_button:
+          'flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium text-heading-text-black hover:bg-primary-dark-grey transition',
+
+        selected:
+          'bg-button-yellow text-button-text-black font-bold hover:bg-button-yellow',
+        today:
+          'border border-dark-green text-heading-text-black font-semibold',
+        outside: 'text-text-grey opacity-40',
+        disabled: 'text-text-grey opacity-40 cursor-not-allowed',
+        hidden: 'invisible',
+
+        range_middle: 'bg-primary-dark-grey text-heading-text-black rounded-none',
+        range_start: 'bg-button-yellow text-button-text-black rounded-full',
+        range_end: 'bg-button-yellow text-button-text-black rounded-full',
+
+        chevron: 'h-4 w-4 text-heading-text-black',
+
+        ...classNames,
       }}
       {...props}
     />
