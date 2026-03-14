@@ -2,7 +2,7 @@
 
 import { X, Star, Loader2 } from 'lucide-react'
 import clsx from 'classnames'
-import type { Book, ReviewFormState } from '@/app/catalog/page'
+import type { Book, ReviewFormState } from '@/app/catalog/catalog-utils'
 
 export default function ReviewModal({
   book,
