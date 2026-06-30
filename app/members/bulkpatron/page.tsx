@@ -57,13 +57,22 @@ export default function BulkUploadMembers() {
           return
         }
 
-        // Simplified: Insert directly using the Supabase client library
-        const { error } = await supabase.from('members').insert(validRows)
+        const response = await fetch('/api/bulk-create-members', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(validRows),
+        })
+        const result = await response.json()
 
-        if (error) {
-          setUploadResult({ type: 'error', message: `Upload failed: ${error.message}` })
+        if (!response.ok || !result.success) {
+          setUploadResult({ type: 'error', message: `Upload failed: ${result.error || 'Server error'}` })
+        } else if (result.failed?.length > 0) {
+          setUploadResult({
+            type: 'error',
+            message: `${result.addedCount} patron(s) were added with login accounts. ${result.failed.length} failed: ${result.failed.map((item: { barcode: string; error: string }) => `${item.barcode} (${item.error})`).join(', ')}`,
+          })
         } else {
-          setUploadResult({ type: 'success', message: `${validRows.length} patrons were uploaded successfully!` })
+          setUploadResult({ type: 'success', message: `${result.addedCount} patron(s) were uploaded successfully and login accounts were created.` })
           setSelectedFile(null) // Clear file on success
         }
         setLoading(false)

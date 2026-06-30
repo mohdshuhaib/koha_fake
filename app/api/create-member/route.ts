@@ -17,8 +17,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const email = `${barcode}@member.pmsa`
-    const password = barcode.padEnd(6, '0') // You could use a more secure password scheme
+    const cleanBarcode = String(barcode).trim()
+    const email = `${cleanBarcode.toLowerCase()}@member.pmsa`
+    const password = cleanBarcode.padEnd(6, '0') // You could use a more secure password scheme
 
     // Step 1: Create Supabase Auth user
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
       {
         id: authUser.user.id,
         name,
-        barcode,
+        barcode: cleanBarcode,
         category,
         batch,
       }
@@ -45,6 +46,7 @@ export async function POST(req: Request) {
 
     if (dbError) {
       console.error('DB error:', dbError.message)
+      await supabase.auth.admin.deleteUser(authUser.user.id)
       return NextResponse.json({ error: dbError.message }, { status: 500 })
     }
 
